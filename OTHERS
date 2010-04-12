@@ -1,0 +1,5 @@
+Languages which produces Erlang VM bytecode:
+ - Erlang
+ - Efene http://efene.tumblr.com/
+ - LFE http://github.com/rvirding/lfe
+

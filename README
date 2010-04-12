@@ -1,0 +1,17 @@
+what is working:
+
+-- data types: atom, integer, float, tuple, list.
+  -- to do: funs make_fun2
+-- arithmetic
+-- pattern matching and tests
+-- tuple operations
+-- list operations?
+-- funs
+-- calling functions, from the same and other modules, with and without fqn.
+-- tail recursion
+
+
+todo: exceptions, stack trace.
+
+
+http://www.erlang.se/~bjorn/beam_file_format.html
