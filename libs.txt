@@ -1,0 +1,27 @@
+General js libs:
+
+base2
+prototype.js
+jQuery
+dojo
+Closure
+mootools
+
+
+Compacting:
+ http://www.julienlecomte.net/yuicompressor/  http://yuilibrary.com/projects/yuicompressor/
+ http://javascript.crockford.com/jsmin.html
+ Google Closure Compiler (can perform very advanced transforms, like dead code elimination, inlineing, global var renaming)
+
+Compressing:
+ http://jscompress.com/
+   http://dean.edwards.name/packer/
+     wersja w php http://joliclic.free.fr/php/javascript-packer/en/index.php
+     wersja 3.1 http://base2.googlecode.com/svn/trunk/src/apps/packer/packer.html
+   http://www.crockford.com/javascript/jsmin.html
+ http://javascriptcompressor.com/
+
+http://razorsharpcode.blogspot.com/2010/02/lightweight-javascript-and-css.html
+http://shrinksafe.dojotoolkit.org/
+
+Best to do: Google closure-compiler + dean.edwards packer with 'base62 encode' (but without 'shrink variable')
