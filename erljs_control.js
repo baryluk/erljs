@@ -10,26 +10,58 @@ function test_json(code) {
 	return test(e);
 }
 
+
+
+
+function erl(X) {
+	var r = /^([^:]+):([^(]+)\((.*)\)$/;
+	var m = r.exec(X);
+	if (m) {
+		var args = m[3].length==0 ? [] : m[3].split(/,/);
+		var arity = args.length;
+		for (var i = 0; i < arity; i++) {
+			args[i] = new Number(args[i]);
+		}
+		return erljs_vm_call(all_modules, [m[1], m[2], arity], args);
+	} else {
+		throw "bad syntax: " + X;
+	}
+};
+
+function erlgo(X) {
+	var R;
+	try {
+		R = erl(X);
+	} catch(err) {
+		R = "Error: "+err;
+	}
+	document.getElementById('codeform').innerText = R.toString(); //Object.toJSON(R);
+	return false;
+}
+
 function go() {
 	var R;
-	//R = erljs_vm_call(all_modules, ["example", "sum1", 1], [333]);
-	//var R = erljs_vm_call(all_modules, ["example", "sum2", 2], [333,1000000]);
-	//var R = erljs_vm_call(all_modules, ["example", "ntka", 2], [333,1000000]);
-	//var R = erljs_vm_call(all_modules, ["example", "tailowa", 1], [1000000]);
-	//var R = erljs_vm_call(all_modules, ["example", "nietailowa", 1], [1000000]);
-	//var R = erljs_vm_call(all_modules, ["example", "konwencje1", 3], ["dupa","blada","masie"]);
-	//var R = erljs_vm_call(all_modules, ["example", "konwencje2", 3], ["dupa","blada","masie"]);
-	//var R = erljs_vm_call(all_modules, ["example", "konwencje3", 3], ["dupa","blada","masie"]);
-	//var R = erljs_vm_call(all_modules, ["example", "konwencje4", 3], ["dupa","blada","masie"]);
-	//var R = erljs_vm_call(all_modules, ["example", "matche", 1], ["a"]);
-	R = erljs_vm_call(all_modules, ["example", "silnia", 1], [20]);
-	//R = erljs_vm_call(all_modules, ["example", "jss", 1], [20]);
-	//R = erljs_vm_call(all_modules, ["example", "llll", 1], [20]);
+	R = erl("example:sum1(333)");
+	R = erl("example:sum2(333,1000000)");
+	R = erl("example:ntka(333,1000000)");
+	R = erl("example:tailowa(1000000)");
+	R = erl("example:nietailowa(1000000)");
+	//R = erl("example:konwencje1('dupa','blada','masie')");
+	//R = erl("example:konwencje2('dupa','blada','masie')");
+	//R = erl("example:konwencje3('dupa','blada','masie')");
+	//R = erl("example:konwencje4('dupa','blada','masie')");
+	//R = erl("example:matche('a')");
+	R = erl("example:silnia(20)");
+	R = erl("example:jss(20)");
+	R = erl("example:llll(20)");
 
-	//R = erljs_vm_call(all_modules, ["lists", "seq", 3], [10,30,2]);
-	//R = erljs_vm_call(all_modules, ["example", "llll3", 2], [133,44]);
-	//R = erljs_vm_call(all_modules, ["example", "llll_z", 1], [33]);
-	//R = erljs_vm_call(all_modules, ["example", "llll_u", 1], [33]);
+	R = erl("lists:seq(10,30,2)");
+	R = erl("example:llll3(10,14)");
+	R = erl("example:llll_z(33)");
+	R = erl("example:llll_u(33)");
+
+	R = erl("example:fib1(10)");
+	R = erl("example:fib2(10)");
 
 	//alert("Returned: "+Object.toJSON(R));
 	document.getElementById('codeform').innerText = "Result: "+R.toString(); //Object.toJSON(R);

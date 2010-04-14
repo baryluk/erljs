@@ -1,7 +1,7 @@
 <html>
 <head>
-<script src="prototype.js" type="text/javascript"> </script>
-<script src="biginteger.js" type="text/javascript"> </script>
+<script src="prototype.js" type="text/javascript"> </script> <!-- mainly for JSON decoding -->
+<!--<script src="biginteger.js" type="text/javascript"> </script>-->
 <script src="erljs_datatypes.js" type="text/javascript"> </script>
 <script src="erljs_vm.js" type="text/javascript"> </script>
 <script src="erljs_code/lists.beam.js" type="text/javascript"> </script>
@@ -12,10 +12,18 @@
 <body>
 <form>
 <div style="float:left;">
+Input: <input id="codeforminput" size="70" value="" />
+<input type="submit" onclick="erlgo(document.getElementById('codeforminput').value); return false" value="e(Input);" />
+<br />
+<br />
+Result:<br />
 <textarea id="codeform" rows=18 cols=80>
 </textarea>
+<!--<textarea id="debugform" rows=18 cols=80> </textarea> -->
 </div>
 <div>
+<input type="checkbox" id="showregisters" /> Show registers <br />
+
 <table>
 <tr><td>Red:</td><td><input id="Red" size="29" /></td></tr>
 <tr><td>X0:</td><td><input id="X0" size="29" /></td></tr>
@@ -26,11 +34,16 @@
 <br/>
 <br/>
 <div>
-<input type="button" onclick="test(document.getElementById('codeform').innerText)" value="test(form);" />
-<input type="button" onclick="go()" value="go();" />
+
+<input type="button" onclick="go()" value="go(tests);" />
+<input type="button" onclick="cont()" value="cont();" />
 </div>
 </form>
-
+<div style="float:right; border: 1px solid green;">
+Tracing:
+<div style=" border: 1px solid green; height: 400px; overflow-y: scroll; overflow-x: scroll;" id="debugdiv">
+</div>
+</div>
 
 </body>
 </html>
