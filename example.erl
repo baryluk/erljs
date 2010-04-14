@@ -66,7 +66,53 @@ listy2(A) ->
 	[a,A,c].
 
 a(E) ->
-	apply(E, lists, a).
+	apply(E, lists, [a]).
+a(E,X) ->
+	apply(E, lists, X).
+a0(E) ->
+	E:lists(a).
+
+a2(E) ->
+	{apply(E, lists, [a])}.
+a2(E,X) ->
+	{apply(E, lists, X)}.
+a20(E,X) ->
+	{E:lists(X)}.
+
+af(F) ->
+	apply(F, [a,5]).
+af(F,X) ->
+	apply(F, X).
+
+af0(F) ->
+	F().
+af1(F) ->
+	F(3,5).
+
+% bug this is not tail recurisve. compiler allocate one additional register, need to free
+af0_bug(F,X) ->
+	F(X).
+af1_bug(F,X) ->
+	F(3,4,5).
+
+
+
+af0_bug_test(F,X) ->
+	F(F,X-1).
+
+af0_bug_start(N0) ->
+	af0_bug_test(fun(Self, 0) -> ok; (Self, X) -> Self(Self, X-1) end, N0).
+
+
+af2(F) ->
+	{apply(F, [a,5])}.
+af2(F,X) ->
+	{apply(F, X)}.
+af20(F,X) ->
+	{F(X)}.
+
+af21(F,X) ->
+	{F(3,4,5)}.
 
 matche(A) ->
 	case A of
@@ -264,12 +310,12 @@ llll2(N) ->
 	{N,[]}.
 
 llll3(N,T) ->
-	L=lists:seq(N, N+100),
-	{lists:nthtail(T, N)}.
+	L=lists:seq(N, N+1000),
+	{lists:nthtail(T, L)}.
 
 llll_z(N) ->
-	L1=lists:seq(N, N+10),
-	L2=lists:seq(N+310, N+320),
+	L1=lists:seq(N, N+1000),
+	L2=lists:seq(N+310, N+1310),
 	{lists:zip(L1,L2)}.
 
 
@@ -277,4 +323,67 @@ llll_u(N) ->
 	{LZ} = llll_z(N),
 	{lists:unzip(LZ)}.
 
+% computes in JS up to fib1(22), then it needs more than 500,000 ops
+fib1(0) -> 1;
+fib1(1) -> 1;
+fib1(N) ->
+	fib1(N-1) + fib1(N-2).
+
+
+% 14472334024676221 = fib2(78). % but failes in JS, due to conversion to float.
+fib2(N) ->
+	fib2(1, 1, N).
+
+fib2(PrevPrev, Prev, 1) ->
+	Prev;
+fib2(PrevPrev, Prev, To) ->
+	fib2(Prev, PrevPrev+Prev, To-1).
+
+
+dd1(A,B,C,D) ->
+	lists:seq(A,B) ++ lists:seq(C,D).
+
+dd2(A,B) ->
+	lists:reverse(lists:seq(A,B)).
+
+dd3(A,B,C,D) ->
+	lists:reverse(lists:seq(A,B), lists:seq(C,D)).
+
+dd4() ->
+	{lists:reverse(lists:seq(1,20),6), lists:reverse([],5)}.
+
+dd5() ->
+	{lists:seq(1,10),lists:seq(42,46),5}.
+
+dd6() ->
+	T = tl(lists:seq(1,10)),
+	{T}.
+
+dd7() ->
+	T = hd(lists:seq(3,10)),
+	{T}.
+
+dd8(A,B) ->
+	lists:sum(lists:seq(A,B)).
+
+
+random(N) ->
+	random(N, 18723, []).
+
+random(0, _, L) -> L;
+random(N, S, L) -> random(N-1, (S*S*17263876+1237611) rem 871263761, [S|L]).
+
+dd9(B) ->
+	random(B).
+
+
+dd10(B) ->
+	lists:sum(random(B)).
+
+dd11(B) ->
+	lists:filter(fun (X) -> ((X rem 3 == X rem 5)) end, random(B)).
+
+dd12(B) ->
+	L=example:dd9(B),
+	{lists:sum(L)/length(L), 871263761/2}.
 

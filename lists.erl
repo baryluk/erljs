@@ -55,10 +55,10 @@
 %%  test if X is a member of the list L
 %%  Now a BIF!
 
-%member(X, [X|_]) -> true;
-%member(X, [_|Y]) ->
-%	member(X, Y);
-%member(X, []) -> false.
+member(X, [X|_]) -> true;
+member(X, [_|Y]) ->
+	member(X, Y);
+member(X, []) -> false.
 
 %% append(X, Y) appends lists X and Y
 
@@ -480,22 +480,22 @@ flatlength([], L) -> L.
 %% keymap(Function, Index, [Tuple])
 %% keymap(Function, ExtraArgs, Index, [Tuple])
 
-%keymember(K,N,L) when is_integer(N), N > 0 ->
-%    keymember3(K,N,L).
+keymember(K,N,L) when is_integer(N), N > 0 ->
+    keymember3(K,N,L).
 
-%keymember3(Key, N, [T|Ts]) when element(N, T) == Key -> true;
-%keymember3(Key, N, [T|Ts]) ->
-%    keymember3(Key, N, Ts);
-%keymember3(Key, N, []) -> false.
+keymember3(Key, N, [T|Ts]) when element(N, T) == Key -> true;
+keymember3(Key, N, [T|Ts]) ->
+    keymember3(Key, N, Ts);
+keymember3(Key, N, []) -> false.
 
-%keysearch(K, N, L) when is_integer(N), N > 0 ->
-%    keysearch3(K, N, L).
+keysearch(K, N, L) when is_integer(N), N > 0 ->
+    keysearch3(K, N, L).
 
-%keysearch3(Key, N, [H|T]) when element(N, H) == Key ->
-%    {value, H};
-%keysearch3(Key, N, [H|T]) ->
-%    keysearch3(Key, N, T);
-%keysearch3(Key, N, []) -> false.
+keysearch3(Key, N, [H|T]) when element(N, H) == Key ->
+    {value, H};
+keysearch3(Key, N, [H|T]) ->
+    keysearch3(Key, N, T);
+keysearch3(Key, N, []) -> false.
 
 -spec keydelete(_, pos_integer(), [T]) -> [T].
 
