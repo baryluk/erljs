@@ -12,10 +12,26 @@ c(Mod, Opts) ->
 		is_list(Mod) -> Mod
 	end,
 
+	% 'S' - will prdue File.S with assembler code.
+	Opts2 = Opts ++ [debug_info,report,inline,{inline_size,24},warn_obsolete_guard],
+	%Opts2 = Opts ++ [debug_info,report,warn_obsolete_guard],
+	io:format("Recompiling: ~p with options ~p ~n", [Mod, Opts2]),
 	% compile file to .beam for sure. it doesn't load it into VM.
-	{ok, _} = compile:file(Mod, Opts),
+	{ok, _} = case compile:file(Mod, Opts2) of
+		{ok, _} = A ->
+			A;
+		E ->
+			io:format("compile error: ~p~n", [E]),
+			throw (compilation_error)
+	end,
 
-	{beam_file,Mod3,Exports,Versions,Options,Disasm} = beam_disasm:file(ModName),
+	{beam_file,Mod3,Exports,Versions,Options,Disasm} = case beam_disasm:file(ModName) of
+		{error, _, {file_error, _ ,_}} = E2 ->
+			io:format("compile error: ~p~n", [E2]),
+			throw (file_reading_error);
+		A2 ->
+			A2
+	end,
 	io:format("Options: ~p~n", [Options]),
 
 	Mod4 = atom_to_list(Mod3),
@@ -38,12 +54,16 @@ c(Mod, Opts) ->
 				%F2
 				%io:format("~s~n~n", [term:encode(F)]),
 				%io:format("~s,~n~n", [json_simple:encode(F)]),
-				ok = file:write(File, [json_simple:encode(F), $,, 10]),
+				ok = if
+					Count > 0 -> file:write(File, [$,, 10]);
+					true -> ok
+				end,
+				ok = file:write(File, json_simple:encode(F)),
 				{Count+1}
 			end,
 			{0},
 		Disasm),
-	ok = file:write(File, ["];", 10,10]),
+	ok = file:write(File, [10, "];", 10,10]),
 	ok = file:close(File),
 	%io:format("~10000P~n", [A, 1000]).
 	%io:format("~p~n", [A])
