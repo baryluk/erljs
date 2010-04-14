@@ -1,3 +1,17 @@
+Acks:
+  rhino
+  Opera
+
  - makeing examples work
  - makeing lists:* work
+
+ - makeing erlang:++, lists:reverse/1,2 to be native
+  - native counters
+ - is_*(E) helper function (in JS), to simplify common tests
+ - implementig tl, hd
+ - jumps with reasons, and fixes multiple occurence of jumpf in ifs without else. jumpf only sets IP, still switch need to be breaken, and no other instruction should be taken
+ - size
+ - fixes
+ - added atom handling to datatypes, and improper lists
+ - length
 
