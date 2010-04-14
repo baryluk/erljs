@@ -1,0 +1,13 @@
+lists:seq(10,20000)
+lists:seq(10,9)
+lists:seq(10,10)
+lists:seq(10,8) properly fails with bad func
+lists:duplicate(10,20000)
+lists:seq(10,200,2)
+lists:seq(200,100,-2)
+erlang:++/2
+lists:reverse/1
+lists:reverse/2
+length/1
+hd, tl
+
