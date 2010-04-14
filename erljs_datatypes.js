@@ -1,8 +1,9 @@
 /* Copyritgh 2008 Witold Baryluk. Special thanks to Michal Kolarz, author of IL2JS freamwork */
 
 // Inspired by base2 and Prototype
+// http://ejohn.org/blog/simple-javascript-inheritance/
 (function(){
-var initializing = false, fnTest = /xyz/.test(function(){xyz;}) ? /\b_super\b/ : /.*/;
+var initializing = false, fnTest = /xyz/.test(function(xyz){xyz("xyz");}) ? /\b_super\b/ : /.*/;
 // The base Class implementation (does nothing)
 this.Class = function(){};
 // Create a new Class that inherits from this class
@@ -15,42 +16,39 @@ Class.extend = function(prop) {
 	initializing = false;
 	// Copy the properties over onto the new prototype
 	for (var name in prop) {
-    // Check if we're overwriting an existing function
-    prototype[name] = typeof prop[name] == "function" && 
-      typeof _super[name] == "function" && fnTest.test(prop[name]) ?
-      (function(name, fn){
-        return function() {
-          var tmp = this._super;
-          // Add a new ._super() method that is the same method
-          // but on the super-class
-          this._super = _super[name];
-          // The method only need to be bound temporarily, so we
-          // remove it when we're done executing
-          var ret = fn.apply(this, arguments);
-          this._super = tmp;
-          return ret;
-        };
-      })(name, prop[name]) :
-      prop[name];
-  }
-  // The dummy class constructor
-  function Class() {
-    // All construction is actually done in the init method
-    if ( !initializing && this.init )
-      this.init.apply(this, arguments);
-  }
-  // Populate our constructed prototype object
-  Class.prototype = prototype;
-  // Enforce the constructor to be what we expect
-  Class.constructor = Class;
-  // And make this class extendable
-  Class.extend = arguments.callee;
-  return Class;
-};
+		// Check if we're overwriting an existing function
+		prototype[name] = typeof prop[name] == "function" && typeof _super[name] == "function" && fnTest.test(prop[name])
+				? (function(name, fn){
+					return function() {
+						var tmp = this._super;
+						// Add a new ._super() method that is the same method but on the super-class
+						this._super = _super[name];
+						// The method only need to be bound temporarily, so we remove it when we're done executing
+						var ret = fn.apply(this, arguments);
+						this._super = tmp;
+						return ret;
+					};
+				})(name, prop[name])
+				: prop[name];
+	}
+	// The dummy class constructor
+	function Class() {
+		// All construction is actually done in the init method
+		if (!initializing && this.init) {
+			this.init.apply(this, arguments);
+		}
+	}
+	// Populate our constructed prototype object
+	Class.prototype = prototype;
+	// Enforce the constructor to be what we expect
+	Class.constructor = Class;
+	// And make this class extendable
+	Class.extend = arguments.callee;
+	return Class;
+}; // Class.extend
 })();
 
-
-// term
+// Erlang type system
 var ETerm = Class.extend({
 	type: function() { return "unknown"; },
 	is: function(T) { return false; },
@@ -58,13 +56,29 @@ var ETerm = Class.extend({
 		throw "unknown eterm";
 	}
 });
+
+var AllAtomsToInt = {};
+var AllAtomsFromInt = {};
+var AllAtomsMaxId = 1;
+
 var EAtom = ETerm.extend({
-	init: function(Atom_) { this.AtomName = Atom_; },
+	init: function(Atom_) {
+		if (Atom_ in AllAtomsToInt) {
+			this.A = AllAtomsToInt[Atom_];
+		} else {
+			this.A = (AllAtomsMaxId++);
+			AllAtomsToInt[Atom_] = this.A;
+			AllAtomsToInt[this.A] = Atom_;
+		}
+	},
 	type: function() { return "atom"; },
 	is: function(T) { return T=="atom"; },
+	atom_id: function() { return this.A; },
+	atom_name: function() { return AllAtomsFromInt[this.A]; },
 	toString: function() {
-		if (/a-z+/.test(this.AtomName)) {
-			return this.AtomName;
+		var a = AllAtomsFromInt[this.A];
+		if (/a-z+/.test(a)) {
+			return a;
 		} else {
 			throw "not implemented string for extended atoms";
 		}
@@ -97,13 +111,16 @@ var ETuple = ETerm.extend({
 		var r = "";
 		for (var i = 0; i < this.TupleArity; i++) {
 			if (i) r += ",";
-			//r += this.TupleData[i].toString();
-			r += this.TupleData[i];
+			r += this.TupleData[i].toString();
+			//r += this.TupleData[i];
 		}
 		return "{"+r+"}";
 	}
 });
-var EList = ETerm.extend({
+
+var EListAny = ETerm.extend({init: function() {}});
+
+var EList = EListAny.extend({
 	init: function(Head_, Tail_) {
 	//this.H = Head_; this.T = Tail_;
 	this._=[Head_,Tail_];
@@ -112,45 +129,65 @@ var EList = ETerm.extend({
 	is: function(T) { return T=="list"; },
 	empty: function() { return false; },
 	head: function() {
-	//return this.H;
-	return this._[0];
+		return this._[0];
 	},
 	tail: function() {
-	//return this.T;
-	return this._[1];
+		//return this.T;
+		return this._[1];
 	},
-	toString: function() {
+	sethead:function(h) {
+		this._[0]=h;
+	},
+	settail:function(t) {
+		this._[1]=t;
+	},
+	toString: function() { // make this function tail recursive and with accumulator
 		//if (this.head().is("integer") && (true)) {
 		//} else {
-		if (this.tail().is("list")) {
-			return "["+this.head().toString()+this.tail().toStringJust()+"]";
+		var t = this.tail();
+		if (t instanceof EListAny) {
+			return "["+this.head().toString()+t.toStringJust()+"]";
 		} else {
-			return "["+this.head().toString()+"|"+this.tail().toString()+"]";
+			return "["+this.head().toString()+"|"+t.toString()+"]";
 		}
 	},
-	toStringJust: function() {
-		if (this.tail().is("list")) {
-			return ","+this.head().toString()+this.tail().toStringJust();
+	toStringJust: function() { // make this function tail recursive and with accumulator
+		var t = this.tail();
+		if (t instanceof EListAny) {
+			return ","+this.head().toString()+t.toStringJust();
 		} else {
-			return this.head().toString()+"|"+this.tail().toString();
+			return ","+this.head().toString()+"|"+t.toString();
 		}
 	},
-	toStringLimited: function() {
-		if (this.tail().is("list")) {
-			return "["+this.head().toString()+","+this.tail().toStringLimited()+"]";
+	toStringLimited: function() { // make this function tail recursive, and pretest
+		var t = this.tail();
+		if (t instanceof EListAny) {
+			return "["+this.head().toString()+","+t.toStringLimited()+"]";
 		} else {
 			return this.toString();
 		}
-	}
+	},
+	length: function() { return list_len(this); }
 });
 
-var EListNil = ETerm.extend({
+function list_len(t) {
+	var l = 0;
+	while (t instanceof EList) {
+		t = t.tail();
+		l++;
+	}
+	return l;
+}
+
+// it is not a EList!
+var EListNil = EListAny.extend({
 	init: function() { },
 	type: function() { return "list"; },
 	is: function(T) { return T=="list"; },
 	empty: function() { return true; },
 	toString: function() { return "[]"; },
-	toStringJust: function() { return ""; }
+	toStringJust: function() { return ""; },
+	length: function() { return 0; }
 });
 var EFun = ETerm.extend({
 	init: function(FunctionSignature_, BindedValues_, ID_) { this.FunctionSignature = FunctionSignature_; this.BindedValues = BindedValues_; this.ID = ID_; },
@@ -161,7 +198,7 @@ var EFun = ETerm.extend({
 	},
 	fun_arity: function() {
 		return -1;
-	},
+	}
 });
 var __refs_ids = 1;
 var ERef = ETerm.extend({
