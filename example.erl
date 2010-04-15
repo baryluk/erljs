@@ -430,7 +430,9 @@ limit(X) ->
 	X bsl (1 bsl 64).
 
 s(X) ->
-	math:sqrt(X)*math:pi().
+	math:pow(
+		math:log(X*math:sin(X))/math:exp(math:tan(X*10.3-math:atan2(X,math:cos(X)))),
+		math:sqrt(X)*math:pi()).
 
 l1(K,N) ->
 	L = dd9(N),

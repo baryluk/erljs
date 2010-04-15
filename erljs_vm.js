@@ -1009,10 +1009,11 @@ mainloop:
 			//ignore;
 			break;
 	case "allocate_heap":
+		//  i.e. ["test_heap",["alloc",[["words",0],["floats",1]]],1],
 		opcode_test(OC, 'allocate_heap', 3);
 			//ignore;
 			break;
-	case "allocate_zero":
+	case "allocate_zero": // i.e. ["allocate_zero",2,1],
 		opcode_test(OC, 'allocate_zero', 2);
 			//ignore;
 			break;
@@ -1034,14 +1035,18 @@ mainloop:
 */
 	case "trim":
 		opcode_test(OC, 'trim', 2); // {trim,2,0}, {trim,1,1} // cos zwiazanego z LocalRegs
-			// it pops OC[1] element from the stack.
-			for (var i = OC[1], j = 0; i < OC[1]+OC[2]; i++, j++) { // just a guess
+			// it pops OC[1] elements from the stack?
+			// i reall doesn't know exactly what this do. if have something to with y regs, allocate and stack pointer movement
+			// why it have two args?
+			for (var i = OC[1], j = 0; i < OC[1]+OC[2]; i++, j++) { // FIXME: just a guess
 				LocalRegs[j] = LocalRegs[i];
 			}
 			break;
 	case "init":
 		opcode_test(OC, 'init', 1);
-			uns(OC);
+			assert(OC[1][0] == "y");
+			LocalRegs[OC[1][1]] = undefined; // FIXME: just a guess what it really does.
+			// if it is just this, it can removed completly from bytecode, as GC will clean it automatically at some point.
 			break;
 	//case "send":
 		//opcode_test(OC, 'send', 0);
