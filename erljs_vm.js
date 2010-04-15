@@ -1193,6 +1193,8 @@ mainloop:
 			var DstFloatRegNo = OC[2][1];
 			if (OC[2][0] == "x") {
 				Regs[DstFloatRegNo] = SrcArg;
+			} else if (OC[2][0] == "y") {
+				LocalRegs[DstFloatRegNo] = SrcArg; // yes, it happend when there is many nested function calls to math:*
 			} else if (OC[2][0] == "fr") {
 				FloatRegs[DstFloatRegNo] = SrcArg;
 			} else {
