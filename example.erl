@@ -324,7 +324,7 @@ llll_u(N) ->
 	{lists:unzip(LZ)}.
 
 % computes in JS up to fib1(22), then it needs more than 500,000 ops
-fib1(0) -> 1;
+fib1(0) -> 0;
 fib1(1) -> 1;
 fib1(N) ->
 	fib1(N-1) + fib1(N-2).
@@ -332,13 +332,32 @@ fib1(N) ->
 
 % 14472334024676221 = fib2(78). % but failes in JS, due to conversion to float.
 fib2(N) ->
-	fib2(1, 1, N).
+	fib2(0, 1, N).
 
 fib2(PrevPrev, Prev, 1) ->
 	Prev;
 fib2(PrevPrev, Prev, To) ->
 	fib2(Prev, PrevPrev+Prev, To-1).
 
+% uses fast squering of 2x2 matrices.
+% http://en.literateprograms.org/Fibonacci_numbers_(Erlang)
+
+fib3(N) ->
+    {Fib, _} = fib3(N, {1, 1}, {0, 1}),
+     Fib.
+
+fib3(0, _, Pair) -> Pair;
+fib3(N, {Fib1, Fib2}, Pair) when N rem 2 == 0 ->
+    SquareFib1 = Fib1*Fib1,
+    fib3(N div 2, {2*Fib1*Fib2 - SquareFib1, SquareFib1 + Fib2*Fib2}, Pair);
+fib3(N, {FibA1, FibA2}=Pair, {FibB1, FibB2}) ->
+    fib3(N-1, Pair, {FibA1*FibB2 + FibB1*(FibA2 - FibA1), FibA1*FibB1 + FibA2*FibB2}).
+
+test_fib23(N) ->
+	{TA,A} = timer:tc(example, fib2, [N]),
+	{TB,B} = timer:tc(example, fib3, [N]),
+	A = B,
+	{ok,TA,TB}.
 
 dd1(A,B,C,D) ->
 	lists:seq(A,B) ++ lists:seq(C,D).
@@ -366,24 +385,55 @@ dd7() ->
 dd8(A,B) ->
 	lists:sum(lists:seq(A,B)).
 
-
-random(N) ->
+random(N) when N > 0 ->
 	random(N, 18723, []).
 
 random(0, _, L) -> L;
-random(N, S, L) -> random(N-1, (S*S*17263876+1237611) rem 871263761, [S|L]).
+% this can overflow in JS, so it will produce other values. fix it later.
+%random(N, S, L) -> random(N-1, (S*S*17263876+1237611) rem 871263761, [S|L]).
+random(N, S, L) -> random(N-1, (S*1713+137) rem 8711, [S|L]).
 
-dd9(B) ->
-	random(B).
+dd9(N) ->
+	random(N).
 
 
-dd10(B) ->
-	lists:sum(random(B)).
+dd10(N) ->
+	lists:sum(random(N)).
 
-dd11(B) ->
-	lists:filter(fun (X) -> ((X rem 3 == X rem 5)) end, random(B)).
+dd11(N) ->
+	lists:filter(fun (X) -> ((X rem 3 == X rem 5)) end, random(N)).
 
-dd12(B) ->
-	L=example:dd9(B),
+dd12(N) ->
+	L = dd9(N),
 	{lists:sum(L)/length(L), 871263761/2}.
+
+
+dd13(K,N) ->
+	L = dd9(N),
+	{lists:nth(K,L)}.
+
+dd14(K,N) ->
+	L = dd9(N),
+	{lists:nthtail(K,L)}.
+
+all(Pred, [Hd|Tail]) ->
+    Pred(Hd) andalso all(Pred, Tail);
+all(_, []) ->
+    true.
+
+none(Pred, [Hd|Tail]) ->
+    Pred(Hd) orelse all(Pred, Tail);
+none(_, []) ->
+    true.
+
+limit(X) ->
+	X bsl (1 bsl 64).
+
+s(X) ->
+	math:sqrt(X)*math:pi().
+
+l1(K,N) ->
+	L = dd9(N),
+	A = [ K*X || X <- L ],
+	{A}.
 

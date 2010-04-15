@@ -10,4 +10,7 @@ lists:reverse/1
 lists:reverse/2
 length/1
 hd, tl
+lists:nth
+lists:nthtail
+math:* but not hiperbolic functions and erf/c.
 

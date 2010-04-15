@@ -3,3 +3,7 @@ Languages which produces Erlang VM bytecode:
  - Efene http://efene.tumblr.com/
  - LFE http://github.com/rvirding/lfe
 
+BEAM recompiler to JVM:
+ - http://wiki.github.com/krestenkrab/erjang/ - very intersting.
+   - http://www.javalimit.com/
+

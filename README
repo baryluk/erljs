@@ -1,17 +1,46 @@
-what is working:
+erljs - Run Erlang in JavaScript
 
--- data types: atom, integer, float, tuple, list.
-  -- to do: funs make_fun2
--- arithmetic
--- pattern matching and tests
--- tuple operations
--- list operations?
--- funs
--- calling functions, from the same and other modules, with and without fqn.
--- tail recursion
+This projects allows you to run erlang code directly
+in the webbrowser!
 
+Currently we have pretty good implementation of some
+basic stuffs. Some modules seems to be fully functional.
 
-todo: exceptions, stack trace.
+What is working:
 
+- data types: atom, integer, float, tuple, list.
+  - to do: funs make_fun2
+- arithmetic
+- pattern matching and tests
+- tuple operations
+- list operations
+- calling functions, from the same and other modules, with and without fqn,
+- funs
+- lists comprehension (without bitstring generators),
+- tail recursion
+
+Differences:
+ - messages are passed using references
+ - scheduler is designed for small number of processes, so do not run more than 200 processes
+ - integer arithmetic is limited to 2^53
+   - i have simple biginteger.js library, but i would want to make overhead for small integers small,
+   - i also want to remove from it some unneded parts for us.
+   - after overflow
+ - operations on floats and intergers can be intermixed.
+   - for example one can `F rem 10`, even when F is float.
+ - float exceptions aren't checked and thrown
+   - JS have floating point exceptions disabled, but Erlang have them enabled, emulation will be slow.
+   - so it is possible to have NaN, +-Inf, or underfloat in variables.
+   - possible solution: add erljs:check_nan(X) test a variable.
+
+Todo:
+ - spawning thread, and message passing, scheduler,
+ - exceptions,
+ - stack trace for exceptions,
+ - bit strings.
+ - tracing,
+
+Tested mainly in Opera 10.52 on Linux. Some tests in Chrome and Epiphany also.
 
 http://www.erlang.se/~bjorn/beam_file_format.html
+
