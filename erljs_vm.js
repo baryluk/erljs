@@ -43,7 +43,7 @@ var opcode_profiler = {};
 
 
 function uns(OC) {
-	throw "unknown opcode "+OC;
+	throw "unknown opcode "+Object.toJSON(OC);
 }
 
 function get_opcode(O) {
@@ -318,16 +318,15 @@ function erljs_vm_call_(Modules, StartFunctionSignature0, Args, MaxReductions, F
 
 	// execution loop
 	// TODO: optimalise it by:
-	//    using smaller number of variables, 
-	//    perform switch based decoder, and inline (preprocesor) this opcode_test calls.
-	//    remove labels from code
-	//    create intermidiate (static) form whic his better suited for it and more compact
-	//    profile code, to know which opcodes are most often occuring (call? move?)
+	//    using smaller number of variables,
+	//    create intermidiate (static) form which is
+	//      better suited for it and more compact
 	// Note: keep all identifiers (function names and variables) disriptive. They will be compressed automatically using compressor.
 	var TracedModules = {};
-	TracedModules = {"example":""};
+	//TracedModules = {"example":""};
 
 	NativeReductions = 0;
+try {
 
 mainloop:
 	while (true) {
@@ -368,7 +367,7 @@ mainloop:
 */
 
 	if (Reductions > MaxReductions) {
-		return "overreduce";
+		throw "too_many_reduction";
 	}
 
 	AllReductions = Reductions;
@@ -610,7 +609,16 @@ mainloop:
 				uns(OC);
 			}
 			if (V!==undefined) { // do not set it on jumpf
-				Regs[DstRegNo] = V;
+				if (OC[5][0] == "x") {
+					Regs[DstRegNo] = V;
+				} else if (OC[5][0] == "y") {
+					// yes, possible (found in some list comprehensions.,
+					// and it looks they are not tail reursive,
+					// but doesn.t need to reverse list then.)
+					LocalRegs[DstRegNo] = V;
+				} else {
+					uns(OC);
+				}
 			}
 			break;
 	case "get_list":
@@ -736,7 +744,46 @@ mainloop:
 					throw "undef";
 				}
 				native=true;
-			} else if (ModuleName == "erlang") {
+			} else if (ModuleName == "math") {
+				var NA = Name+"/"+Arity;
+				switch (NA) {
+				case "pi/0":
+					Regs[0] = Math.PI;
+					break;
+				case "exp/1":
+				case "log/1":
+				case "sqrt/1":
+				case "sin/1": // triconometric functions
+				case "cos/1":
+				case "tan/1":
+				case "asin/1":
+				case "acos/1":
+				case "atan/1":
+					eval("Regs[0] = Math."+Name+"(Regs[0]);");
+					break;
+				case "log10/1":
+					Regs[0] = Math.log(Regs[0])/Math.LN10;
+					break;
+				case "sinh/1": // TODO: hiperbolic functions
+				case "cosh/1":
+				case "tanh/1":
+				case "asinh/1":
+				case "acosh/1":
+				case "atanh/1":
+					uns(OC);
+					break;
+				case "atan2/2":
+				case "pow/2":
+					eval("Regs[0] = Math."+Name+"(Regs[0],Regs[1]);");
+					break;
+				case "erf/1": // Note: also not available in Erlang on Windows.
+				case "erfc/1":
+					uns(OC);
+					break;
+				default: throw "nofunc";
+				}
+				native=true;
+			} else if (ModuleName == "math") {
 				var NA = Name+"/"+Arity;
 
 				switch (NA) {
@@ -766,8 +813,11 @@ mainloop:
 						}
 					}
 					break;
+				case "--/2":
+					uns(OC); break;
 				case "apply/2": // apply(Fun,[a,b,c])
 					// same as {M,F,Binded}=Fun, apply(M,F,Binded++[a,b,c]). ?
+					uns(OC);
 					break;
 				case "apply/3": // apply(M,F,[a,b,c]) // be sure to make it tail-recursive!
 					if (!(is_atom(Regs[0]) && is_atom(Regs[1]) && is_list(Regs[2]))) {
@@ -1215,6 +1265,18 @@ mainloop:
 			return;
 	} // switch (opcode0)
 	} // while (true)
+
+	throw "internal_vm_error_break_at_mainloop";
+
+} catch (err) {
+	Stack.push([ThisFunctionSignature, ThisFunctionCode, IP, ThisModuleName, LocalRegs]);
+	debug("exception error: "+err+"");
+	for (var i = Stack.length-1; i >= 0; i--) {
+		var S = Stack[i];
+		debug((i==Stack.length-1 ? "in function " : "in call from ") + S[0] +" IP:" + S[2] );
+	}
+	throw err;
+}
 }
 
 function erljs_vm_call(Modules, StartFunctionSignature0, Args) {
