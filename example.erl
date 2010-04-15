@@ -439,3 +439,15 @@ l1(K,N) ->
 	A = [ K*X || X <- L ],
 	{A}.
 
+
+l2(K,N) ->
+	L = dd9(N),
+	L2 = lists:nthtail(N, dd9(2*N)),
+	A = [ {K*X,Y} || X <- L, Y <- L2 ],
+	{A}.
+
+l3(K,N) ->
+	L = dd9(N),
+	A = [ {K*X,Y} || X <- L, Y <- dd9(X rem 4+1) ],
+	{A}.
+
