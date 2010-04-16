@@ -7,3 +7,9 @@ BEAM recompiler to JVM:
  - http://wiki.github.com/krestenkrab/erjang/ - very intersting.
    - http://www.javalimit.com/
 
+Using Erlang style concurenncy in JS:
+ - http://beatniksoftware.com/erjs/
+ - http://www.neilmix.com/2007/02/07/threading-in-javascript-17/
+
+There is also other systems, languages and libraries for some languages which are influenced by Erlang.
+
