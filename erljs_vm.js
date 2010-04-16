@@ -55,6 +55,12 @@ var Labels = {};
 var FunctionsCode = {};
 
 function erljs_vm_init(Modules) {
+	if (erljs_vm_initalized) {
+		return true;
+	}
+	erljs_vm_initalized = true;
+	var start = (new Date).getTime(), diff = 0;
+
 	// convert Modules which contains all modules to internal format
 	// registers all functions, and labels.  (can there be jumps to labels outside of the function to the function in the same modules? (It can be, as sometimes compiler do strange things).
 	for (var i = 0; i < Modules.length; i++) {
@@ -108,6 +114,8 @@ function erljs_vm_init(Modules) {
 			}
 		}
 	}
+	diff = (new Date).getTime() - start;
+	debug("vm initialized in "+diff+"ms.");
 }
 
 function is_list(E) {
@@ -242,13 +250,7 @@ function erljs_vm_call_(Modules, StartFunctionSignature0, Args, MaxReductions, F
 	var ThisFunctionCode = [];
 	var FloatError = false;
 
-	if (!erljs_vm_initalized) {
-		var start = (new Date).getTime(), diff = 0;
-		erljs_vm_init(Modules);
-		diff = (new Date).getTime() - start;
-		debug("vm initialized in "+diff+"ms.");
-		erljs_vm_initalized = true;
-	}
+	erljs_vm_init(Modules);
 
 	// start execution point
 	var StartFunctionSignature = func_sig(StartFunctionSignature0[0], StartFunctionSignature0[1], StartFunctionSignature0[2]);
@@ -290,7 +292,7 @@ function erljs_vm_call_(Modules, StartFunctionSignature0, Args, MaxReductions, F
 			case "fr": // {fr,N} is in float register
 				return FloatRegs[What[1]];
 			case "literal": // {litera,Term} is some kind of complex (compile time constant) term in. [a,b,c]
-				return What[1];
+				return eterm_decode(What[1]);
 			default:
 				throw("what? "+What);
 		}
@@ -658,6 +660,7 @@ mainloop:
 				Stack.push([ThisFunctionSignature, ThisFunctionCode, IP, ThisModuleName, LocalRegs]);
 				LocalRegs = [];
 			default:
+				assert(OC[2].length == 3);
 				var ModuleName = OC[2][0];
 				var Name = OC[2][1];
 				var Arity = OC[2][2];
@@ -671,8 +674,6 @@ mainloop:
 				IP = GeneralEntryPoint;
 			}
 			break;
-	case "call_last":
-		//opcode_test(OC, 'call_last', 3);
 			uns(OC);
 			break;
 
@@ -713,21 +714,34 @@ mainloop:
 
 	case "apply_last": // to robi compilator jesli zna ilosc argumentow za wczasu.
 	case "apply":
+			uns(OC);
+			break;
 
 
 	case "call_ext":
 	case "call_ext_only":
 	case "call_ext_last":
+	case "call_last":
 	case "call_lists":
 	case "call_lists_only":
 			last_reason = "";
 			var native = false;
 		//opcode_test(OC, 'call_ext', 2) || opcode_test(OC, 'call_ext_only', 2) || opcode_test(OC, 'call_lists', 2) || opcode_test(OC, 'call_lists_only', 2);
 		//opcode_test(OC, 'call_ext_last', 3); // ? last parameters is integer, i.e. 1
+		//opcode_test(OC, 'call_last', 3);
 
-			var ModuleName = OC[2][1]; // todo: this can be parametrized module!
-			var Name = OC[2][2];
-			var Arity = OC[2][3];
+			var ModuleName, Name, Arity;
+			if (/_last$/.test(opcode0)) {
+				assert(OC[2].length == 3);
+				ModuleName = OC[2][0];
+				Name = OC[2][1];
+				Arity = OC[2][2];
+			} else {
+				assert(OC[2].length == 4);
+				ModuleName = OC[2][1]; // todo: this can be parametrized module!
+				Name = OC[2][2];
+				Arity = OC[2][3];
+			}
 			// TODO: prepare hash table for this.
 			if (ModuleName == "erljs") {
 				var NA = Name+"/"+Arity;
@@ -867,7 +881,16 @@ mainloop:
 				case "list_to_float/1": uns(OC); break;
 				case "float_to_list/1": uns(OC); break;
 
-				case "make_fun/3": uns(OC); break;  // for fun M:F/A
+				case "make_fun/3":
+					//erlang:make_fun(M, F, A) creates object (fun M:F/A)
+					if(!(is_atom(Regs[0]) && is_atom(Regs[1]) && is_integer(Regs[2]) && Regs[2]>=0)) throw "badarg";
+					// it is not needed to check if M:F/A function exists,
+					// (it can be loaded or reloaded later), so check will be done at call time.
+					
+// BUG erlang:fun_to_list(fun 's.d'.'d.h'/5) = "#Fun<s.d.d.h.5>". not very good way.
+// fortunetly there is no general list_to_fun (becuase of garabage collectin of env and lack of reference).
+
+					uns(OC); break; 
 
 				case "put/2": uns(OC); break;
 				case "get/0": uns(OC); break;
@@ -1196,13 +1219,17 @@ mainloop:
 			var SrcArg = get_arg(OC[1]);
 			//assert(OC[2].length == 2);
 			var DstFloatRegNo = OC[2][1];
-			if (OC[2][0] == "x") {
+			switch (OC[2][0]) {
+			case "x":
 				Regs[DstFloatRegNo] = SrcArg;
-			} else if (OC[2][0] == "y") {
+				break;
+			case "y":
 				LocalRegs[DstFloatRegNo] = SrcArg; // yes, it happend when there is many nested function calls to math:*
-			} else if (OC[2][0] == "fr") {
+				break;
+			case "fr":
 				FloatRegs[DstFloatRegNo] = SrcArg;
-			} else {
+				break;
+			default:
 				uns(OC);
 			}
 			break;
