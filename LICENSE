@@ -1,0 +1,35 @@
+Copyright, Witold Baryluk, 2010
+
+This code is currently licensed under GPL.
+
+If you will contriubte to this project you permit me,
+Witold Baryluk to switch to any other license
+of all files including your contributions.
+(Old codes, repositories and releases will
+be available still under GPL). I'm
+guaranting that authors names will be not be removed,
+and will be advertised.
+This is only about patches or any other enhancments you
+send me. By sending them you approve above statments.
+If you want to develop this program with accordance of
+GPL and continue to do so without "fear" of lossing
+your work, you can at any point "fork" this project
+and develop it without me.
+
+Files generated or produced by this project (like recompiled
+js files, vm machine, handlers, etc) are not licensced under GPL,
+similary like binaries produced by GCC isn't and can be used
+for any purpose.
+
+Exception is vm machine which is still licensced GPL,
+without above notes. This is so even if vm machine code
+is embeded in one file with another code or data.
+
+Parts borrowed from the Erlang, like some modified modules (lists,...)
+are licensed according to their license and are not part of this project.
+The patches which implements missing functionality (which wasn't there,
+even in comments), is part of this project.
+
+Hopefully when this project gets shape I will release it using
+some more free licencse.
+
