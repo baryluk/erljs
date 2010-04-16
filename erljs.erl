@@ -12,6 +12,9 @@
 
 -define(HEADER, ok = file:write(File, ?HEAD)).
 
+-define(CRLF, 10).
+-define(TAB, 9).
+
 ca() ->
 	ca([]).
 
@@ -40,7 +43,7 @@ cl(L, Opts) ->
 
 	io:format("// ~s~n", [lists:flatten(?HEAD)]),
 	io:format("var all_modules = [~n"),
-	[ io:format("    [\"~s\", module_~s],~n", [M, M]) || M <- L ],
+	[ io:format("  [\"~s\", module_~s],~n", [M, M]) || M <- L ],
 	io:format("];~n~n"),
 
 	io:format("<!-- ~s -->~n", [lists:flatten(?HEAD)]),
@@ -97,8 +100,8 @@ c(Mod, Opts) ->
 	io:format("Code generation~n"),
 	FileName = "erljs_code/"++Mod4++".beam.js",
 	{ok, File} = file:open(FileName, [write]),
-	ok = file:write(File, ["// ", ?HEAD, 10]),
-	ok = file:write(File, ["var module_"++Mod4++ " = [",10]),
+	ok = file:write(File, ["// ", ?HEAD, ?CRLF]),
+	ok = file:write(File, ["var module_"++Mod4++ " = [", ?CRLF]),
 	{NumerOfFunction,NumberOfFunsAndLCFuns,NumberOfOps} = lists:foldl(
 			fun(F, {Count,CountFuns,CountOps}) ->
 				%F2 = cf(F),
@@ -115,7 +118,7 @@ c(Mod, Opts) ->
 				true -> ok
 				end,
 				ok = if
-					Count > 0 -> file:write(File, [$,, 10]);
+					Count > 0 -> file:write(File, [$,, ?CRLF]);
 					true -> ok
 				end,
 				ok = file:write(File, json_simple:encode(F)),
@@ -123,7 +126,7 @@ c(Mod, Opts) ->
 			end,
 			{0,0,0},
 		Disasm),
-	ok = file:write(File, [10, "];", 10,10]),
+	ok = file:write(File, [?CRLF, "];", ?CRLF, ?CRLF]),
 	ok = file:close(File),
 	%io:format("~10000P~n", [A, 1000]).
 	%io:format("~p~n", [A])
