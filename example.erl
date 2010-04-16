@@ -130,6 +130,13 @@ mnozacz(X) ->
 	F = fun(Y) -> X*Y end,
 	F.
 
+mnozacze(X) ->
+	F = fun(Y) -> X*Y end,
+	G = fun(Y) -> X+Y end,
+	H = fun(Y) -> X-Y end,
+	{F,G,H}.
+
+
 mnozacz2(X) ->
 	F = fun mnoznik2/1,
 	F.
