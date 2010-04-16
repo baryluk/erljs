@@ -3,6 +3,7 @@
 *.o
 *.S
 *.E
+*.beam.js
 
 baryluk_bug_*
 
