@@ -33,6 +33,18 @@ Differences:
    - so it is possible to have NaN, +-Inf, or underfloat in variables.
    - possible solution: add erljs:check_nan(X) test a variable.
 
+Both Erlang and JS are dynamically typed languages. Unfortunettelly JS is weakly typed,
+but Erlang is strongly typed. This means that we need to perform some additional
+checks in JS to be sure that types are correct. There is also problem
+with boxing/unboxing on JS side, but this should work automatically.
+Most important problem is that JavaScript doesn't have arbitrar sized integers,
+and the fact that JS doesn't have separate integer and float types.
+
+Currently bignums and integers are really floats! On some
+operations we know will result in floats but we want integer
+we perform rounding/truncation, but this can be buggy for
+sufficientyl big numbers.
+
 Todo:
  - spawning thread, and message passing, scheduler,
  - exceptions,
@@ -41,6 +53,9 @@ Todo:
  - tracing,
 
 Tested mainly in Opera 10.52 on Linux. Some tests in Chrome and Epiphany also.
+
+Should also work in Rhino (Mozilla's JS engine written in Java). Usefull
+for unittesting, etc.
 
 http://www.erlang.se/~bjorn/beam_file_format.html
 
