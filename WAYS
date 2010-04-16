@@ -1,0 +1,56 @@
+ -1 run erlang using some kind of plugin
+   - hard
+   - not portable
+   - not safe
+   - will need additional user interaction
+
+ 0 .erl to .js translation using own tools
+   - very hard and very stupid.
+
+ 1 .erl to .js direct translation using Erlang parsing tools
+   - very hard 
+     - there is many features in Erlang,
+     - patterns to be reimplemented,
+     - bit strings
+     - optimalisations
+   * we can implement how we want it.
+   + best possible performance
+
+ 2 interpretatin of .beam in JS.
+   - not so possible becuase .beam is binary, and
+   - there is problems with handling binary data or files in javascript.
+   - slow becuase of binary/text conversins and interpretation
+
+ 3 .beam to .js translation using Erlang disasembler + code generation
+   * moderatly simple
+   * tricky tail recursion (but loop reconstruction, birecursion and general trampoline code isn't so hard)
+   + executed code will be native js and can be JITed quite easly
+   + beyond removing most of opcodes we can compact it even more
+     use local variables,
+     code merging for size compactnes,
+     change registers to logical variables.
+   + moderatly fast
+
+ 4 .beam to simple (new) bytecode embeded in js and interpretation of it.
+   + very simple
+   + very simple tail recursion and practically al features
+   - we need to implement most of BIF and opcodes from original BEAM in JS, so quit big VM
+   + we can easily simplifiy and compress some opcodes
+      merge call_ext, call_lists ?
+      remove allocate/test_heap)
+   - quit slow, as executed code can't be JIT'ed so easly.
+
+ 5 translation to other language which can be run or translated to javascript.
+   - probably slow, not such language i know.
+
+
+In all ways we will need to implement many native js functin for BIFs, erlang:*,
+few functions in lists:* for performance and completnes. There is multiple
+versions of BIFs (gc_bif, bif, call_ext, call_lists), so it isn't so simple.
+
+I choosen #4, it can be implemented quickly and allows us to support rich number
+of fetures. #3 is usefull mainly becuase of performance, so we would like
+to use it in places where it is advisable. Implementation of 4 allow also
+to discover internal VM machinery in simple steps without even looking
+into original C source codes.
+
