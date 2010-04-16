@@ -2,6 +2,52 @@
 
 -compile([export_all]).
 
+-export([
+	ca/0, ca/1, % compile standard modules
+	cl/1, cl/2, % compile given list of module
+	c/1, c/2 % compile one module
+]).
+
+-define(HEAD, ["erljs, auto-generated at ",io_lib:format("~p",[erlang:localtime()]),", Witold Baryluk, 2010"]).
+
+-define(HEADER, ok = file:write(File, ?HEAD)).
+
+ca() ->
+	ca([]).
+
+ca(Opts) ->
+	L = [
+		random,
+		lists,
+		orddict,
+		ordsets,
+		string,
+		queue,
+		dict,
+		proplists,
+		sets,
+		gb_trees,
+		gb_sets,
+		example
+	],
+	cl(L,Opts).
+
+cl(L) ->
+	cl(L, []).
+
+cl(L, Opts) ->
+	M = [ c(M, Opts) || M <- L ],
+
+	io:format("// ~s~n", [lists:flatten(?HEAD)]),
+	io:format("var all_modules = [~n"),
+	[ io:format("    [\"~s\", module_~s],~n", [M, M]) || M <- L ],
+	io:format("];~n~n"),
+
+	io:format("<!-- ~s -->~n", [lists:flatten(?HEAD)]),
+	[ io:format(" <script src=\"erljs_code/~s.beam.js\" type=\"text/javascript\"> </script>~n", [M]) || M <- L ],
+	io:format(" <script src=\"erljs_code.js\" type=\"text/javascript\"> </script>~n"),
+	M.
+
 c(Mod) ->
 	c(Mod, []).
 
@@ -11,6 +57,8 @@ c(Mod, Opts) ->
 		is_atom(Mod) -> atom_to_list(Mod);
 		is_list(Mod) -> Mod
 	end,
+
+	Verbose = lists:member(verbose, Opts),
 
 	% 'S' - will prdue File.S with assembler code.
 	Opts2 = Opts ++ [debug_info,report,inline,{inline_size,24},warn_obsolete_guard],
@@ -25,6 +73,7 @@ c(Mod, Opts) ->
 			throw (compilation_error)
 	end,
 
+	io:format("Disasembling~n"),
 	{beam_file,Mod3,Exports,Versions,Options,Disasm} = case beam_disasm:file(ModName) of
 		{error, _, {file_error, _ ,_}} = E2 ->
 			io:format("compile error: ~p~n", [E2]),
@@ -45,29 +94,40 @@ c(Mod, Opts) ->
 %	true -> true
 %	end,
 
-	{ok, File} = file:open("erljs_code/"++Mod4++".beam.js", [write]),
-	ok = file:write(File, ["//erljs, auto-generated at ",io_lib:format("~p",[erlang:localtime()]),", Witold Baryluk, 2010", 10]),
+	io:format("Code generation~n"),
+	FileName = "erljs_code/"++Mod4++".beam.js",
+	{ok, File} = file:open(FileName, [write]),
+	ok = file:write(File, ["// ", ?HEAD, 10]),
 	ok = file:write(File, ["var module_"++Mod4++ " = [",10]),
-	{NumerOfFunction} = lists:foldl(
-			fun(F, {Count}) ->
+	{NumerOfFunction,NumberOfFunsAndLCFuns,NumberOfOps} = lists:foldl(
+			fun(F, {Count,CountFuns,CountOps}) ->
 				%F2 = cf(F),
 				%F2
 				%io:format("~s~n~n", [term:encode(F)]),
 				%io:format("~s,~n~n", [json_simple:encode(F)]),
+				Ops = length(element(5,F)),
+				IsFun = case hd(atom_to_list(element(2,F))) of
+					$- -> 1;
+					_ -> 0
+				end,
+				if Verbose ->
+					io:format("Function: ~s Ops: ~p~n", [atom_to_list(element(2,F)), Ops]);
+				true -> ok
+				end,
 				ok = if
 					Count > 0 -> file:write(File, [$,, 10]);
 					true -> ok
 				end,
 				ok = file:write(File, json_simple:encode(F)),
-				{Count+1}
+				{Count+1,CountFuns+IsFun,CountOps+Ops}
 			end,
-			{0},
+			{0,0,0},
 		Disasm),
 	ok = file:write(File, [10, "];", 10,10]),
 	ok = file:close(File),
 	%io:format("~10000P~n", [A, 1000]).
 	%io:format("~p~n", [A])
-	{ok,NumerOfFunction}.
+	{ok,FileName,[{functions,NumerOfFunction},{funs,NumberOfFunsAndLCFuns},{total_ops,NumberOfOps}]}.
 
 %% Encode function
 cf({function, Name, Arity, _, Body} = _F) ->
