@@ -1,5 +1,6 @@
 /* Copyritgh 2008 Witold Baryluk. Special thanks to Michal Kolarz, author of IL2JS freamwork */
 
+/*
 function test(code) {
 	return erljs_vm_call(code, 100);
 }
@@ -9,9 +10,10 @@ function test_json(code) {
 	alert(e);
 	return test(e);
 }
+*/
 
 function erl(X) {
-	var r = /^([^:]+):([^(]+)\((.*)\)$/;
+	var r = /^\s*([^:]+):([^(]+)\((.*)\)\.?\s*$/;
 	var m = r.exec(X);
 	if (m) {
 /*
