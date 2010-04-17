@@ -12,8 +12,8 @@
 
 -define(HEADER, ok = file:write(File, ?HEAD)).
 
--define(CRLF, 10).
--define(TAB, 9).
+-define(CRLF, $\n).
+-define(TAB, $\t).
 
 ca() ->
 	ca([]).
@@ -122,6 +122,9 @@ c(Mod, Opts) ->
 					true -> ok
 				end,
 				ok = file:write(File, json_simple:encode(F)),
+				%file:write(File, io_lib:print(F,4,132,-1)),
+				%ok=file:write(File, io_lib:write(F)),
+				%ok=file:write(File, io_lib:write(lists:flatten(cf(F)))),
 				{Count+1,CountFuns+IsFun,CountOps+Ops}
 			end,
 			{0,0,0},
@@ -131,6 +134,10 @@ c(Mod, Opts) ->
 	%io:format("~10000P~n", [A, 1000]).
 	%io:format("~p~n", [A])
 	{ok,FileName,[{functions,NumerOfFunction},{funs,NumberOfFunsAndLCFuns},{total_ops,NumberOfOps}]}.
+
+%% return r, call_ c_, atom a, integer i, label l, test t, move m, put_list P, get_list G, put_tuple T, put p, get_tuple_element g
+%% case_end }
+%% usunac: allocate*, deallocate*, test_heap
 
 %% Encode function
 cf({function, Name, Arity, _, Body} = _F) ->
@@ -145,11 +152,17 @@ cf([I|T], C) ->
 encode_what({atom, X}) when is_atom(X) ->
 	["a",atom_to_list(X)];
 encode_what({literal, X}) ->
-	["`",[]];
+	["`",io_lib:write(X)];
 encode_what({x, X}) when is_integer(X) ->
-	["r",integer_to_list(X)];
-encode_what(_) ->
-	["??"].
+	["x",integer_to_list(X)];
+encode_what({y, X}) when is_integer(X) ->
+	["y",integer_to_list(X)];
+encode_what({integer, X}) when is_integer(X) ->
+	["i",integer_to_list(X)];
+encode_what({float, X}) when is_float(X) ->
+	["~",float_to_list(X)];
+encode_what(nil) ->
+	".".
 
 %% Encode single instruction
 cfi({label,N}) when is_integer(N) ->
@@ -158,14 +171,14 @@ cfi({test,Kind,What1,What2}) ->
 	["?", Kind, What1, What2];
 cfi({case_end,What}) ->
 	["}", What];
-cfi({get_tuple_element,What1,Which,Where}) ->
-	["<", encode_what(What1),Which,encode_what(Where)];
-cfi({move,What,{x,RegNo} = Dest}) when is_integer(RegNo) ->
-	["m", encode_what(What), RegNo];
+cfi({badmatch,What}) ->
+	["e", What];
+cfi(if_end) ->
+	[")"];
+cfi({move,What,{Type,RegNo} = Dest}) when is_integer(RegNo) ->
+	["m", encode_what(What), Type, RegNo];
 cfi({func_info,{atom,Module},{atom,Name},Arrity}) when is_atom(Module), is_atom(Name), is_integer(Arrity) ->
 	["f", atom_to_list(Module), atom_to_list(Name), Arrity];
-cfi({test_heap,_,_}) ->
-	[];
 cfi({put_list,What1,What0,Where}) ->
 	["L", encode_what(Where), encode_what(What1), encode_what(What0)];
 cfi(return) ->
@@ -174,21 +187,96 @@ cfi({put_tuple,Size,{x,RegNo}}) ->
 	["p", integer_to_list(Size), integer_to_list(RegNo)];
 cfi({put,What}) ->
 	["P", encode_what(What)];
+cfi({get_tuple_element,What1,Which,Where}) ->
+	["<", encode_what(What1),Which,encode_what(Where)];
+cfi({set_tuple_element,What1,Where,Which}) -> % ?
+	[">", encode_what(What1),encode_what(Where),Which];
 cfi({call,_,{Mod,Func,Arrity}}) ->
 	["c", 2, atom_to_list(Mod), atom_to_list(Func), integer_to_list(Arrity)];
 cfi({call_only,_,{Mod,Func,Arrity}}) ->
+	["t", 2, atom_to_list(Mod), atom_to_list(Func), integer_to_list(Arrity)];
+cfi({call_last,_,{Mod,Func,Arrity}, _Something}) ->
 	["t", 2, atom_to_list(Mod), atom_to_list(Func), integer_to_list(Arrity)];
 cfi({call_ext,_,{extfunc,Mod,Func,Arrity}}) ->
 	["C", 2, atom_to_list(Mod), atom_to_list(Func), integer_to_list(Arrity)];
 cfi({call_ext_only,_,{extfunc,Mod,Func,Arrity}}) ->
 	["T", 2, atom_to_list(Mod), atom_to_list(Func), integer_to_list(Arrity)];
-cfi({deallocate,_RefNo}) ->
+cfi({call_ext_last,_,{extfunc,Mod,Func,Arrity},_Something}) ->
+	["T", 2, atom_to_list(Mod), atom_to_list(Func), integer_to_list(Arrity)];
+cfi({apply_last,N,B}) ->
+	["A"];
+cfi({apply,N}) ->
+	["a"];
+cfi({gc_bif,Op,{f,F},_,[What1, What2],{R,RegNo}}) -> % Op == '+' '*'    _=2, but also 4?
+	[atom_to_list(Op), R, RegNo, encode_what(What1), encode_what(What1)];
+cfi({gc_bif,Op,{f,F},_,[What1],{x,RegNo}}) -> % Op == length, '-',  _=1,2,...?
+	[atom_to_list(Op), RegNo, encode_what(What1)];
+cfi({bif, Op,{f,F},[What1,What2],{x,RegNo}}) when Op=:='=:='; Op=:='=='; Op=:='geaaaa'; Op=:='element'; Op=:='>'; Op=:='<'; Op=:='and'; Op=:='>=' ->
+	[atom_to_list(Op), RegNo, encode_what(What1), encode_what(What2)];
+cfi({bif, Op,{f,F},[What1],{x,RegNo}}) when Op=:='get'; Op=:='tuple_size'; Op=:='not'; Op=:='tl'; Op=:='hd' ->
+	[atom_to_list(Op), RegNo, encode_what(What1)];
+cfi({get_list,{X1,R1},{X2,R2},{X3,R3}}) ->
+	["g"];
+cfi({select_val,{x,R1},{f,F},{list, L}}) ->
+	["S"];
+cfi({select_tuple_arity,{x,R1},{f,F},{list, L}}) ->
+	["Y"];
+cfi({make_fun2, {M,F,A},Id,Uniq,_Something}) ->
+	["make_fun",M,F,A];
+cfi({call_fun, N}) ->
+	["*",N];
+cfi({test_heap,_,_}) ->
+	[];
+cfi({fconv,S,D}) ->
+	[];
+cfi({fmove,S,D}) ->
+	[];
+cfi(fclearerror) ->
+	[];
+cfi({fcheckerror,F}) ->
+	[];
+cfi({arithfbif,Op,F,Args,{fr,R}}) ->
+	[];
+cfi({jump,F}) ->
 	[];
 cfi({allocate,_RefNo,_How}) ->
 	[];
-cfi({gc_bif,Op,{f,0},_,[What1, What2],{x,RegNo}}) -> % Op == '+' '*'
-	[atom_to_list(Op), RegNo, encode_what(What1), encode_what(What1)].
+cfi({allocate_heap,_,_,_}) ->
+	[];
+cfi({allocate_zero,_,_}) ->
+	[];
+cfi({allocate_heap_zero,_,_,_}) ->
+	[];
+cfi({deallocate,_RefNo}) ->
+	[];
+cfi({init, What1}) ->
+	[];
+cfi({'try',Register,FLabel}) -> % probably only {y,R}
+	[];
+cfi({try_end,Register}) ->
+	[];
+cfi({try_case,Register}) ->
+	[];
+cfi({try_case_end,Register}) -> % this could be {x,R}
+	[];
+cfi({raise,F,[What1,What2],{x,RegNo}}) ->
+	[];
+cfi({trim, A,B}) ->
+	["trim",A,B];
+cfi({loop_rec, F,R}) ->
+	[];
+cfi(remove_message) ->
+	[];
+cfi({loop_rec_end, F}) ->
+	[];
+cfi({wait_timeout,F,What1}) ->
+	[];
+cfi(timeout) ->
+	[].
 
+
+% This was try to implement erlang beam bytecode intepreter in erlang. :)
+%
 %eval_start(A) ->
 %	{ok, Pid} = spawn(eval_prepare(A)),
 %	{ok, Pid}.
