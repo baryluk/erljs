@@ -51,6 +51,7 @@ process({ok, Line0}, File, Code, LineNo, Aux = {Modulename, FileErl, FileJS}) ->
 			Type = case Line of
 				[$e,$r,$l,$a,$n,$g,$:|_] -> wrapper;
 				[$m,$a,$t,$h,$:|_] -> wrapper;
+				[$b,$e,$g,$i,$n|_] -> wrapper;
 				[$(| _] -> term;
 				_ -> call
 			end,
