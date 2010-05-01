@@ -23,9 +23,11 @@ function ss(XX) {
 
 function debugh(X) {
 	try { // block for webbrower, but try for Rhino
-		var r = document.createElement("p");
+		var r = document.createElement("div");
 		r.innerHTML = X;
-		document.getElementById("debugdiv").appendChild(r);
+		var d = document.getElementById("debugdiv");
+		d.appendChild(r);
+		d.scrollTop = d.scrollHeight;
 	} catch (e) {
 		try { // Rhino
 			print(X);
@@ -34,7 +36,7 @@ function debugh(X) {
 }
 function debug(X) {
 	try { // block for webbrower, but try for Rhino
-		var r = document.createElement("p");
+		var r = document.createElement("div");
 		r.innerText = X;
 		document.getElementById("debugdiv").appendChild(r);
 
@@ -1695,21 +1697,43 @@ mainloop:
 }
 }
 
-function erljs_vm_call(Modules, StartFunctionSignature0, Args) {
+function erljs_vm_call0(Modules, StartFunctionSignature0, Args, ShowResult, ShowProfile, ShowTime, ShowStats) {
 	//console.time("main loop");
 	//console.timeEnd("main loop");
-	var start = (new Date).getTime(), diff = 0;
+	var start, diff;
+
+	if (ShowTime) {
+		start = (new Date).getTime();
+	}
 
 	// on my 1.7 GHz laptop I have about 70-100KOPS
 	// somtimes up to 210KOPS.
 	var R = erljs_vm_call_(Modules, StartFunctionSignature0, Args, 500000, 1);
 
-	diff = (new Date).getTime() - start;
+	if (ShowTime) {
+		diff = (new Date).getTime() - start;
+	}
 
+	if (ShowTime || ShowStats) {
 	debug("erljs VM statistics: time="+diff+"ms, "+Math.round((AllReductions+NativeReductions)/(diff*0.001))+
 	"rps, Reductions="+AllReductions+", NativeReductions="+NativeReductions);
-	debug("erljs VM profile: "+toJSON(opcode_profiler));
+	}
+	if (ShowProfile) {
+	var P = [];
+	for (var o in opcode_profiler) {
+		if (opcode_profiler.hasOwnProperty(o)) {
+			P.push([o, opcode_profiler[o]]);
+		}
+	}
+	P.sort(function (a,b) { return b[1] - a[1]; });
+	debug("erljs VM profile: "+toJSON(P));
+	}
 
 	return R;
+}
+
+function erljs_vm_call(Modules, StartFunctionSignature0, Args) {
+//	return erljs_vm_call0(Modules, StartFunctionSignature0, Args, true, true, true, true);
+	return erljs_vm_call0(Modules, StartFunctionSignature0, Args);
 }
 

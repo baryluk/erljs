@@ -13,7 +13,7 @@ function test_json(code) {
 }
 */
 
-function erl(X) {
+function erl(X, ShowInput) {
 	var r = /^\s*([^:]+):([^(]+)\((.*)\)\.?\s*$/;
 	var m = r.exec(X);
 	if (m) {
@@ -40,14 +40,16 @@ function erl(X) {
 			}
 			if (i != m[3].length) throw "bad syntax in arguments list";
 		}
+		if (ShowInput) {
 		debug("erljs VM call: "+X);
+		}
 		return erljs_vm_call(all_modules, [m[1], m[2], A], args);
 	} else {
 		throw "bad syntax: " + X;
 	}
 };
 
-function erlgo(X) {
+function erlgo(X, ShowResult) {
 	var R,RR;
 	var no_exp = false;
 	try {
@@ -58,10 +60,12 @@ function erlgo(X) {
 		RR = "Error: "+err;
 		R = err;
 	}
+	if (ShowResult) {
 	debug("Result: "+RR);
+	}
 	try {
 		document.getElementById('codeform').innerText = RR;
-		debug("---");
+//		debug("---");
 	} catch (e) { ; }; // Rhino
 	if (no_exp) {
 		return RR;
@@ -73,7 +77,7 @@ function erlgo(X) {
 function debughfail(x) {
 	try {
 	if (document) {
-	debugh("<pre style='background-color: red;'>"+x+"</pre>");
+	debugh("<div style='background-color: #880000;'>"+x+"</div>");
 	}
 	} catch (e) {
 		try {
@@ -85,7 +89,7 @@ function debughfail(x) {
 function debughok(x) {
 	try {
 	if (document) {
-	debugh("<pre style='background-color: green;'>"+x+"</pre>");
+	debugh("<div style='background-color: #004400;'>"+x+"</div>");
 	}
 	} catch (e) {
 		try {
@@ -108,20 +112,20 @@ function unittest_stats() {
 
 function eq(Input,Expected) {
 	_unittest_fail++;
-	debugh("Input  ="+Input);
 	var Output;
 	var failed = true;
 	try {
 		Output = erlgo(Input);
-		debugh("Output  ="+Output);
 		failed = false;
 	} catch (err) {
 		failed = true;
 	}
 	if (failed === false) {
 		if (Expected !== undefined) {
-			debugh("Expected="+Expected);
 			if (Output != Expected) {
+				debugh("Input  ="+Input);
+				debugh("Output  ="+Output);
+				debugh("Expected="+Expected);
 				debughfail(Input + " not evaluated to expected " + Expected);
 				debughfail(Input + " evaluated insted to " + Output);
 			} else {
@@ -135,9 +139,9 @@ function eq(Input,Expected) {
 			_unittest_ok++;
 		}
 	} else {
-		debughok(Input + " executed with exception");
+		debughfail(Input + " executed with exception");
 	}
-	debug("---");
+//	debug("---");
 }
 
 
