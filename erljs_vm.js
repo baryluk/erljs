@@ -1,14 +1,50 @@
 /* Copyritgh 2008 Witold Baryluk. Special thanks to Michal Kolarz, author of IL2JS freamwork */
 
+function toJSON(x) {
+	if (Object.toJSON) {
+		return Object.toJSON(x);
+	} else {
+		if (x instanceof ETerm
+			 || x instanceof String
+			|| x instanceof Number) {
+			return x.toString();
+		}
+		var r = "\n";
+		for (var i in x) {
+			r += "\t"+i+": "+x[i] +"\n";
+		}
+		return r;
+	}
+}
+
+function ss(XX) {
+	return (XX ? toJSON(XX) : "undefined");
+}
+
+function debugh(X) {
+	try { // block for webbrower, but try for Rhino
+		var r = document.createElement("p");
+		r.innerHTML = X;
+		document.getElementById("debugdiv").appendChild(r);
+	} catch (e) {
+		try { // Rhino
+			print(X);
+		} catch (e2) { };
+	};
+}
 function debug(X) {
-	//console.log(X);
+	try { // block for webbrower, but try for Rhino
+		var r = document.createElement("p");
+		r.innerText = X;
+		document.getElementById("debugdiv").appendChild(r);
 
-	var r = document.createElement("div");
-	r.innerText = X;
-	document.getElementById("debugdiv").appendChild(r);
-
-//	document.getElementById("debugform"). += X;
-//	document.getElementById("debugform").innerText += "\n\r";
+		//document.getElementById("debugform"). += X;
+		//document.getElementById("debugform").innerText += "\n\r";
+	} catch (e) {
+		try { // Rhino
+			print(X);
+		} catch (e2) { };
+	};
 }
 
 // assert test, for internal error, or situation which should never occur in proper bytecode.
@@ -43,7 +79,7 @@ var opcode_profiler = {};
 
 
 function uns(OC) {
-	throw "unknown opcode "+Object.toJSON(OC);
+	throw "unknown opcode "+toJSON(OC);
 }
 
 function get_opcode(O) {
@@ -76,6 +112,7 @@ function erljs_vm_init(Modules) {
 			if (FunctionCode[0] == "function") {
 				var Name = FunctionCode[1];
 				var Arity = FunctionCode[2];
+				//debug(Name+"/"+Arity);
 				var EntryPoint = FunctionCode[3];
 				var Code = FunctionCode[4];
 				var FunctionSignature = func_sig(ModuleName, Name, Arity);
@@ -83,9 +120,10 @@ function erljs_vm_init(Modules) {
 				var l = 0;
 				for (var k = 0; k < Code.length; k++) {
 					var OC = Code[k];
+					//debug(ss(OC));
 					var opcode0 = get_opcode(OC);
-					if (opcode0 == "label") {
-						opcode_test(OC, 'label', 1)
+					if (opcode0 == "label" || opcode0 == "l") {
+						//opcode_test(OC, 'label', 1)
 						//console.log("dodaje label " + OC[1] + "(z pozycji org "+k+") na pozycji "+l+ " w funkcji "+ FunctionSignature);
 						Labels[ModuleName][OC[1]] = [FunctionSignature, l];
 					} else {
@@ -120,12 +158,12 @@ function erljs_vm_init(Modules) {
 
 function is_list(E) {
 	//return E instanceof ETerm && E.is("list");
-	return E instanceof EList || E instanceof EListNil;
+	return E instanceof EList || E instanceof EListNil || E instanceof EListString;
 }
 function is_atom(E) {
 	return E instanceof EAtom;
 }
-function is_tuple(L) {
+function is_tuple(E) {
 	return E instanceof ETuple;
 }
 function is_integer(E) {
@@ -138,12 +176,25 @@ function is_float(E) {
 function is_binary(E) {
 	return false;
 }
-
+function is_boolean(E) {
+	return is_atom(E) && (E.atom_name()=="true" || E.atom_name()=="false");
+}
+// this will also return false if E is not atom, or not false at all.
+function is_true(E) {
+	return is_atom(E) && (E.atom_name()=="true");
+}
+function is_ref(E) {
+	return E instanceof ERef;
+}
+function is_pid(E) {
+	return E instanceof EPid;
+}
 
 function erljs_eq(A,B,strict) {
 erljs_eq_loop:
 while(true) {
 	if (typeof A == typeof B) {
+		if (A === B) { return true; } // equal references
 		switch (typeof(A)) {
 			case "object":
 				if (!(A instanceof ETerm && B instanceof ETerm)) {
@@ -154,6 +205,7 @@ while(true) {
 				}
 				switch (A.type()) {
 					case "list":
+						// TODO: handle EListString more effectivelly
 						if (A.empty() && B.empty()) {
 							return true;
 						}
@@ -164,10 +216,11 @@ while(true) {
 						B = B.tail();
 						continue;
 					case "tuple":
-						if (A.arity() != B.arity()) {
+						var ata=A.tuple_arity();
+						if (ata != B.tuple_arity()) {
 							return false;
 						}
-						for (var i = 0; i < A.arity(); i++) { // todo: opt
+						for (var i = 0; i < ata; i++) {
 							if (!erljs_eq(A.get(i), B.get(i), strict)) {
 								return false;
 							}
@@ -198,7 +251,7 @@ while(true) {
 		return false;
 //
 					default:
-						throw "something missing";
+						throw "something missing in implementation f erljs_eq.";
 				}
 				break;
 			case "number":
@@ -225,8 +278,136 @@ while(true) {
 }
 }
 
-//function erljs_lt(A,B,strict) {
-//function erljs_ge(A,B,strict) {
+// order: (Integer|Float) < Atom < Ref < Pid < Tuple < Nil < List
+
+function term_order(A) {
+	switch (typeof(A)) {
+	case "number":
+		return 1;
+	//case "string":
+	case "object":
+		if (A instanceof ETerm) {
+			switch (A.type()) {
+				case "integer":
+				case "float":
+					return 1;
+				case "atom":
+					return 2;
+				case "ref":
+					return 3;
+				case "pid":
+					return 4;
+				case "tuple":
+					return 5;
+				case "list":
+					return 6;
+				default:
+					throw "term order 3";
+			}
+		} else if (A instanceof Number) {
+			return 1;
+		} else {
+			throw "term order error 2";
+		}
+	default:
+		throw "term order error 1";
+	}
+}
+
+
+function comparator(type) {
+	switch (type) {
+	case "lt":
+		return function (a,b) { return a < b; };
+	case "ge":
+		return function (a,b) { return a >= b; };
+	default:
+		throw "error";
+	}
+}
+
+function erljs_cmp(A,B,cmp) {
+erljs_cmp_loop:
+while(true) {
+	var oA = term_order(A);
+	var oB = term_order(B);
+	if (oA != oB) {
+		return cmp(oA,oB);
+	}
+	// A and B are of the same type now, decompose recursivly
+	switch (oA) {
+	case 1: // integer or float of some kind
+		// natural ordering
+		return cmp(A, B);
+	case 2: // atom
+		// lexicographical ordering of text representation
+		return cmp(A.atom_name(), B.atom_name());
+	case 3: // ref
+		// any consitent ordering
+		throw "ref comparission not implemented yet";
+	case 4: // pid
+		// any consitent ordering
+		throw "pid comparission not implemented yet";
+	case 5: // tuple
+		// shorter tuples first, content doesn't matter
+		// {} < {d} < {c,b} < {a,a,a}
+		// if equal length, then lexicographical from element 1
+		// {a,a,a} < {a,b,c} < {z,z,z}
+		var aA = A.tuple_arity();
+		var aB = B.tuple_arity();
+		if (aA != aB) {
+			return (aA < aB ? -1 : +1);
+		}
+		// same arity
+		for (var i = 0; i < aA; i++) {
+			var c = erljs_cmp(A.get(i), B.get(i), cmp);
+			if (c != 0) { return c; }
+		}
+		return 0;
+	case 6: // list
+		// [] < [a] < [a,a] < [a,b] < [a,c] < [a,d,a]
+		//    [] < [a|[]] < [a|[a|[]]] < [a|[b|[]]] < [a|[c|[]]] < [a|[d|[a|[]]]]
+		// but [a,a,a] < [a,c] !
+		//    but [a|[a|[a|[]]]] < [a|[c|[]]] !
+		// [] < [a|b] < [a] < [b]
+		//    [a|[]] < [a,b] === [] < [b].
+		// so just keep comparing heads, if they are equal continue,
+		// in some point we will compare Nil or inproper tail element with second part.
+
+		if (A instanceof EListNil) {
+			if (B instanceof EListNil) {
+				return 0;
+			} else {
+				return -1;
+			}
+		} else {
+			if (B instanceof EListNil) {
+				return +1;
+			} else {
+				var c = erljs_cmp(A.head(), B.head(), cmp);
+				if (c != 0) { return c; }
+				A = A.tail();
+				B = B.tail();
+				continue erljs_cmp_loop; // tail recursion
+			}
+		}
+		// TODO: special case of EListString
+	default:
+		throw "m";
+	}
+}
+}
+
+// A < B
+function erljs_lt(A,B) {
+	return erljs_cmp(A,B,comparator("lt"));
+}
+
+// A >= B
+function erljs_ge(A,B) {
+	return erljs_cmp(A,B,comparator("ge"));
+}
+
 
 
 var AllReductions = 0;
@@ -238,7 +419,7 @@ function erljs_vm_call_(Modules, StartFunctionSignature0, Args, MaxReductions, F
 	var Reg0 = 0; // x(0)
 	var Regs = []; // x(1), ... x(N)
 	var FloatRegs = []; // floating point
-	var Self = 0; // id
+	var Self = new EPid();
 	var Node = 0;
 	var IP = 0; // pointer in current node
 	var Reductions = 0;
@@ -262,6 +443,14 @@ function erljs_vm_call_(Modules, StartFunctionSignature0, Args, MaxReductions, F
 
 	var ThisModuleName = StartFunctionSignature0[0];
 	var ThisFunctionSignature = StartFunctionSignature;
+
+	switch (ThisModuleName) {
+	case "math":
+	case "erljs":
+	// even if allowed in some point, problem with erlang:* is that some functions are 'bif' and some are called using 'special opcodes' and some using 'call_ext*'
+	case "erlang":
+		throw "module "+ThisModuleName+" not allowed in direct calls yet.";
+	}
 	var ThisLabels = Labels[ThisModuleName];
 
 	var ThisFunctionCode = FunctionsCode[ThisFunctionSignature];
@@ -316,16 +505,40 @@ function erljs_vm_call_(Modules, StartFunctionSignature0, Args, MaxReductions, F
 		jump(LabelF[1]);
 	}
 
+	// erlang:put/get
+	var PDict = {}; // process dictionary
+
+	// bif put/put_tuple
 	var put_tuple_register = -1, put_tuple_i = -1;
+
+	// tracing
+	var TracedModules = {};
+	//TracedModules["example"]=1;
+	//TracedModules["random"]=1;
+	//TracedModules["lists"]=1;
+
+	var Etrue = new EAtom("true"),
+		Efalse = new EAtom("false");
+
+	// current opcode
+	var OC = [];
+
+	function vm_assert(cond, msg) {
+		if (!cond) {
+			alert("vm assertion failed, breaking.  OC="+toJSON(OC) + "  msg="+msg);
+			throw "vm assertion failed";
+		}
+	}
+	var assert = vm_assert;
 
 	// execution loop
 	// TODO: optimalise it by:
 	//    using smaller number of variables,
 	//    create intermidiate (static) form which is
 	//      better suited for it and more compact
-	// Note: keep all identifiers (function names and variables) disriptive. They will be compressed automatically using compressor.
-	var TracedModules = {};
-	//TracedModules = {"example":""};
+	// Note: keep all identifiers (function names and variables) disriptive.
+	// They will be compressed automatically using compressor.
+	// TODO: preallocate some atomes: "true","false","undefined" and use the same ref everytime (saves time, memory, and space in code source)
 
 	NativeReductions = 0;
 try {
@@ -333,40 +546,38 @@ try {
 mainloop:
 	while (true) {
 
-	var OC = ThisFunctionCode[IP];
+	OC = ThisFunctionCode[IP];
 
 	if (ThisModuleName in TracedModules) {
 	if (FullDebug >= 1) {
 		if (FullDebug >= 1) {
 			try {
-				debug("  x0: "+Object.toJSON(Regs[0]));
-				debug("  x1: "+Object.toJSON(Regs[1]));
-				debug("  x2: "+Object.toJSON(Regs[2]));
-				debug("  x3: "+Object.toJSON(Regs[3]));
-				debug("  y0: "+Object.toJSON(LocalRegs[0]));
-				debug("  y1: "+Object.toJSON(LocalRegs[1]));
-			} catch (err) { debug("  not displaying registers -- too long values"); }
+				debug("  x0: "+ss(Regs[0]));
+				debug("  x1: "+ss(Regs[1]));
+				debug("  x2: "+ss(Regs[2]));
+				debug("  x3: "+ss(Regs[3]));
+				debug("  x4: "+ss(Regs[4]));
+				debug("  y0: "+ss(LocalRegs[0]));
+				debug("  y1: "+ss(LocalRegs[1]));
+			} catch (err) { debug("  not displaying registers -- too long values or tuple construction"); }
 		}
 		debug("Function: "+ThisFunctionSignature+"  IP: " + IP + "  (Reduction counter: "+Reductions+", Native reduction counter: "+NativeReductions+").");
-		debug("Instruction: "+Object.toJSON(OC));
+		debug("Instruction: "+toJSON(OC));
 	}
 	}
-//
 
 	IP++;
 
 	Reductions++;
 
-/*
-	if (FullDebug) {
+	if (FullDebug > 2) {
 		document.getElementById("Red").value = Reductions;
 	}
-	if (FullDebug > 2) {
-		document.getElementById("X0").value = Object.toJSON(Regs[0]);
-		document.getElementById("X1").value = Object.toJSON(Regs[1]);
-		document.getElementById("X2").value = Object.toJSON(Regs[2]);
+	if (FullDebug > 3) {
+		document.getElementById("X0").value = toJSON(Regs[0]);
+		document.getElementById("X1").value = toJSON(Regs[1]);
+		document.getElementById("X2").value = toJSON(Regs[2]);
 	}
-*/
 
 	if (Reductions > MaxReductions) {
 		throw "too_many_reduction";
@@ -383,19 +594,24 @@ mainloop:
 	}
 
 	if (ThisModuleName in TracedModules) {
-/*
 	if (FullDebug>1) {
-		debug("profile: "+Object.toJSON(opcode_profiler));
+		debug("profile: "+toJSON(opcode_profiler));
 	}
-*/
+	}
+
+	if (ThisModuleName in TracedModules) {
 	if (FullDebug) {
 		debug("-----");
 	}
 	}
 
+// in opera i see drastic speed loss when added about 50 sporious cases at he beggining of the switch.
+// this mean it isn't O(1), and for this reason I have most important opcodes at the top.
 
 	switch (opcode0) {
-	case "test":
+
+	case "t":
+	//case "test":
 		//opcode_test(OC, 'test', 3);
 			//assert(OC[2].length == 2);
 			//assert(OC[2][0] == "f");
@@ -437,19 +653,25 @@ mainloop:
 				break;
 			case "is_eq_exact":
 				//assert(OC[3].length == 2);
-				if (get_arg(OC[3][0]) != get_arg(OC[3][1])) {
+				if (!erljs_eq(get_arg(OC[3][0]), get_arg(OC[3][1]), true)) {
+					jumpf(OC[2]);
+				}
+				break;
+			case "is_eq":
+				//assert(OC[3].length == 2);
+				if (!erljs_eq(get_arg(OC[3][0]), get_arg(OC[3][1]), false)) {
 					jumpf(OC[2]);
 				}
 				break;
 			case "is_lt": // this tests should be performd using correct ordering from Erlang
 				//assert(OC[3].length == 2);
-				if (!(get_arg(OC[3][0]) < get_arg(OC[3][1]))) {
+				if (!erljs_lt(get_arg(OC[3][0]), get_arg(OC[3][1]))) {
 					jumpf(OC[2]);
 				}
 				break;
 			case "is_ge": // yes there is only < and >= opcode in VM. 
 				//assert(OC[3].length == 2);
-				if (!(get_arg(OC[3][0]) >= get_arg(OC[3][1]))) {
+				if (!erljs_ge(get_arg(OC[3][0]), get_arg(OC[3][1]))) {
 					jumpf(OC[2]);
 				}
 				break;
@@ -463,7 +685,7 @@ mainloop:
 			case "is_nonempty_list":
 				//assert(OC[3].length == 1);
 				var Arg = get_arg(OC[3][0]);
-				if (!(Arg instanceof EList)) {
+				if (!(Arg instanceof EList || Arg instanceof EListString)) {
 					jumpf(OC[2]);
 				}
 				break;
@@ -478,7 +700,8 @@ mainloop:
 				uns(OC);
 			}
 			break;
-	case "move":
+	case "m":
+	//case "move":
 		//opcode_test(OC, 'move', 2);
 			var SrcArg = get_arg(OC[1]);
 			//assert(OC[2].length == 2);
@@ -491,7 +714,8 @@ mainloop:
 				uns(OC);
 			}
 			break;
-	case "gc_bif":
+	case "G":
+	//case "gc_bif":
 		//opcode_test(OC, 'gc_bif', 5);
 			// OC[3]? // it looks it is is mostly number of args: assert(OC[3] == OC[4].length == 2); // but sometimes it is 3.
 			//assert(OC[5].length == 2);
@@ -534,22 +758,27 @@ mainloop:
 						break;
 					// Note: (N bsl X) bsr X is identity function for any N and X>0.
 					case "bsl":
-						V = Arg1 << Arg2; // example: -33 bsl 4 = -528. 33 bsl 4 = 528. 33 bsl -4 = 2. -33 bsl -4 = -3.
+						// example: -33 bsl 4 = -528. 33 bsl 4 = 528. 33 bsl -4 = 2. -33 bsl -4 = -3.
+						V = Arg1 << Arg2;
 						break;
 					case "bsr":
-						V = Arg1 >> Arg2; // example: -33 bsr 4 = -3. -33 bsr -1 = -66. 33 bsr 1 = 16. 33 bsr -1 = 66.
+						// example: -33 bsr 4 = -3. -33 bsr -1 = -66. 33 bsr 1 = 16. 33 bsr -1 = 66.
+						V = Arg1 >> Arg2;
 						break;
-					case "div": // todo: merge div and rem cases, becuase in case of bignum's both are computed in the same time. also Arg2==0 check is the same.
+					case "div":
+						// TODO: merge div and rem cases, becuase in case of bignum's both are computed in the same time. also Arg2==0 check is the same.
 						if (Arg2 == 0) {
 							throw "badarith";
 						}
-						V = Math.round(Arg1/Arg2); // example: 3 div 4 = 0. 5 div 4 = 1. -3 div 4 = 0. -5 div 4 = -1. 5 div -4 = -1. 5 div -6 = 0. -5 div -4 = 1. -5 div -6 = 0.
+						// example: 3 div 4 = 0. 5 div 4 = 1. -3 div 4 = 0. -5 div 4 = -1. 5 div -4 = -1. 5 div -6 = 0. -5 div -4 = 1. -5 div -6 = 0.
+						V = Math.round(Arg1/Arg2);
 						break;
 					case "rem":
 						if (Arg2 == 0) {
 							throw "badarith";
 						};
-						V = Arg1 % Arg2;  // Arg2 and -Arg2 gives same Result.  -Arg1 gives -Result
+						// Arg2 and -Arg2 gives same Result.  -Arg1 gives -Result
+						V = Arg1 % Arg2;
 						break;
 					default:
 						uns("OC");
@@ -604,6 +833,18 @@ mainloop:
 						V = Math.abs(Arg1);
 					}
 					break;
+				case "trunc":
+					if (!is_integer(Arg1) && !is_float(Arg1)) {
+						jumpfr(OC[2],"badarg");
+					} else {
+						// trunc(-1.9) = -1. trunc(1.9) = 1.
+						if (Arg1 > 0) {
+							V = Math.round(Arg1-0.5);
+						} else {
+							V = Math.round(Arg1+0.5);
+						}
+					}
+					break;
 				default:
 					uns(OC);
 				}
@@ -623,40 +864,16 @@ mainloop:
 				}
 			}
 			break;
-	case "get_list":
-		//opcode_test(OC, 'get_list', 3);
-			var Arg = get_arg(OC[1]);
-			//assert(OC[2].length == 2);
-			var Head_DstRegNo = OC[2][1];
-			//assert(OC[3].length == 2);
-			assert(OC[3][0] == "x");
-			var Tail_DstRegNo = OC[3][1];
-			switch (OC[2][0]) {
-			case "x":
-				Regs[Head_DstRegNo] = Arg.head();
-				break;
-			case "y":
-				LocalRegs[Head_DstRegNo] = Arg.head();
-				break;
-			default:
-				throw "bad reg";
-			}
-			Regs[Tail_DstRegNo] = Arg.tail();
-			break;
-	case "put_list":
-		//opcode_test(OC, 'put_list', 3);
-			var Head = get_arg(OC[1]);
-			var Tail = get_arg(OC[2]);
-			//assert(OC[3].length == 2);
-			assert(OC[3][0] == "x");
-			var DstRegNo = OC[3][1];
-			Regs[DstRegNo] = new EList(Head, Tail);
-			break;
-	case "call":
-	case "call_only":
+
+	// calls in the same module
+	case "c": //alias for "call_only", mostly for tight iterative style loops in the same module.
+	//case "call_only":
+	case "C": // alias for "call"
+	//case "call":
 		//opcode_test(OC, 'call', 2) || opcode_test(OC, 'call_only', 2);
 			switch (opcode0) {
-			case "call":
+			case "C":
+			//case "call":
 				Stack.push([ThisFunctionSignature, ThisFunctionCode, IP, ThisModuleName, LocalRegs]);
 				LocalRegs = [];
 			default:
@@ -718,20 +935,27 @@ mainloop:
 			break;
 
 
+	// calls to external modules
+	case "call_lists":
 	case "call_ext":
 	case "call_ext_only":
+	case "call_lists_only":
 	case "call_ext_last":
 	case "call_last":
-	case "call_lists":
-	case "call_lists_only":
 			last_reason = "";
-			var native = false;
+			var native_function = false; // 'native' keyword is reserved in the Rhino JS :(
 		//opcode_test(OC, 'call_ext', 2) || opcode_test(OC, 'call_ext_only', 2) || opcode_test(OC, 'call_lists', 2) || opcode_test(OC, 'call_lists_only', 2);
-		//opcode_test(OC, 'call_ext_last', 3); // ? last parameters is integer, i.e. 1
+		//opcode_test(OC, 'call_ext_last', 3/4 ?); // ? last parameters is integer, i.e. 1
 		//opcode_test(OC, 'call_last', 3);
 
 			var ModuleName, Name, Arity;
-			if (/_last$/.test(opcode0)) {
+			//debug("call OC+"+toJSON(OC));
+			if (opcode0=="call_ext_last") {
+				assert(OC[2].length == 4);
+				ModuleName = OC[2][1];
+				Name = OC[2][2];
+				Arity = OC[2][3];
+			} else if (/_last$/.test(opcode0)) {
 				assert(OC[2].length == 3);
 				ModuleName = OC[2][0];
 				Name = OC[2][1];
@@ -742,22 +966,31 @@ mainloop:
 				Name = OC[2][2];
 				Arity = OC[2][3];
 			}
+			//debug("INS: "+toJSON(OC)+" "+ModuleName+" "+Name+" "+Arity);
+			function ni(OC) { debug("not imlepmented: "+ModuleName+":"+Name+"/"+Arity); uns(OC); }
 			// TODO: prepare hash table for this.
 			if (ModuleName == "erljs") {
 				var NA = Name+"/"+Arity;
 				switch (NA) {
 				case "eval/1":
-					var T=eval(Regs[0]);
+					var k = Regs[0].toString();
+					var T=eval(k);
 					if (T!==undefined) Regs[0] = T; else Regs[0] = 0;
+					break;
+				case "alert/1":
+					var k = Regs[0].toString();
+					alert(k);
+					Regs[0] = 0;
 					break;
 				case "console_log/1":
 					Regs[0] = 0;
 					console.log(Regs[0]);
 					break;
 				default:
+					alert("erljs "+NA+" undef");
 					throw "undef";
 				}
-				native=true;
+				native_function=true;
 			} else if (ModuleName == "math") {
 				var NA = Name+"/"+Arity;
 				switch (NA) {
@@ -796,8 +1029,8 @@ mainloop:
 					break;
 				default: throw "nofunc";
 				}
-				native=true;
-			} else if (ModuleName == "math") {
+				native_function=true;
+			} else if (ModuleName == "erlang") {
 				var NA = Name+"/"+Arity;
 
 				switch (NA) {
@@ -828,10 +1061,10 @@ mainloop:
 					}
 					break;
 				case "--/2":
-					uns(OC); break;
+					ni(OC); break;
 				case "apply/2": // apply(Fun,[a,b,c])
 					// same as {M,F,Binded}=Fun, apply(M,F,Binded++[a,b,c]). ?
-					uns(OC);
+					ni(OC);
 					break;
 				case "apply/3": // apply(M,F,[a,b,c]) // be sure to make it tail-recursive!
 					if (!(is_atom(Regs[0]) && is_atom(Regs[1]) && is_list(Regs[2]))) {
@@ -843,7 +1076,7 @@ mainloop:
 					//LocalRegs2 = Regs[0 .. Arity];
 					//Regs[0] <- Regs[2].hd();
 					//Regs[1] <- Regs[2].tl().hd();...
-					uns(OC);
+					ni(OC);
 					break;
 /*				case "hd/1": // in bif
 					if (!(Regs[0] instanceof EList)) throw "badarg";
@@ -854,13 +1087,14 @@ mainloop:
 					Regs[0]=Regs[0].tail();
 					break;
 */
-				//case "size/1": uns(OC); break; // for tuples or binaries // in gc_bif
+				//case "size/1": ni(OC); break; // for tuples or binaries // in gc_bif
 				//	Regs[0] = Regs[0].tuple_arity();
 
 
-				case "atom_to_list/1": uns(OC); break;
-				case "list_to_atom/1": uns(OC); break;
-				case "list_to_integer/1": uns(OC); break;
+				case "atom_to_list/1": ni(OC); break;
+				case "list_to_atom/1": ni(OC); break;
+				case "list_to_existing_atom/1": ni(OC); break;
+				case "list_to_integer/1": ni(OC); break;
 				case "integer_to_list/1":
 					var L = Math.round(Math.abs(Regs[0]));
 					if (L) {
@@ -877,9 +1111,13 @@ mainloop:
 						Regs[0] = new EList(48,new EListNil()); // [$0]
 					}
 					break;
-				case "integer_to_list/2": uns(OC); break;
-				case "list_to_float/1": uns(OC); break;
-				case "float_to_list/1": uns(OC); break;
+				case "integer_to_list/2": ni(OC); break;
+				case "list_to_float/1": ni(OC); break;
+				case "float_to_list/1": ni(OC); break;
+
+				case "list_to_tuple/1": ni(OC); break;
+				case "tuple_to_list/1": ni(OC); break;
+				case "append_element/2": ni(OC); break;
 
 				case "make_fun/3":
 					//erlang:make_fun(M, F, A) creates object (fun M:F/A)
@@ -890,27 +1128,49 @@ mainloop:
 // BUG erlang:fun_to_list(fun 's.d'.'d.h'/5) = "#Fun<s.d.d.h.5>". not very good way.
 // fortunetly there is no general list_to_fun (becuase of garabage collectin of env and lack of reference).
 
-					uns(OC); break; 
+					ni(OC);
+					break;
 
-				case "put/2": uns(OC); break;
-				case "get/0": uns(OC); break;
-				case "get/1": uns(OC); break;
-				case "get_keys/1": uns(OC); break;
-				case "erase/0": uns(OC); break;
-				case "erase/1": uns(OC); break;
+				case "put/2": // i.e. random:reseed
+					var old = PDict[Regs[0].toString()];
+					PDict[Regs[0].toString()] = [Regs[0],Regs[1]];
+					Regs[0] = (old ? old : new EAtom("undefined"));
+					break;
+				case "erase/0":
+				case "get/0":
+					var t = new EListNil();
+					for (var i in PDict) {
+						t = new EList(new ETuple(r), t);
+					}
+					Regs[0] = t;
+					if (Name=="erase") PDict={};
+					break;
+				case "erase/1":
+				case "get/1":
+					var r = PDict[Regs[0].toString()];
+					Regs[0] = (r ? r[1] : new EAtom("undefined"));
+					if (Name=="erase") PDict[Regs[0].toString()]=undefined; // or delete?
+					break;
+				case "get_keys/1": ni(OC); break;
+				case "erase/0": ni(OC); break;
+				case "erase/1": ni(OC); break;
 
-				//case "abs/1": uns(OC); break; // abs value of float or int // in gc_bif
-				case "min/2": uns(OC); break;
-				case "max/2": uns(OC); break;
-				case "make_ref/0": uns(OC); break;
-				case "self/0": uns(OC); break;
-				case "time/0": uns(OC); break; // {Hour,Minute,Second} // {9,42,44}
-				case "date/0": uns(OC); break; // {Year,Month,Day}// {1996,11,6}
-				case "localtime/0": uns(OC); break; // {{Year,Month,Day}, {Hour,Minute,Second}} // {{1996,11,6},{14,45,17}}
-				case "fun_info/1": uns(OC); break;
-				case "fun_info/2": uns(OC); break;
-				case "get_module_info/1": uns(OC); break;
-				case "get_module_info/2": uns(OC); break;
+				//case "abs/1": ni(OC); break; // abs value of float or int // in gc_bif
+				case "min/2": ni(OC); break;
+				case "max/2": ni(OC); break;
+				case "make_ref/0": ni(OC); break;
+				case "self/0": ni(OC); break;
+				case "time/0": ni(OC); break; // {Hour,Minute,Second} // {9,42,44}
+				case "date/0": ni(OC); break; // {Year,Month,Day}// {1996,11,6}
+				case "localtime/0": ni(OC); break; // {{Year,Month,Day}, {Hour,Minute,Second}} // {{1996,11,6},{14,45,17}}
+				case "fun_info/1": ni(OC); break;
+				case "fun_info/2": ni(OC); break;
+				case "phash/2": // i.e. sets:get_slot/2
+					if (!is_integer(Regs[1])) { throw "badarg"; }
+					Regs[0] = phash(Regs[0], Regs[1]);
+					break;
+				case "get_module_info/1": ni(OC); break;
+				case "get_module_info/2": ni(OC); break;
 				case "yield/0": continue mainloop; break; // ignore
 				case "halt/0":
 					alert("Halted:"+Regs[0]);
@@ -919,10 +1179,10 @@ mainloop:
 					alert("Halted.");
 					return;
 				default:
-					throw "not implemented native function: "+Module+":"+NA;
+					throw "not implemented native function: "+ModuleName+":"+NA;
 					break;
 				}
-				native=true;
+				native_function=true;
 			} else {
 				// not needed currently as we have imlementation of this in lists*
 				if (ModuleName == "lists" && Name == "reverse") {
@@ -950,7 +1210,7 @@ mainloop:
 							}
 							break;
 					}
-					native=true;
+					native_function=true;
 				} else {
 					switch (opcode0) {
 					case 'call_ext':
@@ -961,7 +1221,7 @@ mainloop:
 						var FunctionSignature = func_sig(ModuleName, Name, Arity);
 						// if no such function?
 						ThisFunctionCode = FunctionsCode[FunctionSignature];
-						if (ThisFunctionCode == undefined) throw "undef";
+						if (ThisFunctionCode == undefined) { alert("ps "+NA+" undef"); throw "undef"; }
 						ThisFunctionSignature = FunctionSignature;
 						ThisModuleName = ModuleName;
 						ThisLabels = Labels[ThisModuleName];
@@ -970,9 +1230,25 @@ mainloop:
 					}
 				}
 			}
-			if (native && /_(only|last)$/.test(opcode0) && Stack.length == 0) { return Regs[0]; }
+			if (native_function && /_(only|last)$/.test(opcode0)) {
+	// same as in return
+			Regs = [Regs[0]];
+			if (Stack.length != 0) {
+				var X = Stack.pop();
+				ThisFunctionSignature = X[0];
+				ThisFunctionCode = X[1];
+				IP = X[2];
+				ThisModuleName = X[3];
+				LocalRegs = X[4];
+				ThisLabels = Labels[ThisModuleName];
+			} else {
+				return Regs[0];
+			}
+
+			}
 			break;
-	case "return":
+	case "r":
+	//case "return":
 		//opcode_test(OC, 'return', 0);
 			Regs = [Regs[0]];
 			if (Stack.length != 0) {
@@ -987,6 +1263,48 @@ mainloop:
 				return Regs[0];
 			}
 			break;
+
+	case "g":
+	//case "get_list":
+		//opcode_test(OC, 'get_list', 3);
+			var Arg = get_arg(OC[1]);
+			//assert(OC[2].length == 2);
+			var Head_DstRegNo = OC[2][1];
+			//assert(OC[3].length == 2);
+			var Tail_DstRegNo = OC[3][1];
+			switch (OC[2][0]) {
+			case "x":
+				Regs[Head_DstRegNo] = Arg.head();
+				break;
+			case "y":
+				LocalRegs[Head_DstRegNo] = Arg.head();
+				break;
+			default:
+				throw "bad reg";
+			}
+			switch (OC[3][0]) {
+			case "x":
+				Regs[Tail_DstRegNo] = Arg.tail();
+				break;
+			case "y":
+				LocalRegs[Tail_DstRegNo] = Arg.tail();
+				break;
+			default:
+				throw "bad reg";
+			}
+
+			break;
+	case "p":
+	//case "put_list":
+		//opcode_test(OC, 'put_list', 3);
+			var Head = get_arg(OC[1]);
+			var Tail = get_arg(OC[2]);
+			//assert(OC[3].length == 2);
+			assert(OC[3][0] == "x");
+			var DstRegNo = OC[3][1];
+			Regs[DstRegNo] = new EList(Head, Tail);
+			break;
+
 
 	case "bif":
 		switch (OC[1]) {
@@ -1005,6 +1323,60 @@ mainloop:
 				assert(OC[4][0] == "x");
 				Regs[OC[4][1]]=get_arg(OC[3][0]).tail();
 			}
+			break;
+		case "get": // identitical like erlang:get/1 // ie. random:*
+			var r = PDict[get_arg(OC[3][0]).toString()];
+			assert(OC[4][0] == "x");
+			Regs[OC[4][1]] = (r ? r[1] : new EAtom("undefined"));
+			break;
+		case "tuple_size": // similar to gc_bif size // i.e. proplists:lookup
+			var Arg = get_arg(OC[3][0]);
+			if (!is_tuple(Arg)) {
+				jumpfr(OC[2],"badarg"); // TODO: IMHO it is badarg. but need to recheck
+			} else {
+				assert(OC[4][0] == "x");
+				Regs[OC[4][1]] = Arg.tuple_arity();
+			}
+			break;
+		case ">=": // i.e. proplists:lookup
+			assert(OC[4][0] == "x");
+			Regs[OC[4][1]] = (get_arg(OC[3][0]) >= get_arg(OC[3][1]) ? Etrue : Efalse);
+			break;
+		case "=:=": // i.e. proplists:lookup
+			assert(OC[4][0] == "x");
+			Regs[OC[4][1]] = (erljs_eq(get_arg(OC[3][0]), get_arg(OC[3][1]), true) ? Etrue : Efalse);
+			break;
+		case "element": // i.e. proplists:lookup
+			assert(OC[4][0] == "x");
+			var Arg = get_arg(OC[3][1]),
+				I = get_arg(OC[3][0]);
+			if (!is_tuple(Arg) || !is_integer(I) || I > Arg.tuple_arity()|| I < 1) {
+				jumpfr(OC[2],"badarg");
+			} else {
+				assert(OC[4][0] == "x");
+				Regs[OC[4][1]] = Arg.get(I-1);
+			}
+			break;
+		case "and": // i.e. proplists:lookup
+			assert(OC[4][0] == "x");
+			var Arg1 = get_arg(OC[3][0]),
+				Arg2 = get_arg(OC[3][1]);
+			if (!is_boolean(Arg1) || !is_boolean(Arg2)) {
+				jumpfr(OC[2],"badarg");
+			} else {
+				Regs[OC[4][1]] = (is_true(Arg1)&&is_true(Arg2) ? Etrue : Efalse);
+			}
+			break;
+		case "self": // well, pretty everywhere.
+			//		["bif", "self", "nofail", "", ["x", 0]]
+			assert(OC[4][0] == "x");
+			Regs[OC[4][1]] = Self;
+			break;
+		case "is_integer": // direct call to is_integer or erlang:is_integer in the body of function
+			assert(OC[4][0] == "x");
+			assert(OC[3].length == 1);
+			var Arg = get_arg(OC[3][0]);
+			Regs[OC[4][1]] = (is_integer(Arg) ? Etrue : Efalse);
 			break;
 		default:
 			uns(OC);
@@ -1076,11 +1448,9 @@ mainloop:
 		//	uns(OC);
 /*
 {function,odbierz,0,66,[{label,65},{func_info,{atom,example},{atom,odbierz},0},{label,66},
-{loop_rec,{f,70},{x,0}},{test,is_atom,{f,69},[{x,0}]},{select_val,{x,0},{f,69},{list,[{atom,a},{f,67},{atom,f},{f,68}]}},{label,67},remove_message,{move,{atom,ok},{x,0}},return,{label,68},remove_message,{move,{atom,j},{x,0}},return,{label,69},{loop_rec_end,{f,66}},{label,70},{wait_timeout,{f,66},{integer,1111}},timeout,{move,{atom,kkk},{x,0}},return]}
-
+...
 {function,odbierz2,1,72,[{label,71},{func_info,{atom,example},{atom,odbierz2},1},{label,72},
-{allocate,1,1},{move,{x,0},{y,0}},
-{label,73},{loop_rec,{f,76},{x,0}},{test,is_tuple,{f,74},[{x,0}]},{test,test_arity,{f,75},[{x,0},3]},{get_tuple_element,{x,0},0,{x,1}},{get_tuple_element,{x,0},1,{x,2}},{get_tuple_element,{x,0},2,{x,3}},{test,is_eq_exact,{f,75},[{x,1},{atom,a}]},{test,is_eq_exact,{f,75},[{x,2},{y,0}]},{test,is_eq_exact,{f,75},[{x,3},{y,0}]},remove_message,{move,{atom,ok},{x,0}},{deallocate,1},return,{label,74},{test,is_eq_exact,{f,75},[{x,0},{atom,f}]},remove_message,{move,{atom,j},{x,0}},{deallocate,1},return,{label,75},{loop_rec_end,{f,73}},{label,76},{wait_timeout,{f,73},{integer,1111}},timeout,{move,{atom,kkk},{x,0}},{deallocate,1},return]}
+...
 */
 
 	case "loop_rec":
@@ -1091,13 +1461,14 @@ mainloop:
 		opcode_test(OC, 'select_val', 3); // ozywana tez np. w if
 			var Arg = get_arg(OC[1]);
 			var found = false;
-			assert(is_integer(Arg));
+			//assert(is_integer(Arg), "c1"); // AFAIK it can be any primitive type: atom, integer, float.
 			var C = OC[3]; // raczej literalna lista w postaci: {list,[{integer,1},{f,81},{integer,55},{f,82}]}
-			assert(C.length == 2);
-			assert(C[0] == "list");
+			assert(C.length == 2, "c2");
+			assert(C[0] == "list", "c3");
 			for (var i = 0; i < C[1].length; i += 2) { // use binary search for bigger tables
 				NativeReductions++;
-				if (Arg == get_arg(C[1][i])) {
+				//if (Arg == get_arg(C[1][i])) { // TODO: erljs_eq
+				if (erljs_eq(Arg, get_arg(C[1][i]), true)) { // strict?
 					found = true;
 					jumpf(C[1][i+1]);
 					break;
@@ -1151,16 +1522,22 @@ mainloop:
 			assert(SrcArg.tuple_arity() > WhichElemNo);
 			//assert(OC[3].length == 2);
 			var DstRegNo = OC[3][1];
-			if (OC[3][0] == "x") {
+			switch (OC[3][0]) {
+			case "x":
 				Regs[DstRegNo] = SrcArg.get(WhichElemNo);
-			} else {
+				break;
+			case "y":
+				LocalRegs[DstRegNo] = SrcArg.get(WhichElemNo); // i.e. proplists:expand/2
+				break;
+			default:
 				uns(OC);
 			}
 			break;
 	case "arithfbif":
 		//opcode_test(OC, 'arithfbif', 5);
 			var FOp = OC[1];
-			var OnFloatError = OC[2]; // Erlang checks for floating exceptions, and on any overloaf, underfloat, division by 0, negative sqrt throw error
+			// Erlang checks for floating exceptions, and on any overloaf, underfloat, division by 0, negative sqrt throw error
+			var OnFloatError = OC[2];
 			switch (FOp) {
 			case "fdiv":
 			case "fmul":
@@ -1240,7 +1617,8 @@ mainloop:
 			put_tuple_i = 0;
 			Regs[put_tuple_register] = new ETuple(put_tuple_size);
 			break;
-	case "put":
+	case "P":
+	//case "put":
 		//opcode_test(OC, 'put', 1);
 			var Arg = get_arg(OC[1]);
 			if (put_tuple_i < 0 || put_tuple_register < 0) {
@@ -1257,14 +1635,18 @@ mainloop:
 			// the same version of the code that created the fun will be called (even if newer version  of  the  module  has been loaded).
 			var DstFunction = OC[1];
 			var HereId = OC[2]; // probably to know where fun was constructed (usefull for debuging)
-			var Something = OC[3]; // ? looks like random integer. but is consistent accross compilations. probably something to do with reloading.
-				// it can be also usefull if Fun is moved beetwen process or between Erlang nodes.
+			// ? looks like random integer. but is consistent accross compilations. probably something to do with reloading.
+			// it can be also usefull if Fun is moved beetwen process or between Erlang nodes.
+			var Something = OC[3]; // TODO: what is this?
 			var NumberOfBindedVariables = OC[4];
 			var BindedVarValues = [];
 			for (var i = 0; i < NumberOfBindedVariables; i++) {
 				BindedVarValues[i] = Regs[i];
 			}
 			Regs[0] = new EFun(DstFunction, BindedVarValues);
+			break;
+	case "jump":
+			jumpf(OC[1]); // i.e. proplists:expand/2
 			break;
 	case "fclearerror":
 		//opcode_test(OC, 'fclearerror', 0);
@@ -1280,16 +1662,15 @@ mainloop:
 		//opcode_test(OC, 'case_end', 1);
 			var NotMatchedArg = OC[1];
 			throw "case_end";
-			break;
+	case "if_end":
+			throw "if_clause";
 	case "badmatch":
 		//opcode_test(OC, 'badmatch', 1);
 			var NotMatchedArg = OC[1];
 			throw "badmatch";
-			break;
 	case "func_info": // used by debuger and also when no clause found.
 		//opcode_test(OC, 'func_info', 3);
 			throw "error in "+OC + " at " +ThisFunctionSignature +" IP=" + IP + " last_reason="+last_reason;
-			return;
 	case "label": // labels are already registered in pre execution phase
 		//opcode_test(OC, 'label', 1);
 			//continue;
@@ -1304,6 +1685,7 @@ mainloop:
 
 } catch (err) {
 	Stack.push([ThisFunctionSignature, ThisFunctionCode, IP, ThisModuleName, LocalRegs]);
+	//debug("OC: "+toJSON(ThisFunctionCode[IP]));
 	debug("exception error: "+err+"");
 	for (var i = Stack.length-1; i >= 0; i--) {
 		var S = Stack[i];
@@ -1324,9 +1706,9 @@ function erljs_vm_call(Modules, StartFunctionSignature0, Args) {
 
 	diff = (new Date).getTime() - start;
 
-	debug("diff="+diff+"ms. "+Math.round((AllReductions+NativeReductions)/(diff*0.001))+
-	"rps Red="+AllReductions+" NativeRed="+NativeReductions+
-	" profile: "+Object.toJSON(opcode_profiler));
+	debug("erljs VM statistics: time="+diff+"ms, "+Math.round((AllReductions+NativeReductions)/(diff*0.001))+
+	"rps, Reductions="+AllReductions+", NativeReductions="+NativeReductions);
+	debug("erljs VM profile: "+toJSON(opcode_profiler));
 
 	return R;
 }
