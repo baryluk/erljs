@@ -124,6 +124,56 @@ lists:nthtail(8,[a,b,c,d,e,f,g,h,i,j,k,l|m]).
 lists:nthtail(1,[a]).
 lists:nthtail(1,[a,b]).
 
+lists:flatten([]).
+lists:flatten([1]).
+lists:flatten([1,5]).
+lists:flatten([1,[5,7]]).
+lists:flatten([1,[[5,2],3]]).
+lists:flatten([[1,4],[5,2]]).
+lists:flatten([[1,4],[[5,2],3]]).
+lists:flatten([1,[b,v,[7,a,6],[7,5,[1,[4]],6,7],[2,5,1],[4,[6,5]]],[4,[4,5]],3,[4,5]]).
+lists:flatlength([1,[b,v,[7,a,6],[7,5,[1,[4]],6,7],[2,5,1],[4,[6,5]]],[4,[4,5]],3,[4,5]]).
+lists:flatlength([]).
+lists:flatlength([3,4]).
+lists:flatlength([3,[4,5]]).
+lists:flatlength([[3,1],[4,5]]).
+
+% begining of some examples from manual
+
+lists:append([[1, 2, 3], [a, b], [4, 5, 6]]).
+lists:append("abc", "def").
+lists:concat([doc, '/', file, '.', 3]).
+lists:duplicate(5, xx). 
+%lists:flatmap(fun(X)->[X,X] end, [a,b,c]).
+%lists:foldl(fun(X, Sum) -> X + Sum end, 0, [1,2,3,4,5]).
+%lists:foldl(fun(X, Prod) -> X * Prod end, 1, [1,2,3,4,5]).
+%lists:keymap(fun(Atom) -> atom_to_list(Atom) end, 2, [{name,jane,22},{name,lizzie,20},{name,lydia,15}]).
+%lists:mapfoldl(fun(X, Sum) -> {2*X, X+Sum} end,  0, [1,2,3,4,5]).
+lists:nth(3, [a, b, c, d, e]).
+lists:nthtail(3, [a, b, c, d, e]).
+tl(tl(tl([a, b, c, d, e]))).
+lists:nthtail(0, [a, b, c, d, e]).
+lists:nthtail(5, [a, b, c, d, e]).
+%lists:partition(fun(A) -> A rem 2 == 1 end, [1,2,3,4,5,6,7]).
+%lists:partition(fun(A) -> is_atom(A) end, [a,b,1,c,d,2,3,4,e]).
+lists:reverse([1, 2, 3, 4], [a, b, c]).
+lists:seq(1, 10).
+lists:seq(1, 20, 3).
+lists:seq(1, 0, 1).
+lists:seq(10, 6, 4).
+lists:seq(1, 1, 0).
+%lists:splitwith(fun(A) -> A rem 2 == 1 end, [1,2,3,4,5,6,7]).
+%lists:splitwith(fun(A) -> is_atom(A) end, [a,b,1,c,d,2,3,4,e]).
+lists:sublist([1,2,3,4], 2, 2).
+lists:sublist([1,2,3,4], 2, 5).
+lists:sublist([1,2,3,4], 5, 2).
+lists:subtract("123212", "212").
+%lists:zipwith(fun(X, Y) -> X+Y end, [1,2,3], [4,5,6]). [5,7,9]
+%lists:zipwith3(fun(X, Y, Z) -> X+Y+Z end, [1,2,3], [4,5,6], [7,8,9]).
+%lists:zipwith3(fun(X, Y, Z) -> [X,Y,Z] end, [a,b,c], [x,y,z], [1,2,3]).
+
+% end of examples from lists manual
+
 % math
 math:sin(1.0).
 math:sin(3.14).
