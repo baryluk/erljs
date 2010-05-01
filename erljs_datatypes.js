@@ -54,42 +54,62 @@ var ETerm = Class.extend({
 	is: function(T) { return false; },
 	toString: function() {
 		throw "unknown eterm";
-	}
+	},
+	isastring: function() { return false; }
 });
 
-var AllAtomsToInt = {};
-var AllAtomsFromInt = {};
+var AllAtomsNamesToInt = {};
+var AllAtomsNamesFromInt = {};
 var AllAtomsMaxId = 1;
 
 var EAtom = ETerm.extend({
-	init: function(Atom_) {
+	init: function(AtomName_) {
 		// TODO: perform validation of atom value, double dot, trailing dot, single quotas, lowercase first letter.
 
-		if (Atom_ in AllAtomsToInt) {
-			this.A = AllAtomsToInt[Atom_];
+		if (AtomName_ in AllAtomsNamesToInt) {
+			this.A = AllAtomsNamesToInt[AtomName_];
 		} else {
 			this.A = (AllAtomsMaxId++);
-			AllAtomsToInt[Atom_] = this.A;
-			AllAtomsToInt[this.A] = Atom_;
+			AllAtomsNamesToInt[AtomName_] = this.A;
+			AllAtomsNamesFromInt[this.A] = AtomName_;
 		}
 	},
 	type: function() { return "atom"; },
 	is: function(T) { return T=="atom"; },
 	atom_id: function() { return this.A; },
-	atom_name: function() { return AllAtomsFromInt[this.A]; },
+	atom_name: function() { return AllAtomsNamesFromInt[this.A]; },
 	toString: function() {
-		var a = AllAtomsFromInt[this.A];
-		if (/^[a-z][a-zA-Z_0-9]*$/.test(a)) {
+		var a = AllAtomsNamesFromInt[this.A];
+		// TODO: can be use [\w@] as shortcut to [a-zA-Z_0-9@] ?
+		                                         // reserved atoms. note: throw is not reserved!
+		if (/^[a-z][a-zA-Z_0-9@]*$/.test(a) && !(/^try|fun|catch|end|begin|if|case$/.test(a))) {
 			return a;
-		//} else if (/^[a-z](\.[a-zA-Z_0-9]+)*\.?$/.test(a)) { // we are allowed to display few other atoms directly (with single dots inside),
+		//} else if (/^[a-z](\.[a-zA-Z_0-9@]+)*\.?$/.test(a)) { // we are allowed to display few other atoms directly (with single dots inside),
 		//	return a;                                          // but we will not as EVM doesnt do so.
 //		} else if (a.indexOf("'")<0) { // not needed special case of else below.
 //			return "'"+a+"'";
 		} else {
+			// todo: perform additional transliteration for example of: \n \t \r \b \f \v \e
+			// not printable characters change to octal notation \012   (always with 3 digits, even if it can be shorter and still correct atom)
+			// http://blog.versed.se/2008/07/transliterate-in-javascript.html
+			/*
+			//or
+			a.replace(/([\n\t\r\b\f\v\e'])/g, function() {
+				//return {
+				//	"\n":"\\n",
+				//}[x];
+				return "\\"+x;
+			});
+			*/
 			return "'"+a.replace("'","\\'")+"'";
 		}
 	}
 });
+
+// also cache object references for atoms
+function get_atom(AtomName_, existing) {
+}
+
 var EInteger = ETerm.extend({
 	init: function(Integer_) { this.IntegerValue = Integer_ },
 	type: function() { return "integer"; },
@@ -117,7 +137,11 @@ var ETuple = ETerm.extend({
 		var r = "";
 		for (var i = 0; i < this.TupleArity; i++) {
 			if (i) r += ",";
-			r += this.TupleData[i].toString();
+			if (this.TupleData[i] !== undefined) {
+				r += this.TupleData[i].toString();
+			} else {
+				r += "EMPTY";
+			}
 			//r += this.TupleData[i];
 		}
 		return "{"+r+"}";
@@ -147,33 +171,60 @@ var EList = EListAny.extend({
 	settail:function(t) {
 		this._[1]=t;
 	},
-	toString: function() { // make this function tail recursive and with accumulator
-		//if (this.head().is("integer") && (true)) {
-		//} else {
+	// TODO: make this function tail recursive and with accumulator
+	toString: function() {
+		var h = this.head();
+		var l = this.isastring();
+		if (l>=0) {
+			return this.toStringLimited(l);
+		}
 		var t = this.tail();
 		if (t instanceof EListAny) {
-			return "["+this.head().toString()+t.toStringJust()+"]";
+			return "["+h.toString()+t.toStringJust()+"]";
 		} else {
-			return "["+this.head().toString()+"|"+t.toString()+"]";
+			return "["+h.toString()+"|"+t.toString()+"]";
 		}
 	},
-	toStringJust: function() { // make this function tail recursive and with accumulator
+	// TODO: make this function tail recursive and with accumulator
+	toStringJust: function() {
+		var h = this.head();
 		var t = this.tail();
 		if (t instanceof EListAny) {
-			return ","+this.head().toString()+t.toStringJust();
+			return ","+h.toString()+t.toStringJust();
 		} else {
-			return ","+this.head().toString()+"|"+t.toString();
+			return ","+h.toString()+"|"+t.toString();
 		}
 	},
-	toStringLimited: function() { // make this function tail recursive, and pretest
-		var t = this.tail();
-		if (t instanceof EListAny) {
-			return "["+this.head().toString()+","+t.toStringLimited()+"]";
-		} else {
-			return this.toString();
+	// TODO: make this function tail recursive
+	toStringLimited: function(l) {
+		var x = this;
+		var r = "\"";
+		while (x instanceof EList) {
+			var i = x.head();
+			if (i == 92 || i == 34) { // \ or "
+				r += "\\";
+			}
+			r += String.fromCharCode(i);
+			x = x.tail();
 		}
+		r += x.toStringLimited(l);
+		return r;
 	},
-	length: function() { return list_len(this); }
+	// TODO: we can memoize this! and use in erlang:length/1 !
+	//       Remember about improper lists.
+	length: function() { return 1+list_len(this); },
+	// return lenght of string, or -1 if it is not a printable list
+	// TODO: we can memoize memoize this.
+	isastring: function() {
+		var h = this.head();
+		// TODO: make this function iterative
+		if (!(is_integer(h) && (32<=h) && (h<=126))) {
+			return -1;
+		}
+		var l = this.tail().isastring();
+		if (l < 0) { return l; }
+		return l+1;
+	}
 });
 
 function list_len(t) {
@@ -181,6 +232,9 @@ function list_len(t) {
 	while (t instanceof EList) {
 		t = t.tail();
 		l++;
+	}
+	if (t instanceof EListString) {
+		l += t.length();
 	}
 	return l;
 }
@@ -193,7 +247,9 @@ var EListNil = EListAny.extend({
 	empty: function() { return true; },
 	toString: function() { return "[]"; },
 	toStringJust: function() { return ""; },
-	length: function() { return 0; }
+	toStringLimited: function(l) { return "\""; },
+	length: function() { return 0; },
+	isastring: function() { return 0; }
 });
 
 // slightly more efficient representation and lazy tail
@@ -202,7 +258,7 @@ var EListString = EListAny.extend({
 	type: function() { return "list"; },
 	is: function(T) { return T=="list"; },
 	empty: function() { return this.S.length==this.i; },
-	head: function() { return this.S[this.i]; },
+	head: function() { return this.S.charCodeAt(this.i); },
 	tail: function() {
 /*
 		if (!this.tailmem) { // memoize
@@ -210,32 +266,47 @@ var EListString = EListAny.extend({
 		}
 		return this.tailmem;
 */
-		return new EListString(this.S,this.i+1);;
+		if (this.i+1==this.S.length) {
+			return new EListNil();
+		} else {
+			return new EListString(this.S,this.i+1);
+		}
 	},
-	toString: function() { return "\"" +this.S.replace(/"/g, "\\\"")+ "\""; },
-	toStringJust: function() { return "|\"" +this.S.replace(/"/g, "\\\"")+ "\""; },
-	length: function() { return this.S.length-this.i; }
+	// TODO: escape \n\t\b\r\v\f\e and other binary data to \001
+	toString: function() { return "\"" +this.S.substr(this.i).replace(/"/g, "\\\"")+ "\""; },
+	toStringJust: function() { return "|\"" +this.S.substr(this.i).replace(/"/g, "\\\"")+ "\""; },
+	toStringLimited: function(l) { return this.S.substr(this.i).replace(/"/g, "\\\"")+ "\""; },
+	length: function() { return this.S.length-this.i; },
+	isastring: function() { return this.length(); }
 });
 
 var EFun = ETerm.extend({
-	init: function(M_, FunF_, FunA_, EnvA, ID_, Env_, Pid_) { // module, fun name in module, fun arity (for call), env arity (for makeing), uniq id, binded values for make
+	// module, fun name in module, fun arity (for call), env arity (for makeing), uniq id, binded values for make
+	init: function(M_, FunF_, FunA_, EnvA, ID_, Env_, Pid_) {
 		assert(Env_.length == A2);
 		this.M = M__;
-		this.FunF = FunF_;   // it is normally "-"+FunctionNameInWhichItIsDefined+"/"+ArityOfFunctionInWhichItIsDefined+"-fun-"+IndexNumberOfFunInThisFunction
-		this.FunA = FunA_; // arity of fun. what is number of arguments needed to be provided be caller in call_fun?
-		this.Index = Index_; // it is index of the fun as the funs in the whole module. runtime can store them in some separate table
-		this.Uniq = Uniq_; // used to detect module reloading, and call proper (possibly old) module.
-		this.Pid = Pid_; // which pid created this fun (so it can reference it's data).
+		// it is normally "-"+FunctionNameInWhichItIsDefined+"/"+ArityOfFunctionInWhichItIsDefined+"-fun-"+IndexNumberOfFunInThisFunction
+		this.FunF = FunF_;
+		// arity of fun. what is number of arguments needed to be provided be caller in call_fun?
+		this.FunA = FunA_;
+		// it is index of the fun as the funs in the whole module. runtime can store them in some separate table
+		this.Index = Index_;
+		// used to detect module reloading, and call proper (possibly old) module.
+		this.Uniq = Uniq_;
+		// which pid created this fun (so it can reference it's data).
+		this.Pid = Pid_;
 	},
 	type: function() { return "fun"; },
 	is: function(T) { return T=="fun"; },
 	toString: function() {
 		return "#Fun<"+this.M+"."+this.Uniq+"."+this.Index+">"; // TODO, remember about dots in atoms!
 	},
-	function_arity: function() { // arity of function M:FunF whichi implements this fun. it have Env + actuall parameters.
+	// arity of function M:FunF whichi implements this fun. it have Env + actuall parameters.
+	function_arity: function() {
 		return FunA+Env.length;
 	},
-	fun_arity: function() { // actuall paramater number needed for calling
+	// actuall paramater number needed for calling
+	fun_arity: function() {
 		return A;
 	},
 	fun_type: function() { return "local"; }
@@ -262,7 +333,18 @@ var ERef = ETerm.extend({
 	type: function() { return "ref"; },
 	is: function(T) { return T=="ref"; },
 	toString: function() {
-		return "#Ref<0.0."+this.refid+">";
+		return "#Ref<0.0.0."+this.refid+">";
+	}
+});
+
+var __pids_ids = 1;
+var EPid = ETerm.extend({
+	init: function() { this.pid = __pids_ids++; },
+	type: function() { return "pid"; },
+	pid_type: function() { return "local"; },
+	is: function(T) { return T=="pid"; },
+	toString: function() {
+		return "<0."+this.pid+".0>";
 	}
 });
 
@@ -316,8 +398,13 @@ function eterm_decode_(s,existing) {
 	if (t[1] != s.length) throw "excesive data";
 	return t[0];
 }
+// Logical xor. Thanks for this short and universally working version. http://www.howtocreate.co.uk/xor.html :)
+function lnotxor(a,b){return !a == !b;}
 
+// parse next chunk of data, returns [readed_and_parsed_object, position_of_next_element_to_read_from_s]
+// TODO: make it slighlty smaller (now it have 38 branches), or divide into few smaller functions.
 function get_next(s,i,existing) {
+	var m;
 	switch (s[i++]) {
 		case "{":
 			if (s[i] == "}") return [new ETuple(0),i+1];
@@ -354,7 +441,7 @@ list_loop:
 						continue list_loop;
 					case "|":
 						proper=false;
-					case "]":
+					case "]": // fallthrough
 						break list_loop;
 					default:
 						throw "syntax error in list at "+i;
@@ -366,46 +453,125 @@ list_loop:
 				var t = get_next(s, i, existing);
 				r.settail(t[0]);
 				i=t[1];
-				if (s[i++] != "]") throw "bad list";
+				if (s[i++] != "]") throw "bad list at about "+i;
 			}
 			return [r0.tail(),i];
-		case "\"":
-			throw "string";
-		case "'":
-			return get_next_atom(s,i,existing);
-		default:
-			if (/^a-z$/.test(s[i-1])) {
-				return get_next_atom(s,i,existing);
+		case "$": // integer, asci code
+			// exceptions: not $\ but $\\, $\n, etc. 
+			if (s[i]!="\\") {
+				return [s.charCodeAt(i), i+1]; // TODO: is this safe to perform ++ ?
+			} else {
+				return [s.charCodeAt(i), i+1];
 			}
-			if (/^[0-9\-+]$/.test(s[i-1])) {
-				var m,
+		case "#":
+		case "<":
+			throw "not supported pid,port,ref or fun at "+i;
+		case "\"": // list in the string form
+			i--;
+			// TODO: add | for tail notation: "asd"|"bce", but also "asd"|13, or "asd"|[3,6666,123,555]|"asdczx"
+			var rS = /"((?:[^"\\]|\\["'\\btnvfre ])*)"/ig;
+			// '
+			rS.lastIndex = i;
+			m = rS.exec(s);
+			if (!m || m.index!=i) { throw "bad syntax in string at about "+i; }
+			// TODO: perform actuall unescaping
+			if (m[1].length==0) {
+				return [new EListNil(), rS.lastIndex];
+			} else {
+				return [new EListString(m[1],0), rS.lastIndex];
+			}
+		case "'":
+				// allowed char:   a-z A-Z 0-9 - ` ~ ! @ # $ % ^ & * ( ) _ = - + [ ] { } ; \ : " | , . / < > ? SPACE
+				// allowed: \\ or \' or \" (but " doesn't need to be escaped)
+				// most special characters can (but do not need) be escaped also: ` ~ ! @ # $ % (CAN NOT BE ^) & * ( ) _ - = + [ ] { } ; : (MUST BE ' " \) , . < > / ?
+				// pracitcally all letters can (but should not be) be escaped, exceptions:
+				// \x00 - \xff (\xFF)  --- hexdecimal notation,   \xHH is illegal
+				// \0 - \7, \00 - \77, \000 - \377  -- octal.    i.e. '\400' is illegal. but '\900' is ok, becuase 9 isn't octal digit, and it just matches '900'
+				// \b \t \n \v \f \r (\10 .. \15 octal), \e (\33),  -- special chars
+				// \^ - cannot, what it is?
+				//   for example this gives something:   \^]  = \035  \^2 = \022  \^a - \^z, \^A - \^Z = \001 - \032 (yes both cases)
+				//    \^= = \035  \^1 - \^9 = \021 - \031, \^^ = \036, \^\ = \034, \^" = \002 (yes without any other escaping), '\^ ' = '\000'
+				//    '\^
+				//    '. = '\n'   - physical new line character.
+				//    and many others, most maps injectivelly into \000 - \035 range (so exactly 30 integers).
+				// there can be physical \n \t characters in atom, and probably more (but they can't be so easly to type :D).
+				// they can in theory by in the binary files (reall \b after other character in the file is really interesting case). but this should not be used anyway:
+				//  '			'  (yes with REAL TABS there is correct atom equivalent to '\t\t\t'
+				// TODO: can be use [\w`~!@....] as shortcut to [a-zA-Z_0-9`~!@...] ?
+				i--;
+				//var rA = /'((?:[a-zA-Z_0-9`~!@#\$%^&*()\-+=\[\]{}();:"|,./?<> ]|\\["'\\btnvfre])*)'/g;
+				// ' // - to fix stupid highlighting
+				var rA = /'((?:[a-zA-Z_0-9`~!@#\$%^&*()\-+=\[\]{}();:"|,./?<> ]|\\["'\\btnvfre ]|\\[a-wyzA-Z]|\\x[0-9a-fA-F]{2,2}|\\[0-3]?[0-7][0-7]?(?![0-7]))*)'/g;
+				// ' // - to fix stupid highlighting
+				// (?:  ) means "non capturing group" (we don not need it). 
+				// (?!  ) means "not followed by"
+				//  we use it for \666  case.  becuase \66,6  is currect, but removing , will create octal 666 which larger than 255
+				rA.lastIndex = i;
+				m = rA.exec(s);
+				if (!m || m.index!=i) { throw "bad syntax in atom at "+i; }
+				// TODO: perform actuall unescaping.
+				// TODO: is_existing_atom?
+				//if (existing) {
+				return [new EAtom(m[1]), rA.lastIndex];
+
+		default:
+			i--;
+			if (/^[a-z]$/.test(s[i])) {
+				var ra = /([a-z][a-zA-Z_0-9@]*)/g; // TODO: dots
+				ra.lastIndex = i;
+				m = ra.exec(s);
+				if (!m || m.index!=i) { throw "internal error 7 at "+i; }
+				if (/^try|fun|catch|end|begin|if|case$/.test(m[1])) { throw "reserved keyword at "+i; }
+				// TODO: is_existing_atom?
+				//if (existing) {
+				return [new EAtom(m[1]), ra.lastIndex];
+			}
+			if (/^[0-9\-+]$/.test(s[i])) {
 					// we need /g for lastIndex, then verify if it was anchored correctly.
 					// we are using this so we do not need to use substr which can lead to O(n^2) parsing of things like [0,0,0,0,...,0,0,0,0]
 					// well, it can still be O(n).
-					// TODO: Merge both into single regexp
-					rfi = /(([\-+]?\d+)|([\-+]?\d+\.\d+([eE]([\-+]?\d+))?))/g,
+					var rfi = /(?:([\-+]?\d+\.\d+(?:[eE](?:[\-+]?\d+))?)|([\-+]?\d+))/g;
 
-					ri = /([\-+]?\d+)/g,
-					// Floats: dot is mandatory (even with "e" syntax).
-					//   some digits before AND after dot is also mandatory.
-					//   0.000...........00001e1000  is ok.
-					rf = /[\-+]?\d+\.\d+([eE]([\-+]?\d+))?/g;
-
-				rfi.lastIndex = i-1;
+				rfi.lastIndex = i;
 				m = rfi.exec(s);
 				if (!m) {
-					throw "error 1";
+					throw "syntax error (looks like number but isn't) 1. internal error in decder 0. please report at "+i;
 				}
-				if (m.index!=i-1) {
-					throw "error 2";
+				if (m.index!=i) {
+					throw "syntax error (not anchored number) 2 at "+i;
 				}
+				//debug("m="+toJSON(m));
+				//debug("m0='"+m[0]+"' m1='"+m[1]+"' m2='"+m[2]+"'");
+				if (lnotxor(m[1],m[2])) { throw "internal error in decoder 1. please report. at "+i; }
+				if (m[2]) {
+					assert(m[2].length == rfi.lastIndex-i);
+					return [parseInt(m[2], 10), rfi.lastIndex];
+				} else if (m[1]) {
+					assert(m[1].length == rfi.lastIndex-i);
+					var x = parseFloat(m[1]);
+					if (x==Infinity || x==-Infinity || isNaN(x)) throw "bad float at "+i;
+					return [x, rfi.lastIndex];
+				} else {
+					throw "internal error in decoder 2: please report. at "+i;
+				}
+/*
+				// These are two old regexp separated into intger and float, first i was checking float and if it faild, then integer.
+				// in both cases i was testing if match possition is current position.
+				// this was suboptimal, becuase yes we didn't used s.substr(i, s.length), duse avoding copying,
+				// but for [0, 0, 0, 0 ,......., 0,0] all float matches will fail (0 is not a float), so float regexp will scan whole string to the end.
+				// duse this method is deprecated
+				var ri = /([\-+]?\d+)/g;
+				// Floats: dot is mandatory (even with "e" syntax).
+				//   some digits before AND after dot is also mandatory.
+				//   0.000...........00001e1000  is ok.
+				var rf = /[\-+]?\d+\.\d+([eE]([\-+]?\d+))?/g;
 
-				rf.lastIndex = i-1;
+				rf.lastIndex = i;
 				if (m = rf.exec(s)) {
 					//assert(rr.leftContext.length == 0); // not available in Opera and Safari
 					// we need to check this anchoring, because this should not be accepted:
 					// --2.0 (will return -2.0) or 12abc4.56  (will return 4.56). but both are invalid literals.
-					if(m.index == i-1) {
+					if(m.index == i) {
 						// Note: parseFloat accepts NaN, Infinity, -Infinity, -0.0
 						//  one can construct x=-0.0, but it is dispayed everywhere as 0
 						//  it is -0.0 becuase 1.0/x creates -Infinity.
@@ -417,11 +583,9 @@ list_loop:
 
 				// TODO: 16#abd51abf, and other bases notation.
 
-				ri.lastIndex = i-1;
+				ri.lastIndex = i;
 				if (m = ri.exec(s)) {
-					if (m.index != i-1) {
-//alert("i="+i+" m.index="+m.index+" m="+Object.toJSON(m));
- throw "error 4"; }
+					if (m.index != i) { throw "error 4"; }
 					// in JavaScript parseInt, prefixed 0 assumes that it is octal (base8), so we force base 10
 					// or we could use this regexp: /^([\-+]?)0*(0|[1-9]\d*)/  with m[2] as leading-0-free string, but then we will need check sign or append it
 					return [parseInt(m[0], 10), ri.lastIndex];
@@ -429,14 +593,77 @@ list_loop:
 				}
 
 				throw "internal error 5";
+*/
 			}
 
-			throw "syntax error at "+i;
+			throw "syntax error (unknown character) at "+i;
 	}
 }
+
+// reserved atoms: try, fun, catch, end, begin, if, case
+// but not reserved: throw! :)
 
 //var req = new XMLHttpRequest();
 //req.overrideMimeType("text/plain");
 //req.open("GET", "http://smp.if.uj.edu.pl/~baryluk/pobierz.php", false);
 //R = req.send();
+
+// R[1] can be 1 .. 2^32 inclusisve.
+// output in range 1 .. R[1] inclusive.
+// see rv.txt for reverse enginered behaviour of this function.
+
+function phash(T, M) {
+
+	var r = 0;
+	switch (T.type()) {
+		case "atom":
+		// atoms are solved completly.
+			var x = T.atom_name();
+			var r2 = r;
+			for (var i = 0; i < x.length; i++) {
+				r2 = (16*r2 + x.charCodeAt(i))
+				//if (i == 5) {
+				//	//r -= (1 << 28);
+				//	r = (r + r2) % M;
+				//	r2 = 0;
+				//}
+			}
+			//r = (r + r2) % M;
+			//return ((1 + r) % (1 << 28)) % M;
+			//return (1 + r) % M;
+			return 1 + r2;
+
+		case "tuple":
+		// tuples are solved practically.
+			var c = 268439627;
+			for (var i = Tuple.arity(); i > 0; i--) {
+				r = (r + 1 + c*(phash(Tuple.get(i), M)-1)) % M;
+				c = (c*268440163 % M);
+			}
+			return (r + 1) % M;
+
+		case "integer":
+		// integers are solved practically.
+			while (T) {
+				r += ( 268435459*((T >> 24) & 0xff) ) % M;
+				r += ( (1<<32) - 1073730709*((T >> 16) & 0xff) ) % M;
+				r += ( 1920229267*((T >> 8) & 0xff) ) % M;
+				r += ( 2788898427*(T & 0xff) ) % M;
+				T >>= 32;
+			}
+			return (r + 1) % M;
+
+		case "float":
+			throw "not implemented";
+
+		case "list":
+		// lists are much more complicated
+			// phash(T.head(), M);
+			// and something mor complicated with tail :/
+			throw "not implemented";
+
+		default:
+			throw "not implemented";
+	}
+}
 
