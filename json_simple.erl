@@ -33,7 +33,7 @@ encode(true) -> "true";
 encode(false) -> "false";
 encode(null) -> "null";
 encode(I) when is_integer(I) -> integer_to_list(I);
-encode(F) when is_float(F) -> io_lib:format("~g", [F]);
+encode(F) when is_float(F) -> io_lib:format("~w", [F]);
 encode([]) -> encode_string([]);
 encode([C|_] = L) when is_integer(C), C >= $\000, C =< $\377  ->
 	try encode_string(L) of R ->
