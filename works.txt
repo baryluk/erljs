@@ -13,4 +13,8 @@ hd, tl
 lists:nth
 lists:nthtail
 math:* but not hiperbolic functions and erf/c.
+random:uniform/1,2, and other random:*
+proplists:lookup/2
+lists:{max,min,sum,last,zip,zip3,unzip,unzip3,sort} just works.
+
 
