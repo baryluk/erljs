@@ -47,6 +47,6 @@ load("erljs_control.js");
 	unittest__small_rhino_tests();
 //	unittest__term_decode(true,true);
 	unittest__run_examples();
-//	unittest__tests_auto();
+	unittest__tests_auto();
 })();
 
