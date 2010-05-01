@@ -52,19 +52,21 @@
 
 % lists
 
-lists:seq(10,20).
-lists:seq(10,20000).
-lists:seq(10,9).
-lists:seq(10,10).
+lists:seq(1,11).
+lists:seq(300,400).
+lists:seq(4,3).
+lists:seq(4,4).
 %lists:seq(10,8).  % bad func
-lists:seq(10,50,2).
-lists:seq(20,6,-2).
-lists:duplicate(200,10).
-lists:duplicate(200,97).
-lists:duplicate(2000,{a}).
-lists:duplicate(2000,a).
+lists:seq(2,50,2).
+lists:seq(20,2,-2).
+lists:duplicate(9,4).
+lists:duplicate(9,97).
+lists:duplicate(80,{a}).
+lists:duplicate(80,a).
 lists:seq(10,200,2).
-lists:seq(200,100,-2).
+lists:seq(50,-50,-3).
+%lists:seq(1,14,0.137).
+%lists:seq(54,43,-0.461).
 erlang:'++'([1,23,1,23,12],[12,3,12,31,2]).
 erlang:'++'([1,23,1,23,12],[]).
 erlang:'++'([],[1,23,12,3123]).
@@ -127,8 +129,17 @@ math:sin(1.0).
 math:sin(3.14).
 math:sin(-34.14).
 math:sin(0).
+math:sin(10).
 math:sin(0.0).
 math:sin(0.01).
+
+math:cos(1.0).
+math:cos(3.14).
+math:cos(-34.14).
+math:cos(0).
+math:cos(10).
+math:cos(0.0).
+math:cos(0.01).
 
 % proplists
 proplists:lookup(ala,[{ala,12},{ola,613},{ewa,661},{kasia,551},{basia,41}]).
@@ -160,7 +171,15 @@ lists:max([2,4,1,7]).
 lists:min([2,4,1,7]).
 lists:max([9,4,1,7]).
 lists:min([9,4,1,7]).
+lists:max([9,14,1,7]).
+lists:min([9,14,1,7]).
 lists:sum([]).
+lists:sum([1,2]).
+lists:sum([1,3]).
+lists:sum([0.4,9.99,3.14]).
+lists:sum([1,33,412]).
+lists:sum([1,3,6,401,-5,12,41,-12]).
+lists:sum([1,3.5,6,8.5,11,13.3,16,18.5,21.3,23.51,26,28.5,31,33.5,36,38.5,41,43.5,46,48.5,51,53.5,56,58.5,61,63.5,66376,378.5,381,383.5,386,388.5,391,393.5,396,398.5,401]).
 lists:last([8]).
 lists:last([9,2]).
 lists:last([a,b,c]).
@@ -172,7 +191,12 @@ lists:zip3([],[],[]).
 lists:zip3([a],[5],[{z,p}]).
 lists:zip3([a,7],[5,a8],[{z,p},{-5,f}]).
 lists:unzip([]).
+lists:unzip([{a,b},{5,6}]).
+lists:unzip([{a,900},{c,11}]).
+lists:unzip([{a,900},{c,11},{d,5}]).
 lists:unzip3([]).
+lists:unzip3([{a,2,c}]).
+lists:unzip3([{a,2,c},{6,i,q},{6,i,q}]).
 lists:sort([]).
 lists:sort([1,7,1,8,9,12,8,9,23,4]).
 lists:sort([3]).
@@ -185,5 +209,31 @@ lists:sort([1,3,3]).
 lists:sort([1,3,3,6,1,2,3,1,56,12,62,3423,4,7,213,24,6,7,2,4,7,8,65,3,5,6,89,8765,43,23,12,4,1,4,3,2,2,4,5,6,7,5,4,3,5,65,6,7,4,3,2,4,65,7,9,0,9,7,5,3,2,12,4]).
 
 gb_trees:empty().
-begin T=gb_trees:empty(), gb_trees:enter(ala,123, T) end.
+begin T=gb_trees:empty(), T2=gb_trees:enter(ala,123,T) end.
+begin T=gb_trees:empty(), T2=gb_trees:insert(ala,123,T) end.
+begin T=gb_trees:empty(), T2=gb_trees:enter(ala,123,T), gb_trees:lookup(ala,T2) end.
+begin T=gb_trees:empty(), T2=gb_trees:enter(ala,123,T), T3=gb_trees:update(ala,555,T2) end.
+begin T=gb_trees:empty(), T2=gb_trees:enter(ala,123,T), gb_trees:is_defined(ala,T2) end.
+begin T=gb_trees:empty(), T2=gb_trees:enter(ala,123,T), gb_trees:get(ala,T2) end.
+begin T=gb_trees:empty(), T2=gb_trees:enter(ala,123,T), T3=gb_trees:delete(ala,T2) end.
+begin T=gb_trees:empty(), T2=gb_trees:enter(ala,123,T), T3=gb_trees:delete_any(ala,T2) end.
+begin T=gb_trees:empty(), T2=gb_trees:enter(ala,123,T), T3=gb_trees:delete_any(xxx,T2) end.
+% balance/1 should be used only after massive deletes, without further insertions.
+begin T=gb_trees:empty(), T2=gb_trees:enter(ala,123,T), T3=gb_trees:balance(T2) end.
+begin T=gb_trees:empty(), T2=gb_trees:enter(ala,123,T), gb_trees:is_empty(T2) end.
+begin T=gb_trees:empty(), T2=gb_trees:enter(ala,123,T), I=gb_trees:iterator(T2) end.
+begin T=gb_trees:empty(), T2=gb_trees:enter(ala,123,T), gb_trees:take_largest(T2) end.
+begin T=gb_trees:empty(), T2=gb_trees:enter(ala,123,T), gb_trees:take_smallest(T2) end.
+begin T=gb_trees:empty(), T2=gb_trees:enter(ala,123,T), gb_trees:smallest(T2) end.
+begin T=gb_trees:empty(), T2=gb_trees:enter(ala,123,T), gb_trees:largest(T2) end.
+begin T=gb_trees:empty(), T2=gb_trees:enter(ala,123,T), gb_trees:size(T2) end.
+begin T=gb_trees:empty(), T2=gb_trees:enter(ala,123,T), L=gb_trees:keys(T2) end.
+begin T=gb_trees:empty(), T2=gb_trees:enter(ala,123,T), L=gb_trees:values(T2) end.
+begin T=gb_trees:empty(), T2=gb_trees:enter(ala,123,T), L=gb_trees:to_list(T2) end.
+% map/2, next/1
+begin T=gb_trees:empty(), T2=gb_trees:from_orddict([{ala,123},{basia,123},{ela,512},{gosia,612},{jola,71},{kasia,123},{ola,21}]) end.
+begin T=gb_trees:empty(), T2=gb_trees:from_orddict([{ala,123},{basia,123},{ela,512},{gosia,612},{jola,71},{kasia,123},{ola,21}]), L=gb_trees:keys(T2) end.
+begin T=gb_trees:empty(), T2=gb_trees:from_orddict([{ala,123},{basia,123},{ela,512},{gosia,612},{jola,71},{kasia,123},{ola,21}]), L=gb_trees:to_list(T2) end.
+begin T=gb_trees:empty(), T2=gb_trees:from_orddict([{ala,123},{basia,123},{ela,512},{gosia,612},{jola,71},{kasia,123},{ola,21}]), T3=gb_trees:delete(kasia,T2) end.
+begin T=gb_trees:empty(), T2=gb_trees:from_orddict([{ala,123},{basia,123},{ela,512},{gosia,612},{jola,71},{kasia,123},{ola,21}]), T3=gb_trees:delete(kasia,T2), TR=gb_trees:delete(jola,T3) end.
 
