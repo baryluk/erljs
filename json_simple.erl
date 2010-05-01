@@ -29,9 +29,9 @@
 %% case of un-convertible input.
 %% Note: object keys may be either strings or atoms.
 
-encode(true) -> "true";
-encode(false) -> "false";
-encode(null) -> "null";
+%encode(true) -> "true";
+%encode(false) -> "false";
+%encode(null) -> "null";
 encode(I) when is_integer(I) -> integer_to_list(I);
 encode(F) when is_float(F) -> io_lib:format("~w", [F]);
 encode([]) -> encode_string([]);
