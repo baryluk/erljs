@@ -7,3 +7,17 @@
 
 baryluk_bug_*
 
+dict.erl
+gb_sets.erl
+gb_trees.erl
+orddict.erl
+ordsets.erl
+proplists.erl
+queue.erl
+random.erl
+sets.erl
+string.erl
+
+tests_auto.erl
+tests_auto.js
+
