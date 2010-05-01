@@ -1,0 +1,1027 @@
+Reverse enginering of phash/2 function.
+
+I have not looked at any source codes.
+
+I will assume that phash is probably computed recursivlly.
+Things like atom, integer is probably very simple.
+Things like tuples or lists are probably computed
+by computing first elements / head / tail, and then
+combining somehow results.
+This also allows for caching subresults.
+
+phash have second argument M which tells what is te biggest
+value of operation. We will start by using only biggest one.
+If we assume that it uses modular arithmetic, then
+modular operation can be well be done every operation to not
+overflow results, or well also at the end.
+It probably needs to be modular arithmetic, becuase then
+it can be easly combined using multiplication and addition
+in modular arithmetic and then there will be no difference
+in what place there was modular reduction.
+
+I hope this is good assumption.
+
+
+================== atoms =======================
+
+> erlang:phash(a,1 bsl 32).
+98
+> erlang:phash(b,1 bsl 32).
+99
+> $c=99
+> erlang:phash(c,1 bsl 32)
+100
+> erlang:phash(d,1 bsl 32)
+101
+> erlang:phash(e,1 bsl 32)
+102
+> erlang:phash(z,1 bsl 32).
+123
+
+> erlang:phash(aa,1 bsl 32).
+1650 === 1 + $a + 16*$a
+> erlang:phash(ab,1 bsl 32).
+1651 === 1 + $b + 16*$a
+> erlang:phash(ba,1 bsl 32).
+1666 === 1 + $1 + 16*$b
+> erlang:phash(bb,1 bsl 32).
+1667 === 1 + $b + 16*$b
+
+>erlang:phash(abc, 1 bsl 32).
+26500 ==== 1 + $c + $b*16 + 16*16*$a.
+
+
+> erlang:phash(abcd,1 bsl 32).
+424085 === 1 + $d + 16*$c + $b*16*16 + 16*16*16*$a.
+
+% looks like module at the end.
+> erlang:phash(bb,1 bsl 32).
+1667
+> erlang:phash(bb,1 bsl 8).
+131
+> 1667 rem 256.
+131
+
+
+336> erlang:phash('',1 bsl 32).
+1
+436> erlang:phash('\000',1 bsl 32).
+1
+437> erlang:phash('\001',1 bsl 32).
+2
+438> erlang:phash('\002',1 bsl 32).
+3
+439> erlang:phash('\003',1 bsl 32).
+4
+
+527> erlang:phash('\000\000',1 bsl 32).
+1
+528> erlang:phash('\000\001',1 bsl 32).
+2
+530> erlang:phash('\001\000',1 bsl 32).
+17
+529> erlang:phash('\001\001',1 bsl 32).
+18
+
+
+
+thesis 0:
+
+function H(ATOM, M) {
+  var r = 0;
+  var x = ATOM.get_name();
+  for (var i = 0; i < x.length; i++) {
+     r *= 16;
+     r += x.charCodeAt(i);
+  }
+  return (1 + r) % M;
+}
+
+============================ integers: ============================
+
+337> erlang:phash(0,1 bsl 32). 
+1 = 0*2788898427 rem (1 bsl 32) + 1.
+338> erlang:phash(1,1 bsl 32).
+2788898428 = 1*2788898427 rem (1 bsl 32) + 1.
+418> erlang:phash(2,1 bsl 32).    
+1282829559 = 2*2788898427 rem (1 bsl 32) + 1.
+419> erlang:phash(3,1 bsl 32).
+4071727986 = 3*2788898427 rem (1 bsl 32) + 1.
+420> erlang:phash(4,1 bsl 32).
+2565659117 = 4*2788898427 rem (1 bsl 32) + 1.
+421> erlang:phash(5,1 bsl 32).
+1059590248 = 5*2788898427 rem (1 bsl 32) + 1.
+422> erlang:phash(6,1 bsl 32).
+3848488675 = 6*2788898427 rem (1 bsl 32) + 1.
+
+// differences 1506068869 and 2788898427
+
+thesis 1:
+
+function H(Integer, M) {
+	return (Integer * 2788898427 + 1) % M;
+}
+
+
+// testing ok, for 0, 1, ..., 255 !
+// for negative and bigger than 255 it is not so!
+
+// but it is close, difference for 256, ... , 511
+//    is  constant 926803091 or -3368164205  (which are separated by 1 bsl 32)
+0 =  -3368164205 + (1 bsl 32) - 926803091
+
+//for 512 up to 767, constant is:
+//   -2441361114 and 1853606182 (which again are seperated by 1 bsl 32).
+
+lets see
+615> erlang:phash(256,1 bsl 32).
+1920229268
+616> erlang:phash(257,1 bsl 32).
+414160399 = (1920229268 + 2788898427*(257 - 256) )rem (1 bsl 32).
+617> erlang:phash(258,1 bsl 32).
+3203058826 = (1920229268 + 2788898427*(258 - 256) )rem (1 bsl 32).
+618> erlang:phash(259,1 bsl 32).
+1696989957 = (1920229268 + 2788898427*(259 - 256) )rem (1 bsl 32).
+619> erlang:phash(260,1 bsl 32).
+190921088 = (1920229268 + 2788898427*(260 - 256) )rem (1 bsl 32).
+
+
+// ok, we have here differences: 2788898427 (the same as before!)  and  -1506068869.
+//          which are separated by 1 bsl 32.
+
+647> erlang:phash(511,1 bsl 32).
+124757017 = (1920229268 + 2788898427*(511 - 256) )rem (1 bsl 32).
+
+
+ok.
+
+lets see more
+648> erlang:phash(512,1 bsl 32).
+3840458535
+650> erlang:phash(513,1 bsl 32).
+2334389666 = (3840458535 + 2788898427*(513 - 512) )rem (1 bsl 32).
+651> erlang:phash(514,1 bsl 32).
+828320797 = (3840458535 + 2788898427*(514 - 512) )rem (1 bsl 32).
+652> erlang:phash(515,1 bsl 32).
+3617219224 = (3840458535 + 2788898427*(515 - 512) )rem (1 bsl 32).
+653> erlang:phash(516,1 bsl 32).
+2111150355 =  (3840458535 + 2788898427*(516 - 512) )rem (1 bsl 32).
+654> erlang:phash(517,1 bsl 32).
+605081486 =  (3840458535 + 2788898427*(517 - 512) )rem (1 bsl 32).
+
+// differences: 1506068869 and -2788898427 (the same as before, but with opposite sign!)
+
+
+// ok lets see at meta level
+
+668> erlang:phash(256,1 bsl 32). 
+1920229268 = 1* 1920229267 + 1
+669> erlang:phash(512,1 bsl 32).
+3840458535 = 2 * 1920229268 - 1 = 2* 1920229267 + 1
+670> erlang:phash(768,1 bsl 32).
+1465720506 = 3*1920229267 rem (1 bsl 32) + 1.
+671> erlang:phash(1024,1 bsl 32).
+3385949773 = 4*1920229267 rem (1 bsl 32) + 1.
+
+yes, we something interesting here.!  btw. 1920229267 is composite number.
+
+
+thesis 0b:
+
+function H(Integer, M) {
+	return (1920229267*((Integer >> 8) & 0xff) +   (Integer & 0xff) * 2788898427 + 1) % M;
+}
+
+
+// testing shows that:
+D=fun (X) -> (1920229267*((X bsr 8) band 255) + 2788898427 * (X band 255) + 1) rem (1 bsl 32) - erlang:phash(X, 1 bsl 32) end.
+
+is correct for all number 0, 1, ... , 65535!
+
+lets look at next terms, we asume similar structure, so go ahead with bits 16..23:
+
+709> erlang:phash(1 bsl 16, 1 bsl 32).
+3221236588
+710> erlang:phash(2 bsl 16, 1 bsl 32).
+2147505879
+711> erlang:phash(3 bsl 16, 1 bsl 32).
+1073775170
+712> erlang:phash(4 bsl 16, 1 bsl 32).
+44461
+713> erlang:phash(5 bsl 16, 1 bsl 32).
+3221281048
+
+// difference: 1073730709
+
+thesis 0c:
+
+function H(Integer, M) {
+	return ( - 1073730709*((Integer >> 16) & 0xff) +    1920229267*((Integer >> 8) & 0xff) +   (Integer & 0xff) * 2788898427 + 1) % M;
+}
+
+
+// generally it works, but from tme to time it returns -4294967296 which is 0-(1 bsl 32), and can be esily fixed.
+
+ E2=fun (X) -> (
+ (1 bsl 32)
+ + (- 1073730709*((X bsr 16) band 255) rem (1 bsl 32))
+ + 1920229267*((X bsr 8) band 255)
+ + 2788898427 * (X band 255) + 1) rem (1 bsl 32) - erlang:phash(X, 1 bsl 32) end.
+
+
+// it brokes for 16777216 (1 bsl 24)
+
+787> E2(16777216).
+-268435459
+788> E2(16777216 + 1).
+-268435459
+789> E2(16777216 + 2).
+-268435459
+790> E2(16777216 + 3).
+4026531837
+791> E2(16777216 + 4).
+-268435459
+792> E2(16777216 + 5).
+-268435459
+793> E2(16777216 + 6).
+-268435459
+794> E2(16777216 + 7).
+-268435459
+795> E2(16777216 + 8).
+-268435459
+
+lets see again:
+
+796> erlang:phash(1 bsl 24, 1 bsl 32).
+268435460
+797> erlang:phash(2 bsl 24, 1 bsl 32).
+536870919
+798> erlang:phash(3 bsl 24, 1 bsl 32).
+805306378
+799> erlang:phash(4 bsl 24, 1 bsl 32).
+1073741837
+800> erlang:phash(5 bsl 24, 1 bsl 32).
+1342177296
+801> erlang:phash(6 bsl 24, 1 bsl 32).
+1610612755
+
+// difference 268435459 and it is a prime.
+
+thesis 0c:
+
+function H(Integer, M) {
+	return (268435459*(((Integer >> 24) & 0xff))  - 1073730709*((Integer >> 16) & 0xff) +    1920229267*((Integer >> 8) & 0xff) +   (Integer & 0xff) * 2788898427 + 1) % M;
+}
+
+E3 = fun (X) -> A1=(
+    (1 bsl 32)
+  + 268435459*((X bsr 24) band 255)
+  + (- 1073730709*((X bsr 16) band 255) rem (1 bsl 32))
+  + 1920229267*((X bsr 8) band 255)
+  + 2788898427 * (X band 255)
+  + 1
+ ) rem (1 bsl 32), A2=erlang:phash(X, 1 bsl 32), {A1,A2,A2-A1} end.
+
+it looks good up to the 1 bsl 32.
+
+again look at it:
+
+877> erlang:phash(1 bsl 32, 1 bsl 32).
+2788898428
+878> erlang:phash(2 bsl 32, 1 bsl 32).
+1282829559
+879> erlang:phash(3 bsl 32, 1 bsl 32).
+4071727986
+880> erlang:phash(4 bsl 32, 1 bsl 32).
+2565659117
+881> erlang:phash(5 bsl 32, 1 bsl 32).
+1059590248
+882> erlang:phash(6 bsl 32, 1 bsl 32).
+3848488675
+
+// differences 1506068869 and 2788898427 ! (the same as on the begining!)
+// and 2788898427+1506068869 - (1 bsl 32) = 0
+
+look upper
+
+892> erlang:phash(1 bsl 40, 1 bsl 32). 
+1920229268
+893> erlang:phash(2 bsl 40, 1 bsl 32).
+3840458535
+894> erlang:phash(3 bsl 40, 1 bsl 32).
+1465720506
+895> erlang:phash(4 bsl 40, 1 bsl 32).
+3385949773
+896> erlang:phash(5 bsl 40, 1 bsl 32).
+1011211744
+
+// differences 2374738029 and 1920229267 (again the same as for 256!)
+//  and 1920229267+2374738029 - (1 bsl 32) = 0.
+
+so hypothesis is that for number larger than 1 bsl 32, hash is produced by combining hashes
+of 32 bit subchunks.
+
+// TODO: negative numbers.
+
+============================ float ============================
+
+339> erlang:phash(1.0,1 bsl 32).
+1072693249
+340> erlang:phash(0.0,1 bsl 32).
+1
+
+============================ tuples ================================
+
+
+334> erlang:phash({},1 bsl 32). 
+1
+
+335> erlang:phash([],1 bsl 32).
+2
+
+
+341> erlang:phash({a},1 bsl 32).
+268840045
+342> erlang:phash({b},1 bsl 32).
+537279672
+343> erlang:phash({c},1 bsl 32).
+805719299
+344> erlang:phash({d},1 bsl 32).
+1074158926
+345> erlang:phash({e},1 bsl 32).
+1342598553
+
+// difference beetween two of them is: 268439627  !
+
+440> erlang:phash({'\000'},1 bsl 32).
+2
+442> erlang:phash({'\001'},1 bsl 32).
+268439629
+443> erlang:phash({'\002'},1 bsl 32).
+536879256
+444> erlang:phash({'\003'},1 bsl 32).
+805318883
+445> erlang:phash({'\004'},1 bsl 32).
+1073758510
+
+// difference beetween two of them is: 268439627  !
+
+
+450> erlang:phash({'\077'},1 bsl 32).
+4026794615
+451> erlang:phash({'\100'},1 bsl 32).
+266946
+452> erlang:phash({'\101'},1 bsl 32).
+268706573
+453> erlang:phash({'\102'},1 bsl 32).
+537146200
+454> erlang:phash({'\103'},1 bsl 32).
+805585827
+
+// differences 268439627.
+
+
+hipotesis 1:
+
+function H({X},M) {
+	return (268439627*(H(X,M)-1) + 2) % M;
+}
+
+testing reveals that for F = fun(X) -> (erlang:phash(X, 1 bsl 32)-1)*268439627 rem (1 bsl 32) + 2 - erlang:phash({X},1 bsl 32) end.
+F(X) for all tested values X is constant 0. !
+
+268439627 = ( (1 bsl 28) + (1 bsl 12) + (1 bsl 6) + (1 bsl 3) + (1 bsl 1) + (1 bsl 0))
+nothing special.
+btw. 268439627 is a prime number.
+
+
+
+
+
+// differences: 1610606571 or 2684360725
+
+
+362> erlang:phash([{}],1 bsl 32).
+268437512
+
+363> erlang:phash({{}},1 bsl 32).
+2
+
+364> erlang:phash({{{}}},1 bsl 32).
+268439629 = ((2-1)*268439627 + 2) rem (1 bsl 32). OK, agree with hypo1.
+
+365> erlang:phash({{{{}}}},1 bsl 32).
+1896449606 = ((268439629-1)*268439627 + 2) rem (1 bsl 32). OK, agree with hypo1.
+
+
+366> erlang:phash({a,a},1 bsl 32).   
+1636360143
+367> erlang:phash({a,b},1 bsl 32).
+1904799770
+368> erlang:phash({a,c},1 bsl 32).
+2173239397
+369> erlang:phash({a,d},1 bsl 32).
+2441679024
+370> erlang:phash({a,e},1 bsl 32).
+2710118651
+
+// differences: 268439627
+
+399> erlang:phash({b,a},1 bsl 32).
+1119122128
+400> erlang:phash({b,b},1 bsl 32).
+1387561755
+401> erlang:phash({b,c},1 bsl 32).
+1656001382
+402> erlang:phash({b,d},1 bsl 32).
+1924441009
+403> erlang:phash({b,e},1 bsl 32).
+2192880636
+
+// differences: 268439627 same
+
+// differences beetwen phash({a,X}) and phash({b,X}) == 517238015 !
+
+412> erlang:phash({c,a},1 bsl 32).
+601884113
+413> erlang:phash({c,b},1 bsl 32).
+870323740
+414> erlang:phash({c,c},1 bsl 32).
+1138763367
+
+// differences: 268439627 same
+
+// differences beetwen phash({b,X}) and phash({c,X}) == 517238015 ! same.
+
+
+371> erlang:phash({a,{}},1 bsl 32).
+3298145116
+378> erlang:phash({b,{}},1 bsl 32).
+631187797
+379> erlang:phash({c,{}},1 bsl 32).
+2259197774
+380> erlang:phash({d,{}},1 bsl 32).
+3887207751
+381> erlang:phash({e,{}},1 bsl 32).
+1220250432
+
+// differences: 2666957319 and 1628009977. strange, it is not 517238015  :(
+
+
+372> erlang:phash({{},{}},1 bsl 32).
+3
+
+373> erlang:phash({{},a},1 bsl 32). 
+268840046
+374> erlang:phash({{},b},1 bsl 32).
+537279673
+375> erlang:phash({{},c},1 bsl 32).
+805719300
+376> erlang:phash({{},d},1 bsl 32).
+1074158927
+377> erlang:phash({{},e},1 bsl 32).
+1342598554
+
+// differences: 268439627 !
+
+
+
+initial hypothesis 2
+
+function H({X,Y},M) {
+	return (517238015*(H(X,M)-1) + 268439627*(H(Y,M)-1) + 2) % M;
+}
+
+**DOESNT WORK***
+
+try simpler:
+
+952> erlang:phash({'\000','\000'}, 1 bsl 32).
+3
+953> erlang:phash({'\000','\001'}, 1 bsl 32).
+268439630
+954> erlang:phash({'\000','\002'}, 1 bsl 32).
+536879257
+955> erlang:phash({'\000','\003'}, 1 bsl 32).
+805318884
+956> erlang:phash({'\000','\004'}, 1 bsl 32).
+1073758511
+
+// differences: 268439627
+
+957> erlang:phash({'\001','\000'}, 1 bsl 32).
+3777729284
+958> erlang:phash({'\001','\001'}, 1 bsl 32).
+4046168911
+959> erlang:phash({'\001','\002'}, 1 bsl 32).
+19641242
+960> erlang:phash({'\001','\003'}, 1 bsl 32).
+288080869
+
+
+961> erlang:phash({'\002','\000'}, 1 bsl 32).
+3260491269
+962> erlang:phash({'\002','\001'}, 1 bsl 32).
+3528930896
+963> erlang:phash({'\002','\002'}, 1 bsl 32).
+3797370523
+
+979> erlang:phash({'\003','\000'}, 1 bsl 32).
+2743253254
+
+
+// meta difference: 3777729284-3 = 3777729281
+
+thesis 3:
+
+function H({X,Y},M) {
+	return ( 3777729281 * (H(X)-1) + 268439627*(H(Y)-1) + 3 ) % M;
+}
+
+
+
+
+386> erlang:phash({{},{},{}},1 bsl 32).
+4
+387> erlang:phash({{},{},{},{}},1 bsl 32).
+5
+
+lets see
+
+984> erlang:phash({'\000','\000', '\000'}, 1 bsl 32).
+4
+985> erlang:phash({'\000','\000', '\001'}, 1 bsl 32).
+268439631
+986> erlang:phash({'\000','\000', '\002'}, 1 bsl 32).
+536879258
+
+// +1 like in {X,Y}
+
+988> erlang:phash({'\000','\000', '\000'}, 1 bsl 32).
+4
+989> erlang:phash({'\000','\001', '\000'}, 1 bsl 32).
+3777729285
+990> erlang:phash({'\000','\002', '\000'}, 1 bsl 32).
+3260491270
+
+// +1 like in {X,Y}
+
+991> erlang:phash({'\000','\000', '\000'}, 1 bsl 32).
+4
+992> erlang:phash({'\001','\000', '\000'}, 1 bsl 32).
+875555687
+993> erlang:phash({'\002','\000', '\000'}, 1 bsl 32).
+1751111370
+
+
+// difference: 875555683
+
+thesis 4:
+
+function H({A,X,Y},M) {
+	return ( 875555683 * (H(A)-1) + 3777729281 * (H(X)-1) + 268439627*(H(Y)-1) + 4 ) % M;
+}
+
+// will test later, keep going
+
+995> erlang:phash({'\000', '\000','\000', '\000'}, 1 bsl 32).
+5
+996> erlang:phash({'\001', '\000','\000', '\000'}, 1 bsl 32).
+3172269390
+997> erlang:phash({'\002', '\000','\000', '\000'}, 1 bsl 32).
+2049571479
+
+
+// difference 3172269385
+
+
+thesis 5:
+
+function H({B,A,X,Y},M) {
+	return ( 3172269385 * (H(B)-1) + 875555683 * (H(A)-1) + 3777729281 * (H(X)-1) + 268439627*(H(Y)-1) + 5 ) % M;
+}
+
+
+// keep going
+
+999> erlang:phash({'\000', '\000', '\000','\000', '\000'}, 1 bsl 32).
+6
+1000> erlang:phash({'\001', '\000', '\000','\000', '\000'}, 1 bsl 32).
+686626113
+1001> erlang:phash({'\002', '\000', '\000','\000', '\000'}, 1 bsl 32).
+1373252220
+
+// difference 686626107
+
+// keep going
+
+1007> erlang:phash({'\000', '\000', '\000', '\000','\000', '\000'}, 1 bsl 32).
+7
+1008> erlang:phash({'\001', '\000', '\000', '\000','\000', '\000'}, 1 bsl 32).
+791501784
+1009> erlang:phash({'\002', '\000', '\000', '\000','\000', '\000'}, 1 bsl 32).
+1583003561
+
+// differences 791501777
+
+1012> erlang:phash({'\000', '\000', '\000', '\000', '\000','\000', '\000'}, 1 bsl 32).
+8
+1013> erlang:phash({'\001', '\000', '\000', '\000', '\000','\000', '\000'}, 1 bsl 32).
+2130654171
+1014> erlang:phash({'\002', '\000', '\000', '\000', '\000','\000', '\000'}, 1 bsl 32).
+4261308334
+
+// difference 2130654163
+
+any interesting pattern?
+lets see:
+x0   268439627
+x1   3777729281
+x2   875555683
+x3   3172269385
+
+x4   686626107
+x5   791501777
+x6   2130654163
+
+
+nothing interesting here, no constant difference
+
+it can be some kind of geometric progression.
+
+what is important. all this numbers are odd! (also tested to 40 elements)
+
+assume it some kind generator of the form
+
+(a*C0 + b) mod m
+
+3777729281 = (a*268439627 + b) % m
+875555683 = (a*3777729281 + b) % m
+3172269385 = (a*875555683 + b) % m
+
+solve.
+
+assume m = 2^32.
+
+then inverse of 3777729281 is 2319281409
+and inverse of 875555683 is 3428904523
+and inverse of 3172269385 is 270304505
+
+gives
+1 = ( 1724841803 a + 2319281409 b ) mod m
+1 = ( 1724841803 a + 3428904523 b ) mod m
+1 = ( 1724841803 a + 270304505 b ) mod m
+
+ // INTERESTING, why the same coefficient?
+ 2319281409*268439627 = 3428904523*3777729281 (mod m)
+  622587036339994443L = 12953473018290437963L (mod m)
+  1724841803 = 1724841803
+
+which means:
+
+inverse(x_{n+1}, 2**32) * x_{n} = 1724841803   (mod m)
+
+thesis:
+
+x_{n} = 1724841803  * x_{n+1} (mod m) ??
+
+
+x0   268439627
+x1   3777729281
+x2   875555683
+x3   3172269385
+
+x4   686626107
+x5   791501777
+x6   2130654163
+
+
+backward:
+
+2130654163*1724841803 = 791501777 (mod m)  YES!
+791501777*1724841803 = 686626107 (mod m)  YES!
+
+791501777*(1724841803**5) = 268439627 (mod m) EUREKA!
+
+rewrite this now into forward formula,
+inverse of 1724841803 is 268440163  ( and the second one is a prime number )
+                                    ( and gcd(268440163, 2^32) == 1 )
+
+
+x0 = 268439627
+
+x_{n+1} =  268440163 * x_n (mod m) ??
+
+Test:
+>>> 268439627*(268440163**1) % (2**32)
+3777729281L
+>>> 268439627*(268440163**2) % (2**32)
+875555683L
+>>> 268439627*(268440163**3) % (2**32)
+3172269385L
+>>> 268439627*(268440163**4) % (2**32)
+686626107L
+>>> 268439627*(268440163**5) % (2**32)
+791501777L
+>>> 268439627*(268440163**6) % (2**32)
+2130654163L
+
+Perfect! 
+
+thesis 6:
+
+function H(Tuple,M) {
+	var r = 0;
+	var c = 268439627;
+	for (var i = Tuple.arity(); i > 0; i--) {
+		r = (r + 1 + c*(H(Tuple.get(i), M)-1) % M;
+		c = (c*268440163 % M);
+	}
+	return (r + 1) % M;
+}
+
+
+
+============================== lists =================================
+
+6> catch erlang:phash([],1 bsl 32).
+2
+
+
+350> erlang:phash([a],1 bsl 32).
+2953390077
+351> erlang:phash([b],1 bsl 32).
+1342783506
+352> erlang:phash([c],1 bsl 32).
+4027144231
+353> erlang:phash([d],1 bsl 32).
+2416537660
+354> erlang:phash([e],1 bsl 32).
+805931089
+
+
+21> erlang:phash({},1 bsl 32).
+1
+
+
+6> erlang:phash([],1 bsl 32).
+2
+8> erlang:phash([{}],1 bsl 32).
+268437512
+9> erlang:phash([{},{}],1 bsl 32).
+268437512
+10> erlang:phash([{},{},{}],1 bsl 32).
+268437512
+11> erlang:phash([{},{},{},{}],1 bsl 32).
+268437512
+
+
+INTERESTING!
+
+20> erlang:phash(0,1 bsl 32).
+1
+16> erlang:phash([0],1 bsl 32).
+268437512
+17> erlang:phash([0,0],1 bsl 32).
+268437512
+18> erlang:phash([0,0,0],1 bsl 32).
+268437512
+19> erlang:phash([0,0,0,0],1 bsl 32).
+268437512
+
+
+23> catch erlang:phash('\000',1 bsl 32).
+1
+24> catch erlang:phash('\001',1 bsl 32).
+2
+
+26> erlang:phash(['\000'],1 bsl 32).
+268437512
+27> erlang:phash(['\001'],1 bsl 32).
+2952798237
+28> erlang:phash(['\002'],1 bsl 32).
+1342191666
+
+29> erlang:phash(['\000','\000'],1 bsl 32).
+268437512
+30> erlang:phash(['\000','\001'],1 bsl 32).
+2952798237
+31> erlang:phash(['\000','\002'],1 bsl 32).
+1342191666
+
+33> erlang:phash(['\000','\000','\000'],1 bsl 32).
+268437512
+34> erlang:phash(['\000','\000','\001'],1 bsl 32).
+2952798237
+35> erlang:phash(['\000','\000','\002'],1 bsl 32).
+1342191666
+
+// differences: 2684360725.
+
+Thesis:
+
+head is used only using H(Head,M)-1 term.
+
+43> erlang:phash([],1 bsl 32).
+2
+
+
+39> erlang:phash(['\000'|'\000'],1 bsl 32).
+1
+40> erlang:phash(['\000'|'\001'],1 bsl 32).
+268437512
+41> erlang:phash(['\000'|'\002'],1 bsl 32).
+536875023
+42> erlang:phash(['\000'|'\003'],1 bsl 32).
+805312534
+
+// differences: 268437511
+
+44> erlang:phash(['\001'|'\000'],1 bsl 32).
+2694027446
+45> erlang:phash(['\001'|'\001'],1 bsl 32).
+2962464957
+46> erlang:phash(['\001'|'\002'],1 bsl 32).
+3230902468
+47> erlang:phash(['\001'|'\003'],1 bsl 32).
+3499339979
+
+// same differences 268437511
+
+
+52> erlang:phash([],1 bsl 32).
+2
+53> erlang:phash('\001',1 bsl 32).
+2
+
+54> erlang:phash([ala,'\001'],1 bsl 32).
+4214277660
+57> erlang:phash([ala|'\001'],1 bsl 32).
+3104849757
+55> erlang:phash([ala],1 bsl 32).
+3117132477
+56> erlang:phash([ala|[]],1 bsl 32).
+3117132477
+84> erlang:phash([ala|{{}}],1 bsl 32).
+1106140087
+
+
+Observation: even if tails [], '\001' and {{}} have the same hash,
+they are no so easly embeded in the resulting hash.
+
+96> erlang:phash(['\000'|'\003'],1 bsl 32).
+805312534
+68> erlang:phash([0|'\003'],1 bsl 32).  
+805312534
+69> erlang:phash([{}|'\003'],1 bsl 32).
+805312534
+
+74> erlang:phash([{{}}|'\003'],1 bsl 32).
+3499339979
+75> erlang:phash([[]|'\003'],1 bsl 32).
+3499339979
+77> erlang:phash(['\001'|'\003'],1 bsl 32).
+3499339979
+
+But for head it looks that it just works. So our previous thesis holds.
+
+
+100> erlang:phash(['\000'|0],1 bsl 32).
+1
+101> erlang:phash(['\001'|0],1 bsl 32).
+1687514870
+103> erlang:phash(['\002'|0],1 bsl 32).
+3375029739
+
+// difference 1687514869
+// hash(0) = 1
+
+106> erlang:phash(['\000'|{}],1 bsl 32).
+1
+107> erlang:phash(['\001'|{}],1 bsl 32).
+545442318
+108> erlang:phash(['\002'|{}],1 bsl 32).
+1090884635
+124> erlang:phash(['\003'|{}],1 bsl 32).  
+1636326952
+125> erlang:phash(['\004'|{}],1 bsl 32).
+2181769269
+
+// difference 545442317
+// hash({}) = 1
+
+131> erlang:phash(['\000'|'\000'],1 bsl 32).
+1
+132> erlang:phash(['\001'|'\000'],1 bsl 32).
+2694027446
+133> erlang:phash(['\002'|'\000'],1 bsl 32).
+1093087595
+134> erlang:phash(['\003'|'\000'],1 bsl 32).
+3787115040
+
+// difference 2694027445
+// hash('\000') = 1
+
+
+111> erlang:phash(['\000'|{{}}],1 bsl 32).
+268437512
+112> erlang:phash(['\001'|{{}}],1 bsl 32).
+2465335767
+113> erlang:phash(['\002'|{{}}],1 bsl 32).
+367266726
+118> erlang:phash(['\003'|{{}}],1 bsl 32).
+2564164981
+121> erlang:phash(['\004'|{{}}],1 bsl 32).
+466095940
+122> erlang:phash(['\005'|{{}}],1 bsl 32). 
+2662994195
+
+// difference 2196898255
+// hash({{}}) = 2
+
+138> erlang:phash(['\000'|'\001'],1 bsl 32).
+268437512
+139> erlang:phash(['\001'|'\001'],1 bsl 32).
+2962464957
+140> erlang:phash(['\002'|'\001'],1 bsl 32).
+1361525106
+141> erlang:phash(['\003'|'\001'],1 bsl 32).
+4055552551
+
+// difference 2694027445
+// hash('\001') = 2
+
+This mean probably one, that hash for lists isn't computed from head's and tail's hashes.
+This probably mean that algorithms calculates heads hash, combine with accumulator,
+and go to the next head.
+
+Lets se here again at something we already computed:
+
+111> erlang:phash(['\000'|{{}}],1 bsl 32).
+268437512
+138> erlang:phash(['\000'|'\001'],1 bsl 32).
+268437512
+154> erlang:phash(['\000'|[]],1 bsl 32).
+268437512
+157> erlang:phash(['\000','\000'|[]],1 bsl 32).
+268437512
+158> erlang:phash(['\000','\000','\000'|[]],1 bsl 32).
+268437512
+159> erlang:phash(['\000','\000','\000'|'\001'],1 bsl 32).
+268437512
+160> erlang:phash(['\000','\000','\000'|{{}}],1 bsl 32).  
+268437512
+
+
+149> erlang:phash(['\000'|0],1 bsl 32).
+1
+151> erlang:phash(['\000'|{}],1 bsl 32).
+1
+152> erlang:phash(['\000'|'\000'],1 bsl 32).
+1
+161> erlang:phash(['\000','\000','\000'|0],1 bsl 32).
+1
+162> erlang:phash(['\000','\000','\000'|{}],1 bsl 32).
+1
+
+but
+
+and other:
+145> erlang:phash(['\001'|{{}}],1 bsl 32).  
+2465335767
+146> erlang:phash(['\001'|'\001'],1 bsl 32).
+2962464957
+
+and one other
+101> erlang:phash(['\001'|0],1 bsl 32).
+1687514870
+107> erlang:phash(['\001'|{}],1 bsl 32).
+545442318
+132> erlang:phash(['\001'|'\000'],1 bsl 32).
+2694027446
+
+
+we can see here that it probably also modifies way in which next head's hash is computed.
+Eventually it can be becuause improper lists are handled in some strange way.
+
+Ok, lets see at this result with hash=1
+
+162> erlang:phash(['\000','\000','\000'|{}],1 bsl 32).
+1
+163> erlang:phash(['\001','\000','\000'|{}],1 bsl 32).
+480937910
+165> erlang:phash(['\000','\001','\000'|{}],1 bsl 32). 
+2496204040
+164> erlang:phash(['\001','\000'|{}],1 bsl 32).
+2496204040
+166> erlang:phash(['\000','\002','\000'|{}],1 bsl 32).
+697440783
+167> erlang:phash(['\002','\000'|{}],1 bsl 32).
+697440783
+168> erlang:phash(['\003','\000'|{}],1 bsl 32).
+3193644822
+169> erlang:phash(['\004','\000'|{}],1 bsl 32).
+1394881565
+
+// dufferences 1798763257
+
