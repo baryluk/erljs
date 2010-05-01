@@ -13,5 +13,7 @@ var all_modules = [
 	["gb_trees", module_gb_trees],
 	["gb_sets", module_gb_sets],
 	["example", module_example],
+
+	["tests_auto", module_tests_auto],
 ];
 
