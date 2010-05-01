@@ -71,7 +71,7 @@ process({ok, Line0}, File, Code, LineNo, Aux = {Modulename, FileErl, FileJS}) ->
 					io:format(FileJS, "d2(\"~s\", \"~s\");~n", [Line, lists:flatten(io_lib:write(Value))]);
 				call ->
 					% simple function calls
-					file:write(FileJS, ["\teq(\"", Line, "\",\n\t\t",
+					file:write(FileJS, ["\teq(", io_lib:write_string(Line), ",\n\t\t",
 						io_lib:write_string(lists:flatten(io_lib:print(Value,1,1000000000000,-1))), ");\n"])
 			end,
 			[{Line, Value}|Code]
