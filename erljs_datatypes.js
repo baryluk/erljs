@@ -405,6 +405,8 @@ function lnotxor(a,b){return !a == !b;}
 // TODO: make it slighlty smaller (now it have 38 branches), or divide into few smaller functions.
 function get_next(s,i,existing) {
 	var m;
+decode_again:
+while (true) {
 	switch (s[i++]) {
 		case "{":
 			if (s[i] == "}") return [new ETuple(0),i+1];
@@ -511,7 +513,7 @@ list_loop:
 				if (!m || m.index!=i) { throw "bad syntax in atom at "+i; }
 				// TODO: perform actuall unescaping.
 				// TODO: is_existing_atom?
-				//if (existing) {
+				//if (existing)
 				return [new EAtom(m[1]), rA.lastIndex];
 
 		default:
@@ -523,7 +525,7 @@ list_loop:
 				if (!m || m.index!=i) { throw "internal error 7 at "+i; }
 				if (/^try|fun|catch|end|begin|if|case$/.test(m[1])) { throw "reserved keyword at "+i; }
 				// TODO: is_existing_atom?
-				//if (existing) {
+				//if (existing)
 				return [new EAtom(m[1]), ra.lastIndex];
 			}
 			if (/^[0-9\-+]$/.test(s[i])) {
@@ -596,8 +598,16 @@ list_loop:
 */
 			}
 
+			if (/^[ \t\n\r]$/.test(s[i])) {
+				i++;
+				continue decode_again;
+			}
+
 			throw "syntax error (unknown character) at "+i;
-	}
+	} // switch
+
+throw "internal error 11";
+}  // while (true);
 }
 
 // reserved atoms: try, fun, catch, end, begin, if, case
