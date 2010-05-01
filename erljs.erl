@@ -121,7 +121,78 @@ c(Mod, Opts) ->
 					Count > 0 -> file:write(File, [$,, ?CRLF]);
 					true -> ok
 				end,
-				ok = file:write(File, json_simple:encode(F)),
+				%io:format("Function: ~p~n", [F]),
+				case F of
+					{function,FunctionName,FunctionArity,FunctionEntryPoint,Instructions} when is_list(Instructions) ->
+						ok = file:write(File, "[\"function\",\""++atom_to_list(FunctionName)++"\","++integer_to_list(FunctionArity)
+												++","++integer_to_list(FunctionEntryPoint)++",["++[?CRLF, ?TAB]),
+						%ok = file:write(File, [?CRLF, ?TAB]),
+						lists:foldl(fun (Inst, Number) ->
+							InstFiltered = case Inst of
+								% not needed
+								{allocate,_,_} -> [];
+								{allocate_zero,_,_} -> [];
+								{allocate_heap,_,_,_} -> [];
+								{allocate_heap_zero,_,_,_} -> [];
+								{deallocate,_} -> [];
+								{test_heap,_,_} -> [];
+
+								% fix literals encoding
+								{move, {literal, X}, RR} ->
+									{m, {literal, lists:flatten(io_lib:write(X))}, RR};
+								{put, {literal, X}} ->
+									{'P', {literal, lists:flatten(io_lib:write(X))}};
+								{test, T1, T2, [T3, {literal, X}]} ->
+									{t, T1, T2, [T3, {literal, lists:flatten(io_lib:write(X))}]};
+								{put_list, T1, {literal, X}, T3} ->
+									{p, T1, {literal, lists:flatten(io_lib:write(X))}, T3};
+
+								% shorter opcodes for common things:
+								{call_only, T1, T2} ->
+									{c, T1, T2};
+								{call, T1, T2} ->
+									{'C', T1, T2};
+								{label, L} ->
+									{l, L};
+								return ->
+									r;
+
+								{move, T1, T2} ->
+									{m, T1, T2};
+								{test, T1, T2, T3} ->
+									{t, T1, T2, T3};
+								{gc_bif, T1, T2, T3, T4, T5} ->
+									{'G', T1, T2, T3, T4, T5};
+
+								{get_list, T1, T2, T3} ->
+									{g, T1, T2, T3};
+								{put_list, T1, T2, T3} ->
+									{p, T1, T2, T3};
+
+								{put, T1} ->
+									{'P', T1};
+
+								% warning letters used above are not the same as bellow!!
+
+								_ ->
+									Inst
+							end,
+							case InstFiltered of
+								[] ->
+									Number;
+								_ ->
+									TextEncoded = json_simple:encode(InstFiltered),
+									ok = if
+										Number > 1 -> file:write(File, [$,]);
+										true -> ok
+									end,
+									file:write(File, TextEncoded),
+									Number+1
+							end
+						end, 1, Instructions),
+						ok = file:write(File, "]]")
+				end,
+				%ok = file:write(File, json_simple:encode(F)),
 				%file:write(File, io_lib:print(F,4,132,-1)),
 				%ok=file:write(File, io_lib:write(F)),
 				%ok=file:write(File, io_lib:write(lists:flatten(cf(F)))),
@@ -296,3 +367,12 @@ cfi(timeout) ->
 %
 %eval_loop(Code, {Module, Function, Label, IP}, Tid, Stack) ->
 %	ok.
+
+
+eval(X) ->
+	throw (callable_only_at_client_side).
+
+alert(X) ->
+	throw (callable_only_at_client_side).
+
+
