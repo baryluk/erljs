@@ -30,6 +30,17 @@ are licensed according to their license and are not part of this project.
 The patches which implements missing functionality (which wasn't there,
 even in comments), is part of this project.
 
+No part of this project which implementes some Erlang
+funcionality in the JavaScript or in compiler by rewriting
+to special bytecode, JavaScript, recompilation or interpretation,
+have been writen using more than just erlang documentation
+(manual pages) and the observing behaiour of Erlang.
+This include even obscure opcodes like trim, or hard functions
+like erlang:phash/2, erlang:term_to_binary/1 and others.
+All of them have been reversed enginered without looking
+at any Erlang or C source files of Erlang/OTP project.
+
+
 Hopefully when this project gets shape I will release it using
 some more free licencse.
 
