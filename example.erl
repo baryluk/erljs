@@ -263,7 +263,13 @@ maly_bbbbb2(L,N) ->
 	{B,B2}.
 
 jss(N) ->
-	erljs:eval("alert('kuku')").
+	erljs:eval("alert(4)").
+
+jss2(N) ->
+	erljs:alert(10031*N).
+
+jss3(N) ->
+	erljs:alert(N).
 
 hhh(L) ->
 	[H|T] = L,
@@ -400,6 +406,12 @@ random(0, _, L) -> L;
 %random(N, S, L) -> random(N-1, (S*S*17263876+1237611) rem 871263761, [S|L]).
 random(N, S, L) -> random(N-1, (S*1713+137) rem 8711, [S|L]).
 
+rf(N) ->
+	[ random:uniform() || _ <- lists:seq(1, N) ].
+
+ri(N,Max) ->
+	[ random:uniform(Max) || _ <- lists:seq(1, N) ].
+
 dd9(N) ->
 	random(N).
 
@@ -457,4 +469,37 @@ l3(K,N) ->
 	L = dd9(N),
 	A = [ {K*X,Y} || X <- L, Y <- dd9(X rem 4+1) ],
 	{A}.
+
+
+me() ->
+	A = self(),
+	{its_me,A}.
+
+
+cross({V10,V11,V12}, {V20,V21,V22})
+      when is_float(V10), is_float(V11), is_float(V12),
+           is_float(V20), is_float(V21), is_float(V22) ->
+      {V11*V22-V12*V21,V12*V20-V10*V22,V10*V21-V11*V20}.
+
+cross2({V10,V11,V12}, {V20,V21,V22}) ->
+      {V11*V22-V12*V21,V12*V20-V10*V22,V10*V21-V11*V20}.
+
+cross3({V10,V11,V12}, {V20,V21,V22})
+      when is_integer(V10), is_integer(V11), is_integer(V12),
+           is_integer(V20), is_integer(V21), is_integer(V22) ->
+      {V11*V22-V12*V21,V12*V20-V10*V22,V10*V21-V11*V20}.
+
+oo1(X) when is_integer(X) ->
+	true;
+oo1(_) ->
+	false.
+
+oo2(X) ->
+	is_integer(X).
+
+oo3(X) ->
+	erlang:is_integer(X).
+
+hasz1(X) ->
+	erlang:phash(X, 1 bsl 32).
 
