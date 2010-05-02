@@ -1,5 +1,3 @@
-% TODO: handle white spaces inside parameters, or ignore in get_next in JS
-
 	example:sum1(333).
 	example:sum2(333,1000000).
 	example:ntka(333,1000000).
