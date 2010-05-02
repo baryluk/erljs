@@ -976,7 +976,8 @@ mainloop:
 				switch (NA) {
 				case "eval/1":
 					var k = Regs[0].toString();
-					var T=eval(k);
+					var T = eval(k); // first one can be changed to fromJSON
+					T = eval(T);
 					if (T!==undefined) Regs[0] = T; else Regs[0] = 0;
 					break;
 				case "alert/1":

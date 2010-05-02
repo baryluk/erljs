@@ -263,6 +263,9 @@ maly_bbbbb2(L,N) ->
 	{B,B2}.
 
 jss(N) ->
+	erljs:eval(N).
+
+jss1(N) ->
 	erljs:eval("alert(4)").
 
 jss2(N) ->
