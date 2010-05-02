@@ -48,6 +48,8 @@
 	%example:jss2(33).
 	%example:jss3([23,ab,{34,55}]).
 
+begin A=(0.4+9.99+3.14), B=A-13.5, C=A-13.53, {A,B,C} end.
+
 % TODO: tests expection handling of improper lists and bad or incorrect arguments
 
 % lists
