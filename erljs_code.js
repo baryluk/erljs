@@ -12,6 +12,7 @@ var all_modules = [
 	["sets", module_sets],
 	["gb_trees", module_gb_trees],
 	["gb_sets", module_gb_sets],
+	["regexp", module_regexp],
 	["example", module_example],
 
 	["tests_auto", module_tests_auto],

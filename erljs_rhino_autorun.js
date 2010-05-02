@@ -17,6 +17,7 @@ load("erljs_code/proplists.beam.js");
 load("erljs_code/sets.beam.js");
 load("erljs_code/gb_trees.beam.js");
 load("erljs_code/gb_sets.beam.js");
+load("erljs_code/regexp.beam.js");
 
 // digraph // need lists, ets, queue
 // sofs // needs lists, digraph

@@ -31,6 +31,7 @@ ca(Opts) ->
 		sets,
 		gb_trees,
 		gb_sets,
+		regexp,
 		example
 	],
 	cl(L,Opts).
