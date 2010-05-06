@@ -158,7 +158,7 @@ var str_esc = {
 	13: "\\r", // \r
 	11: "\\v", // \v
 	12: "\\f", // \f
-	27: "\\e", // \e
+	27: "\\e", // \e - ASCII 27
 	34: "\\\"" // "
 };
 
@@ -290,9 +290,28 @@ var EListString = EListAny.extend({
 		}
 	},
 	// TODO: escape \n\t\b\r\v\f\e and other binary data to \001
-	toString: function() { return "\"" +this.S.substr(this.i).replace(/"/g, "\\\"")+ "\""; },
+	toString: function() {
+		return "\"" + this.toStringLimited();
+//		return this.S.substr(this.i).replace(/"/g, "\\\"")+ "\"";
+	},
 	toStringJust: function() { return "|\"" +this.S.substr(this.i).replace(/"/g, "\\\"")+ "\""; },
-	toStringLimited: function(l) { return this.S.substr(this.i).replace(/"/g, "\\\"")+ "\""; },
+	toStringLimited: function(l) {
+		return this.S.substr(this.i).replace(/([\\\b\t\n\r\v\f\33"])/g,
+			// " // <- workaround for stupid syntax highlighting
+		function (str, submatch1, offset, totalstring) {
+			return {
+				"\\": "\\\\",
+				"\b": "\\b",
+				"\t": "\\t",
+				"\n": "\\n",
+				"\r": "\\r",
+				"\v": "\\v",
+				"\f": "\\f",
+				/*"\e"*/ "\33": "\\e", // ASCII 27,   octal 33
+				"\"": "\\\""
+			}[submatch1];
+		})+ "\"";
+	},
 	length: function() { return this.S.length-this.i; },
 	isastring: function() { return this.length(); }
 });
@@ -488,17 +507,18 @@ list_loop:
 		case "\"": // list in the string form
 			i--;
 			// TODO: add | for tail notation: "asd"|"bce", but also "asd"|13, or "asd"|[3,6666,123,555]|"asdczx"
-			var rS = /"((?:[^"\\]|\\["'\\btnvfre ])*)"/ig;
+			var rS = /"((?:[^"\\]|\\["'\\btnvfre A-Z0-9a-wyz]|\\x[0-9a-fA-F][0-9a-fA-F])*)"/ig;
 			// '
 			rS.lastIndex = i;
 			m = rS.exec(s);
 			if (!m || m.index!=i) { throw "bad syntax in string at about "+i; }
-			// TODO: perform actuall unescaping
 			if (m[1].length==0) {
 				return [new EListNil(), rS.lastIndex];
 			} else {
-				var m1 = m[1].replace(/\\([\\btnrvfe])/g, function (str, submatch1, offset, totalstring) {
-					return {
+				// TODO: \o, \oo, \ooo, \xFF syntax
+				var m1 = m[1].replace(/\\(.)/g, function (str, submatch1, offset, totalstring) {
+					var esc = {
+						// "\"": "\"", // handled bellow
 						"\\": "\\",
 						"b": "\b",
 						"t": "\t",
@@ -506,8 +526,16 @@ list_loop:
 						"r": "\r",
 						"v": "\v",
 						"f": "\f",
-						"e": "\e"
+						"e": "\33" // String.fromCharCode(27)
 					}[submatch1];
+					if (esc) {
+						return esc;
+					} else {
+						if (submatch1 == "x") {
+							throw "hex in string not implemented";
+						}
+						return submatch1;
+					}
 				});
 				return [new EListString(m1,0), rS.lastIndex];
 			}

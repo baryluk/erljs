@@ -1,6 +1,29 @@
 	example:sum1(333).
 	example:sum2(333,1000000).
 	example:ntka(333,1000000).
+	example:ntka(10,[13,11]).
+	example:ntka(10, [97,115,100,2,97,115,100]).
+	example:ntka(10, [97,115,100,97,115,100]).
+	example:ntka(10, [97,115,100,44,97,115,100]).
+	example:ntka(10, [97,115,100,8,9,10,11,12,13,14,15,16,26,27,28,97,115,100]).
+	example:ntka(10, [97,115,100,8,9,10,11,12,13,27,97,115,100]).
+	example:ntka(10,"ala\\ma\\kota").
+	example:ntka(10,"ala\b\t\n\r\v\f\\\"ma").
+	example:ntka(10,"ala\ema").
+	example:ntka(10,"ala\wma").
+%	example:ntka(10,"ala\x00ma").
+%	example:ntka(10,"ala\x61ma").
+%	example:ntka(10,"ala\xafma").
+%	example:ntka(10,"ala\xffma").
+%	example:ntka(10,"ala\xfcma").
+%	example:ntka(10,"ala\xfc\x65ma").
+%	example:ntka(10,"ala\xfc\023ma").
+%	example:ntka(10,"ala\xfc\03ma").
+%	example:ntka(10,"ala\xfc\43ma").
+%	example:ntka(10,"ala\xfc\44\044ma").
+%	example:ntka(10,"ala\xfc\44\044ma").
+	example:ntka(10,"ala\nma\tkota\r\\a kot \w\f\g\a\ma ale \e\f\v\b\b\b\b").
+	example:ntka(10,"ala\nma\tkota\r\\\"a kot \w\f\g\a\ma ale \e\f\v\b\b\b\b").
 	example:tailowa(1000000).
 	example:nietailowa(1000000).
 	example:konwencje1('dupa','blada','masie').
@@ -75,6 +98,10 @@ erlang:'++'([1],[1,23,12,3123]).
 erlang:'++'([1],[1,23,12|3123]).
 erlang:'++'([],[1,23,12|3123]).
 erlang:'++'([41,2,312,3],[1,23,12|3123]).
+
+% printable ASCII
+lists:seq(32,126).
+
 
 lists:reverse([6|[1|[0|[]]]]).
 lists:reverse([6|[1|[0]]]).
