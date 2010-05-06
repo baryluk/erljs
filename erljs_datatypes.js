@@ -150,6 +150,18 @@ var ETuple = ETerm.extend({
 
 var EListAny = ETerm.extend({init: function() {}});
 
+var str_esc = {
+	92: "\\\\", // \
+	8: "\\b", // \b
+	9: "\\t", // \t
+	10: "\\n", // \n
+	13: "\\r", // \r
+	11: "\\v", // \v
+	12: "\\f", // \f
+	27: "\\e", // \e
+	34: "\\\"" // "
+};
+
 var EList = EListAny.extend({
 	init: function(Head_, Tail_) {
 	//this.H = Head_; this.T = Tail_;
@@ -201,10 +213,12 @@ var EList = EListAny.extend({
 		var r = "\"";
 		while (x instanceof EList) {
 			var i = x.head();
-			if (i == 92 || i == 34) { // \ or "
-				r += "\\";
+			var e = str_esc[i];
+			if (e) {
+				r += e;
+			} else {
+				r += String.fromCharCode(i);
 			}
-			r += String.fromCharCode(i);
 			x = x.tail();
 		}
 		r += x.toStringLimited(l);
@@ -218,7 +232,10 @@ var EList = EListAny.extend({
 	isastring: function() {
 		var h = this.head();
 		// TODO: make this function iterative
-		if (!(is_integer(h) && (32<=h) && (h<=126))) {
+		if (!is_integer(h)) {
+			return -1;
+		}
+		if (! ( ( (32<=h) && (h<=126) ) || str_esc[h])) {
 			return -1;
 		}
 		var l = this.tail().isastring();
@@ -480,7 +497,19 @@ list_loop:
 			if (m[1].length==0) {
 				return [new EListNil(), rS.lastIndex];
 			} else {
-				return [new EListString(m[1],0), rS.lastIndex];
+				var m1 = m[1].replace(/\\([\\btnrvfe])/g, function (str, submatch1, offset, totalstring) {
+					return {
+						"\\": "\\",
+						"b": "\b",
+						"t": "\t",
+						"n": "\n",
+						"r": "\r",
+						"v": "\v",
+						"f": "\f",
+						"e": "\e"
+					}[submatch1];
+				});
+				return [new EListString(m1,0), rS.lastIndex];
 			}
 		case "'":
 				// allowed char:   a-z A-Z 0-9 - ` ~ ! @ # $ % ^ & * ( ) _ = - + [ ] { } ; \ : " | , . / < > ? SPACE
@@ -501,9 +530,9 @@ list_loop:
 				//  '			'  (yes with REAL TABS there is correct atom equivalent to '\t\t\t'
 				// TODO: can be use [\w`~!@....] as shortcut to [a-zA-Z_0-9`~!@...] ?
 				i--;
-				//var rA = /'((?:[a-zA-Z_0-9`~!@#\$%^&*()\-+=\[\]{}();:"|,./?<> ]|\\["'\\btnvfre])*)'/g;
+				//var rA = /'((?:[a-zA-Z_0-9`~!@#\$%^&*()\-+=\[\]{}();:"|,./?<> ]|\\["'\\btnrvfe])*)'/g;
 				// ' // - to fix stupid highlighting
-				var rA = /'((?:[a-zA-Z_0-9`~!@#\$%^&*()\-+=\[\]{}();:"|,./?<> ]|\\["'\\btnvfre ]|\\[a-wyzA-Z]|\\x[0-9a-fA-F]{2,2}|\\[0-3]?[0-7][0-7]?(?![0-7]))*)'/g;
+				var rA = /'((?:[a-zA-Z_0-9`~!@#\$%^&*()\-+=\[\]{}();:"|,./?<> ]|\\["'\\btnrvfe ]|\\[a-wyzA-Z]|\\x[0-9a-fA-F]{2,2}|\\[0-3]?[0-7][0-7]?(?![0-7]))*)'/g;
 				// ' // - to fix stupid highlighting
 				// (?:  ) means "non capturing group" (we don not need it). 
 				// (?!  ) means "not followed by"
