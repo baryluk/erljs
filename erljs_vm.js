@@ -512,6 +512,7 @@ function erljs_vm_call_(Modules, StartFunctionSignature0, Args, MaxReductions, F
 if (LabelF[1] === 0) {
 		// special case in which we should throw error because of some invalide operation, like badarith.
 		//it should look like this:
+		erl_throw(eterm_decode("{'EXIT',{"+Reason+",[]}}"));
 /*
 		{'EXIT',{badarith,[
 					{erlang,'+',[1,a]},
@@ -551,6 +552,28 @@ if (LabelF[1] === 0) {
 		}
 	}
 	var assert = vm_assert;
+
+	function erl_throw(E) {
+		// now we need to traverse stack, up to the proper EH handler
+		// we can ignore stack trace for now
+		var X;
+		while (LocalEH[0] === undefined) {
+			X = Stack.pop();
+			LocalEH = X[5];
+		}
+// part of return opcode
+		ThisFunctionSignature = X[0];
+		ThisFunctionCode = X[1];
+		//IP = X[2];
+		ThisModuleName = X[3];
+		LocalRegs = X[4];
+		//LocalEH = X[5];
+		ThisLabels = Labels[ThisModuleName];
+
+		LocalRegs[LocalEH[0][0]] = E;
+		IP = LocalEH[0][1];
+		// TODO: assert that IP is in the same function
+	}
 
 	// execution loop
 	// TODO: optimalise it by:
@@ -668,7 +691,7 @@ mainloop:
 			case "is_atom":
 				//assert(OC[3].length == 1);
 				var Arg = get_arg(OC[3][0]);
-				if (!is_atom(Arg)) { // TODO: this should be more specific.
+				if (!is_atom(Arg)) {
 					jumpf(OC[2]);
 				}
 				break;
@@ -720,6 +743,13 @@ mainloop:
 				//assert(OC[3].length == 1);
 				var Arg = get_arg(OC[3][0]);
 				if (!(Arg instanceof EListNil)) {
+					jumpf(OC[2]);
+				}
+				break;
+			case "is_function2":
+				var Arg1 = get_arg(OC[3][0]);
+				var Arg2 = get_arg(OC[3][0]);
+				if (!(Arg1 instanceof EFun && Arg1.fun_arity() === Arg2)) {
 					jumpf(OC[2]);
 				}
 				break;
@@ -957,6 +987,11 @@ mainloop:
 			// but it doesn't eat memoery!
 
 */
+	case "call_fun":
+			uns(OC);
+			break;
+
+
 
 	case "apply_last": // to robi compilator jesli zna ilosc argumentow za wczasu.
 	case "apply":
@@ -1210,27 +1245,7 @@ mainloop:
 					return;
 
 				case "throw/1":
-					var E = Regs[0];
-					// now we need to traverse stack, up to the proper EH handler
-					// we can ignore stack trace for now
-					var X;
-					while (LocalEH[0] === undefined) {
-						X = Stack.pop();
-						LocalEH = X[5];
-					}
-// part of return opcode
-				ThisFunctionSignature = X[0];
-				ThisFunctionCode = X[1];
-				//IP = X[2];
-				ThisModuleName = X[3];
-				LocalRegs = X[4];
-				//LocalEH = X[5];
-				ThisLabels = Labels[ThisModuleName];
-
-					LocalRegs[LocalEH[0][0]] = E;
-					IP = LocalEH[0][1];
-					// TODO: assert that IP is in the same function
-
+					erl_throw(Regs[0]);
 					break;
 
 				default:
@@ -1734,7 +1749,9 @@ mainloop:
 			for (var i = 0; i < NumberOfBindedVariables; i++) {
 				BindedVarValues[i] = Regs[i];
 			}
-			Regs[0] = new EFun(DstFunction, BindedVarValues);
+			var Arity = 1;
+			Regs[0] = new EFun(ThisModuleName, DstFunction, Arity, NumberOfBindedVariables, HereId, BindedVarValues, Self);
+
 			break;
 	case "jump":
 			jumpf(OC[1]); // i.e. proplists:expand/2
