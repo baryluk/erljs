@@ -81,7 +81,7 @@ var opcode_profiler = {};
 
 
 function uns(OC) {
-	throw "unknown opcode "+toJSON(OC);
+	throw "not yet supported opcode "+toJSON(OC);
 }
 
 function get_opcode(O) {
@@ -210,6 +210,9 @@ while(true) {
 						// TODO: handle EListString more effectivelly
 						if (A.empty() && B.empty()) {
 							return true;
+						}
+						if (A.empty() || B.empty()) {
+							return false;
 						}
 						if (!erljs_eq(A.head(), B.head(), strict)) {
 							return false;
@@ -426,6 +429,7 @@ function erljs_vm_call_(Modules, StartFunctionSignature0, Args, MaxReductions, F
 	var IP = 0; // pointer in current node
 	var Reductions = 0;
 	var LocalRegs = []; // unify Regs and LocalRegs into [2] array, and choose from them using 0 or 1 pointer.
+	var LocalEH = []; // local exception handlers (in this function)
 
 //	var FunctionsCode = {};
 //	var Labels = {};
@@ -485,7 +489,7 @@ function erljs_vm_call_(Modules, StartFunctionSignature0, Args, MaxReductions, F
 			case "literal": // {litera,Term} is some kind of complex (compile time constant) term in. [a,b,c]
 				return eterm_decode(What[1]);
 			default:
-				throw("what? "+What);
+				throw("what? "+ss(What));
 		}
 	}
 
@@ -498,13 +502,28 @@ function erljs_vm_call_(Modules, StartFunctionSignature0, Args, MaxReductions, F
 		//assert(LabelF.length == 2);
 		//assert(LabelF[0] == "f");
 		last_reason = "noreason";
+		assert(LabelF[1] != 0);
 		jump(LabelF[1]);
 	}
 	function jumpfr(LabelF,Reason) {
 		//assert(LabelF.length == 2);
 		//assert(LabelF[0] == "f");
 		last_reason = Reason;
+if (LabelF[1] === 0) {
+		// special case in which we should throw error because of some invalide operation, like badarith.
+		//it should look like this:
+/*
+		{'EXIT',{badarith,[
+					{erlang,'+',[1,a]},
+					F1.  // {M,F,A}
+					F2,  // {M,F,A}
+					F3   // {M,F,A}
+				]}}
+*/
+	throw "we do not support implicit exceptions yet";
+} else {
 		jump(LabelF[1]);
+}
 	}
 
 	// erlang:put/get
@@ -662,6 +681,12 @@ mainloop:
 			case "is_eq":
 				//assert(OC[3].length == 2);
 				if (!erljs_eq(get_arg(OC[3][0]), get_arg(OC[3][1]), false)) {
+					jumpf(OC[2]);
+				}
+				break;
+			case "is_ne_exact":
+				//assert(OC[3].length == 2);
+				if (erljs_eq(get_arg(OC[3][0]), get_arg(OC[3][1]), true)) {
 					jumpf(OC[2]);
 				}
 				break;
@@ -864,6 +889,7 @@ mainloop:
 				} else {
 					uns(OC);
 				}
+				break;
 			}
 			break;
 
@@ -876,9 +902,10 @@ mainloop:
 			switch (opcode0) {
 			case "C":
 			//case "call":
-				Stack.push([ThisFunctionSignature, ThisFunctionCode, IP, ThisModuleName, LocalRegs]);
+				Stack.push([ThisFunctionSignature, ThisFunctionCode, IP, ThisModuleName, LocalRegs, LocalEH]);
 				LocalRegs = [];
-			default:
+			default: // fall-throught
+				LocalEH = [];
 				assert(OC[2].length == 3);
 				var ModuleName = OC[2][0];
 				var Name = OC[2][1];
@@ -969,7 +996,7 @@ mainloop:
 				Arity = OC[2][3];
 			}
 			//debug("INS: "+toJSON(OC)+" "+ModuleName+" "+Name+" "+Arity);
-			function ni(OC) { debug("not imlepmented: "+ModuleName+":"+Name+"/"+Arity); uns(OC); }
+			function ni(OC) { debug("not imlepmented: "+ModuleName+":"+Name+"/"+Arity); uns(OC); throw "stoped execution"; }
 			// TODO: prepare hash table for this.
 			if (ModuleName == "erljs") {
 				var NA = Name+"/"+Arity;
@@ -1181,6 +1208,31 @@ mainloop:
 				case "halt/1":
 					alert("Halted.");
 					return;
+
+				case "throw/1":
+					var E = Regs[0];
+					// now we need to traverse stack, up to the proper EH handler
+					// we can ignore stack trace for now
+					var X;
+					while (LocalEH[0] === undefined) {
+						X = Stack.pop();
+						LocalEH = X[5];
+					}
+// part of return opcode
+				ThisFunctionSignature = X[0];
+				ThisFunctionCode = X[1];
+				//IP = X[2];
+				ThisModuleName = X[3];
+				LocalRegs = X[4];
+				//LocalEH = X[5];
+				ThisLabels = Labels[ThisModuleName];
+
+					LocalRegs[LocalEH[0][0]] = E;
+					IP = LocalEH[0][1];
+					// TODO: assert that IP is in the same function
+
+					break;
+
 				default:
 					throw "not implemented native function: "+ModuleName+":"+NA;
 					break;
@@ -1218,9 +1270,10 @@ mainloop:
 					switch (opcode0) {
 					case 'call_ext':
 					case 'call_lists':
-						Stack.push([ThisFunctionSignature, ThisFunctionCode, IP, ThisModuleName, LocalRegs]);
+						Stack.push([ThisFunctionSignature, ThisFunctionCode, IP, ThisModuleName, LocalRegs, LocalEH]);
 						LocalRegs = [];
 					default: // fallthrough
+						LocalEH = [];
 						var FunctionSignature = func_sig(ModuleName, Name, Arity);
 						// if no such function?
 						ThisFunctionCode = FunctionsCode[FunctionSignature];
@@ -1243,6 +1296,7 @@ mainloop:
 				IP = X[2];
 				ThisModuleName = X[3];
 				LocalRegs = X[4];
+				LocalEH = X[5];
 				ThisLabels = Labels[ThisModuleName];
 			} else {
 				return Regs[0];
@@ -1261,6 +1315,7 @@ mainloop:
 				IP = X[2];
 				ThisModuleName = X[3];
 				LocalRegs = X[4];
+				LocalEH = X[5];
 				ThisLabels = Labels[ThisModuleName];
 			} else {
 				return Regs[0];
@@ -1499,7 +1554,8 @@ mainloop:
 			var Arg = get_arg(OC[1]);
 			if (is_tuple(Arg)) {
 				var T = Arg.tuple_arity();
-				var C = get_arg(OC[3]); // raczej literalna lista w postaci: {list,[2,{f,81},3,{f,82}]}
+				var C = OC[3]; // raczej literalna lista w postaci: {list,[2,{f,81},3,{f,82}]}
+				// C = get_arg(C);
 				assert(C.length == 2);
 				assert(C[0] == "list");
 				var found = false;
@@ -1633,6 +1689,38 @@ mainloop:
 			Regs[put_tuple_register].put(put_tuple_i++, Arg);
 			// TODO: if next instruction is not put, then reset put_tuple_* variables. Or is this legal to intermix put and other instructions?
 			break;
+	case "catch":
+		opcode_test(OC, 'catch', 2);
+			assert(OC[1].length == 2);
+			assert(OC[1][0] == "y");
+			assert(OC[2].length == 2);
+			assert(OC[2][0] == "f");
+			LocalEH.push([ OC[1][1], OC[2][1] ]);
+			assert(LocalRegs[OC[1][1]] === undefined);
+			//LocalRegs[OC[1][1]] = undefined; // just to make sure
+
+			// TODO: assert that IP is in the same function
+
+			// TODO: check if at OC[2][1] there is catch_end
+			//     but probably it is leggal to not have catch_end immiedietly, for example in try.
+			// I think that OC[1][1] is where too put catched exception
+			break;
+	case "catch_end":
+		opcode_test(OC, 'catch_end', 1);
+			assert(OC[1].length == 2);
+			assert(OC[1][0] == "y");
+
+			// we can came here in two ways. by normal entry, or due to the exception.
+			// If there was normal entry, then OC[1][1] will be empty, and we do not need to do anything beyond removing EH
+			// other wise, move it to the x0
+			var V = LocalRegs[OC[1][1]];
+			if (V !== undefined) {
+				Regs[0] = V;
+			}
+			LocalEH.pop();
+
+			break;
+
 	case "make_fun2":
 		//opcode_test(OC, 'make_fun2', 4); // this make 'local' fun.
 			// the same version of the code that created the fun will be called (even if newer version  of  the  module  has been loaded).
@@ -1679,6 +1767,7 @@ mainloop:
 			//continue;
 			break;
 	default:
+			alert("unknown opcode "+OC);
 			uns(OC);
 			return;
 	} // switch (opcode0)
@@ -1688,13 +1777,14 @@ mainloop:
 
 } catch (err) {
 	Stack.push([ThisFunctionSignature, ThisFunctionCode, IP, ThisModuleName, LocalRegs]);
-	//debug("OC: "+toJSON(ThisFunctionCode[IP]));
+	debug("Last OC: "+toJSON(ThisFunctionCode[IP]));
 	debug("exception error: "+err+"");
 	for (var i = Stack.length-1; i >= 0; i--) {
 		var S = Stack[i];
 		debug((i==Stack.length-1 ? "in function " : "in call from ") + S[0] +" IP:" + S[2] );
 	}
-	throw err;
+	//throw err;
+	return "Error: "+err;
 }
 }
 
