@@ -178,7 +178,7 @@ lists:duplicate(5, xx).
 %lists:mapfoldl(fun(X, Sum) -> {2*X, X+Sum} end,  0, [1,2,3,4,5]).
 lists:nth(3, [a, b, c, d, e]).
 lists:nthtail(3, [a, b, c, d, e]).
-tl(tl(tl([a, b, c, d, e]))).
+begin tl(tl(tl([a, b, c, d, e]))) end.
 lists:nthtail(0, [a, b, c, d, e]).
 lists:nthtail(5, [a, b, c, d, e]).
 %lists:partition(fun(A) -> A rem 2 == 1 end, [1,2,3,4,5,6,7]).
