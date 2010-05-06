@@ -82,7 +82,7 @@ var EAtom = ETerm.extend({
 		var a = AllAtomsNamesFromInt[this.A];
 		// TODO: can be use [\w@] as shortcut to [a-zA-Z_0-9@] ?
 		                                         // reserved atoms. note: throw is not reserved!
-		if (/^[a-z][a-zA-Z_0-9@]*$/.test(a) && !(/^try|fun|catch|end|begin|if|case|when|(or|and)(also)?|b(or|and|xor|not|sr|sl)$/.test(a))) {
+		if (/^[a-z][a-zA-Z_0-9@]*$/.test(a) && !(/^try|fun|catch|end|begin|if|case|when|or(else)?|and(also)?|b(or|and|xor|not|sr|sl)$/.test(a))) {
 			return a;
 		//} else if (/^[a-z](\.[a-zA-Z_0-9@]+)*\.?$/.test(a)) { // we are allowed to display few other atoms directly (with single dots inside),
 		//	return a;                                          // but we will not as EVM doesnt do so.
@@ -523,7 +523,7 @@ list_loop:
 				ra.lastIndex = i;
 				m = ra.exec(s);
 				if (!m || m.index!=i) { throw "internal error 7 at "+i; }
-				if (/^try|fun|catch|end|begin|if|case$/.test(m[1])) { throw "reserved keyword at "+i; }
+				if (/^try|fun|catch|end|begin|if|case|when|or(else)?|and(also)?|b(or|and|xor|not|sr|sl)$/.test(m[1])) { throw "reserved keyword at "+i; }
 				// TODO: is_existing_atom?
 				//if (existing)
 				return [new EAtom(m[1]), ra.lastIndex];
