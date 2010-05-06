@@ -287,3 +287,13 @@ begin T=gb_trees:empty(), T2=gb_trees:from_orddict([{ala,123},{basia,123},{ela,5
 begin T=gb_trees:empty(), T2=gb_trees:from_orddict([{ala,123},{basia,123},{ela,512},{gosia,612},{jola,71},{kasia,123},{ola,21}]), T3=gb_trees:delete(kasia,T2) end.
 begin T=gb_trees:empty(), T2=gb_trees:from_orddict([{ala,123},{basia,123},{ela,512},{gosia,612},{jola,71},{kasia,123},{ola,21}]), T3=gb_trees:delete(kasia,T2), TR=gb_trees:delete(jola,T3) end.
 
+regexp:parse("joe").
+regexp:parse("(ala|adam|ewa|kasia|ewelina)").
+regexp:parse("(jo)?anna").
+regexp:parse("[a-z][0-9a-zA-Z_]*").
+regexp:parse("[A-Z_][0-9a-zA-Z_]*").
+regexp:parse("^([a-z][0-9a-zA-Z_]*|[A-Z_][0-9a-zA-Z_]*)").
+regexp:parse("(\\+|-)?[0-9]+\\.[0-9]+((E|e)(\\+|-)?[0-9]+)?").
+begin {ok,P} = regexp:parse("(jo)?an+a"), {regexp:match("joanna", P), regexp:match("joe", P), regexp:match("anna", P), regexp:match("joannnnna", P)} end.
+begin {ok,P} = regexp:parse("an+a"), regexp:matches("joanna dala janowia jana, a anna miela manna w wannach", P) end.
+
