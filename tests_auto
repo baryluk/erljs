@@ -32,8 +32,8 @@
 	example:konwencje4('dupa','blada','masie').
 	example:matche({1,1}).
 	example:matche(aaa).
-	%example:matche({aaa}).
-	%example:matche('a'). // throws exp
+	begin catch example:matche({aaa}) end.
+	begin catch example:matche('a') end.
 	example:silnia(20).
 	example:llll(20).
 
@@ -79,7 +79,7 @@ lists:seq(1,11).
 lists:seq(300,400).
 lists:seq(4,3).
 lists:seq(4,4).
-%lists:seq(10,8).  % bad func
+begin catch lists:seq(10,8) end.
 lists:seq(2,50,2).
 lists:seq(20,2,-2).
 lists:duplicate(9,4).
@@ -88,8 +88,8 @@ lists:duplicate(80,{a}).
 lists:duplicate(80,a).
 lists:seq(10,200,2).
 lists:seq(50,-50,-3).
-%lists:seq(1,14,0.137).
-%lists:seq(54,43,-0.461).
+begin catch lists:seq(1,14,0.137) end.
+begin catch lists:seq(54,43,-0.461) end.
 erlang:'++'([1,23,1,23,12],[12,3,12,31,2]).
 erlang:'++'([1,23,1,23,12],[]).
 erlang:'++'([],[1,23,12,3123]).
@@ -167,37 +167,62 @@ lists:flatlength([[3,1],[4,5]]).
 
 % begining of some examples from manual
 
+lists:append([], []).
+lists:append([1, 2, 3], []).
+lists:append([1, 2, 3], [a, b,c]).
+lists:append([1, 2, 3], [a, b|c]).
+lists:append([], [a, b,c]).
+lists:append([], [a, b|c]).
+lists:append([4], [a, b,c]).
+lists:append([4], [a, b|c]).
+lists:append([40,41,42],[51,52,53]).
 lists:append([[1, 2, 3], [a, b], [4, 5, 6]]).
 lists:append("abc", "def").
+lists:append("abc", "").
+lists:append("", "").
+lists:append("", "def").
+lists:append("", "d").
+lists:append("a", "").
+lists:append("a", "d").
+lists:append("a", [a,b,c]).
+lists:append("a", [a,b|c]).
+lists:append("", [a,b|c]).
+lists:append([], "def").
+lists:append([4], "d").
+lists:append([4], "").
+lists:append([4], "def").
+lists:append([66|"ad"]," cat").
 lists:concat([doc, '/', file, '.', 3]).
 lists:duplicate(5, xx). 
-%lists:flatmap(fun(X)->[X,X] end, [a,b,c]).
-%lists:foldl(fun(X, Sum) -> X + Sum end, 0, [1,2,3,4,5]).
-%lists:foldl(fun(X, Prod) -> X * Prod end, 1, [1,2,3,4,5]).
-%lists:keymap(fun(Atom) -> atom_to_list(Atom) end, 2, [{name,jane,22},{name,lizzie,20},{name,lydia,15}]).
-%lists:mapfoldl(fun(X, Sum) -> {2*X, X+Sum} end,  0, [1,2,3,4,5]).
+begin lists:flatmap(fun(X)->[X,X] end, [a,b,c]) end.
+begin lists:foldl(fun(X, Sum) -> X + Sum end, 0, [1,2,3,4,5]) end.
+begin lists:foldl(fun(X, Prod) -> X * Prod end, 1, [1,2,3,4,5]) end.
+begin lists:keymap(fun(Atom) -> atom_to_list(Atom) end, 2, [{name,jane,22},{name,lizzie,20},{name,lydia,15}]) end.
+% my addition
+begin lists:keymap(fun(Age) -> {age,Age} end, 3, [{name,jane,22},{name,lizzie,20},{name,lydia,15}]) end.
+begin lists:mapfoldl(fun(X, Sum) -> {2*X, X+Sum} end,  0, [1,2,3,4,5]) end.
 lists:nth(3, [a, b, c, d, e]).
 lists:nthtail(3, [a, b, c, d, e]).
 begin tl(tl(tl([a, b, c, d, e]))) end.
 lists:nthtail(0, [a, b, c, d, e]).
 lists:nthtail(5, [a, b, c, d, e]).
-%lists:partition(fun(A) -> A rem 2 == 1 end, [1,2,3,4,5,6,7]).
-%lists:partition(fun(A) -> is_atom(A) end, [a,b,1,c,d,2,3,4,e]).
+begin lists:partition(fun(A) -> A rem 2 == 1 end, [1,2,3,4,5,6,7]) end.
+begin lists:partition(fun(A) -> is_atom(A) end, [a,b,1,c,d,2,3,4,e]) end.
 lists:reverse([1, 2, 3, 4], [a, b, c]).
 lists:seq(1, 10).
 lists:seq(1, 20, 3).
 lists:seq(1, 0, 1).
 lists:seq(10, 6, 4).
 lists:seq(1, 1, 0).
-%lists:splitwith(fun(A) -> A rem 2 == 1 end, [1,2,3,4,5,6,7]).
-%lists:splitwith(fun(A) -> is_atom(A) end, [a,b,1,c,d,2,3,4,e]).
+begin lists:splitwith(fun(A) -> A rem 2 == 1 end, [1,2,3,4,5,6,7]) end.
+begin lists:splitwith(fun(A) -> is_atom(A) end, [a,b,1,c,d,2,3,4,e]) end.
 lists:sublist([1,2,3,4], 2, 2).
 lists:sublist([1,2,3,4], 2, 5).
 lists:sublist([1,2,3,4], 5, 2).
 lists:subtract("123212", "212").
-%lists:zipwith(fun(X, Y) -> X+Y end, [1,2,3], [4,5,6]). [5,7,9]
-%lists:zipwith3(fun(X, Y, Z) -> X+Y+Z end, [1,2,3], [4,5,6], [7,8,9]).
-%lists:zipwith3(fun(X, Y, Z) -> [X,Y,Z] end, [a,b,c], [x,y,z], [1,2,3]).
+begin lists:zipwith(fun(X, Y) -> X+Y end, [1,2,3], [4,5,6]) end.
+begin lists:zipwith3(fun(X, Y, Z) -> X+Y+Z end, [1,2,3], [4,5,6], [7,8,9]) end.
+begin lists:zipwith3(fun(X, Y, Z) -> [X,Y,Z] end, [a,b,c], [x,y,z], [1,2,3]) end.
 
 % end of examples from lists manual
 
