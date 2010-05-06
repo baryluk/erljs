@@ -55,6 +55,7 @@ process({ok, Line0}, File, Code, LineNo, Aux = {Modulename, FileErl, FileJS}) ->
 				[$m,$a,$t,$h,$:|_] -> wrapper;
 				[$b,$e,$g,$i,$n|_] -> wrapper;
 				[$(| _] -> term;
+				[Letter|_] when is_integer(Letter), $A =< Letter, Letter =< $Z -> wrapper;
 				_ -> call
 			end,
 			case Type of
