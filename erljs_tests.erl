@@ -53,7 +53,14 @@ process({ok, Line0}, File, Code, LineNo, Stats, Aux = {Modulename, FileErl, File
 			{ok, [AbstractExpression]} = erl_parse:parse_exprs(Tokens),
 			%io:format("parsed~n"),
 			Bindings = erl_eval:new_bindings(),
-			{value, Value, _NewBindings} = erl_eval:expr(AbstractExpression, Bindings),
+			{value, Value0, _NewBindings} = erl_eval:expr(AbstractExpression, Bindings),
+			% handled exception to only contain one element in stack trace
+			% TODO: discover automatically what amount of stack trace entries to keep
+			Value = case Value0 of
+				{'EXIT',{ExceptionReason,[ExceptionStackTraceFirst|_ExceptionStackTraceRest]}} ->
+					{'EXIT',{ExceptionReason,[ExceptionStackTraceFirst]}};
+				_ -> Value0
+			end,
 			%io:format("evalueted~n"),
 			%io:format("~p~n", [Value]),
 			Type = case Line of
