@@ -561,6 +561,7 @@ if (LabelF[1] === 0) {
 		var X;
 		while (LocalEH[0] === undefined) {
 			X = Stack.pop();
+			if (X === undefined) { throw E; }
 			LocalEH = X[5];
 		}
 // part of return opcode
