@@ -149,6 +149,7 @@ var ETuple = ETerm.extend({
 });
 
 var EListAny = ETerm.extend({init: function() {}});
+var EListNonEmpty = EListAny.extend({init: function() {}});
 
 var str_esc = {
 	92: "\\\\", // \
@@ -162,7 +163,7 @@ var str_esc = {
 	34: "\\\"" // "
 };
 
-var EList = EListAny.extend({
+var EList = EListNonEmpty.extend({
 	init: function(Head_, Tail_) {
 	//this.H = Head_; this.T = Tail_;
 	this._=[Head_,Tail_];
@@ -252,6 +253,10 @@ function list_len(t) {
 	}
 	if (t instanceof EListString) {
 		l += t.length();
+	} else if (t instanceof EListNil) {
+		;
+	} else {
+		throw "improper list";
 	}
 	return l;
 }
@@ -270,10 +275,16 @@ var EListNil = EListAny.extend({
 });
 
 // slightly more efficient representation and lazy tail
-var EListString = EListAny.extend({
-	init: function(S_, i_) { this.S = S_; this.i=i_; },
+var EListString = EListNonEmpty.extend({
+	init: function(S_, i_) {
+		assert(i_ < S_.length);
+		this.S = S_; this.i=i_;
+	},
 	type: function() { return "list"; },
 	is: function(T) { return T=="list"; },
+	// this.empty(), should be always false, because there is EListNil for empty list
+	// there is also no reason for EListString with empty string, EListNil is just fine.
+	// only real reason can be to have display "", and not [].
 	empty: function() { return this.S.length==this.i; },
 	head: function() { return this.S.charCodeAt(this.i); },
 	tail: function() {

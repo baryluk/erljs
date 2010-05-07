@@ -160,7 +160,8 @@ function erljs_vm_init(Modules) {
 
 function is_list(E) {
 	//return E instanceof ETerm && E.is("list");
-	return E instanceof EList || E instanceof EListNil || E instanceof EListString;
+	//return E instanceof EList || E instanceof EListNil || E instanceof EListString;
+	return E instanceof EListAny;
 }
 function is_atom(E) {
 	return E instanceof EAtom;
@@ -214,6 +215,7 @@ while(true) {
 						if (A.empty() || B.empty()) {
 							return false;
 						}
+						// TODO: make this tail recursive
 						if (!erljs_eq(A.head(), B.head(), strict)) {
 							return false;
 						}
@@ -735,7 +737,8 @@ mainloop:
 			case "is_nonempty_list":
 				//assert(OC[3].length == 1);
 				var Arg = get_arg(OC[3][0]);
-				if (!(Arg instanceof EList || Arg instanceof EListString)) {
+				//if (!(Arg instanceof EList || Arg instanceof EListString)) {
+				if (!(Arg instanceof EListNonEmpty)) {
 					jumpf(OC[2]);
 				}
 				break;
@@ -864,14 +867,13 @@ mainloop:
 					if (!is_list(Arg1)) {
 						jumpfr(OC[2],"badarg");
 					} else {
-						var l = 0;
-						while (Arg1 instanceof EList) {
-							l++;
-							Arg1 = Arg1.tail();
-							NativeReductions++;
+						try {
+							var l = list_len(Arg1);
+							NativeReductions += l;
+							V = l;
+						} catch (err) {
+							throw "badarg"; // Arg must be proper list
 						}
-						if (!(Arg1 instanceof EListNil)) throw "badarg"; // Arg must be proper list.
-						V = l;
 					}
 					break;
 				case "size":
@@ -1106,9 +1108,10 @@ mainloop:
 					if (!(is_list(Regs[0]) && is_list(Regs[1]))) throw "badarg";
 					if (!Regs[1].empty()) {
 						if (!Regs[0].empty()) {
+							// TODO: add optimalisation for case when Regs[0] is EListString
 							var temp0 = new EList(-137,-138);
 							var temp = temp0;
-							while (Regs[0] instanceof EList) {
+							while (Regs[0] instanceof EListNonEmpty) {
 								temp.sethead(Regs[0].head());
 								var temp2 = new EList(-139,-142)
 								temp.settail(temp2);
@@ -1267,7 +1270,7 @@ mainloop:
 							//lists:reverse([],5)=5.
 							if (!Regs[0].empty()) {
 								var temp = new EList(-137,Regs[1]);
-								while (Regs[0] instanceof EList) {
+								while (Regs[0] instanceof EListNonEmpty) {
 									temp.sethead(Regs[0].head());
 									temp = new EList(-139,temp)
 									Regs[0] = Regs[0].tail();

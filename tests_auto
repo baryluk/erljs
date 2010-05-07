@@ -119,6 +119,25 @@ lists:reverse([12,3,123,15,19],[6,8,912,13,21]).
 lists:reverse([12,3,123,15,19],[6,1,2,7,1,9|0]).
 lists:reverse([19],[6,1,2,7,1,9|0]).
 lists:reverse([],[6,1,2,7,1,9|0]).
+lists:reverse("").
+lists:reverse("a").
+lists:reverse("ab").
+lists:reverse("abc").
+lists:reverse([88|"abc"]).
+lists:reverse([88,77|"abc"]).
+lists:reverse([88,77|""]).
+lists:reverse([88,77|"f"]).
+lists:reverse([88|""]).
+lists:reverse("","xyz").
+lists:reverse("a","xyz").
+lists:reverse("ab","xyz").
+lists:reverse("abc","xyz").
+lists:reverse([88|"abc"],"xyz").
+lists:reverse([88,77|"abc"],"xyz").
+lists:reverse([88,77|""],"xyz").
+lists:reverse([88,77|"f"],"xyz").
+lists:reverse([88|""],"xyz").
+
 
 erlang:length([]).
 erlang:length([1]).
@@ -127,6 +146,15 @@ erlang:length([[1],6]).
 erlang:length([[1],6]).
 erlang:length([4|[1]]).
 erlang:length([4|[1|[]]]).
+erlang:length("").
+erlang:length("a").
+erlang:length("ab").
+erlang:length("abc").
+erlang:length([88|"abc"]).
+erlang:length([88,77|"abc"]).
+erlang:length([88,77|""]).
+erlang:length([88,77|"f"]).
+erlang:length([88|""]).
 
 erlang:hd([3,4,5]).
 erlang:hd([3,4|5]).
@@ -139,11 +167,44 @@ erlang:tl([3]).
 erlang:tl([3,5]).
 erlang:tl([3|5]).
 
+catch erlang:hd([]).
+catch erlang:tl([]).
+% erlc is smart, and emits erlang:error/1 call for above on compile time. will try to prevent this:
+begin F=fun(X) -> erlang:hd(X) end, catch F([]) end.
+begin F=fun(X) -> erlang:tl(X) end, catch F([]) end.
+
+catch erlang:hd("").
+erlang:hd("a").
+erlang:hd("ab").
+erlang:hd("abc").
+erlang:hd([88|"abc"]).
+erlang:hd([88,77|"abc"]).
+erlang:hd([88,77|""]).
+erlang:hd([88,77|"f"]).
+erlang:hd([88|""]).
+catch erlang:tl("").
+erlang:tl("a").
+erlang:tl("ab").
+erlang:tl("abc").
+erlang:tl([88|"abc"]).
+erlang:tl([88,77|"abc"]).
+erlang:tl([88,77|""]).
+erlang:tl([88,77|"f"]).
+erlang:tl([88|""]).
+
+catch lists:nth(1,[]).
+catch lists:nth(1,"").
 lists:nth(4,[1,2,3,5,7,8,9,0]).
+catch lists:nth(100,[1,2,3,5,7,8,9,0]).
+catch lists:nth(-100,[1,2,3,5,7,8,9,0]).
 lists:nth(8,[a,b,c,d,e,f,g,h,i,j,k,l]).
 lists:nth(8,[a,b,c,d,e,f,g,h,i,j,k,l|m]).
 lists:nth(1,[a]).
 lists:nth(1,[a,b]).
+lists:nth(8,"ala ma duzo kotow").
+lists:nth(8,[a,l,a|"ma duzo kotow"]).
+catch lists:nth(100,"ala ma duzo kotow").
+catch lists:nth(100,[a,l,a|"ma duzo kotow"]).
 
 lists:nthtail(4,[1,2,3,5,7,8,9,0]).
 lists:nthtail(8,[a,b,c,d,e,f,g,h,i,j,k,l]).
@@ -192,6 +253,9 @@ lists:append([4], "d").
 lists:append([4], "").
 lists:append([4], "def").
 lists:append([66|"ad"]," cat").
+lists:append([66|"ad"],[" dog and"|" cat"]).
+lists:append([66|["ad"|[108|"y "]]],["dog and"|" cat"]).
+lists:append([66|["ad"|[108|"y "]]],["cat"|dot]).
 lists:concat([doc, '/', file, '.', 3]).
 lists:duplicate(5, xx). 
 begin lists:flatmap(fun(X)->[X,X] end, [a,b,c]) end.
