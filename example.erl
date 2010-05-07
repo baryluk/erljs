@@ -326,12 +326,12 @@ llll2(N) ->
 	{N,[]}.
 
 llll3(N,T) ->
-	L=lists:seq(N, N+1000),
+	L=lists:seq(N, N+20),
 	{lists:nthtail(T, L)}.
 
 llll_z(N) ->
-	L1=lists:seq(N, N+1000),
-	L2=lists:seq(N+310, N+1310),
+	L1=lists:seq(N, N+20),
+	L2=lists:seq(N+310, N+310+20),
 	{lists:zip(L1,L2)}.
 
 
