@@ -110,6 +110,8 @@ function unittest_stats() {
 	return {ok: _unittest_ok, fail: _unittest_fail};
 }
 
+var eq_hide_green = true;
+
 function eq(Input,Expected,OriginalCodeForWrapper) {
 	_unittest_fail++;
 	var failed = true;
@@ -132,20 +134,25 @@ function eq(Input,Expected,OriginalCodeForWrapper) {
 				debugh("Expected="+Expected);
 				debughfail(ShowAs + " not evaluated to expected " + Expected);
 				debughfail(ShowAs + " evaluated insted to " + Output);
+				debugh("<hr/>");
 			} else {
-				debughok(ShowAs + " evaluated to expected " + Expected);
+				if (!eq_hide_green) {
+					debughok(ShowAs + " evaluated to expected " + Expected);
+				}
 				_unittest_fail--;
 				_unittest_ok++;
 			}
 		} else {
-			debughok(ShowAs + " executed without error");
+			if (!eq_hide_green) {
+				debughok(ShowAs + " executed without error");
+			}
 			_unittest_fail--;
 			_unittest_ok++;
 		}
 	} else {
 		debughfail(ShowAs + " executed with exception");
+		debugh("<hr/>");
 	}
-//	debug("---");
 }
 
 
