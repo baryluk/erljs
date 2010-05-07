@@ -60,6 +60,7 @@ process({ok, Line0}, File, Code, LineNo, Stats, Aux = {Modulename, FileErl, File
 				[$e,$r,$l,$a,$n,$g,$:|_] -> wrapper;
 				[$m,$a,$t,$h,$:|_] -> wrapper;
 				[$b,$e,$g,$i,$n|_] -> wrapper;
+				[$c,$a,$t,$c,$h|_] -> wrapper;
 				[$(| _] -> term;
 				[Letter|_] when is_integer(Letter), $A =< Letter, Letter =< $Z -> wrapper;
 				_ -> call
@@ -73,7 +74,8 @@ process({ok, Line0}, File, Code, LineNo, Stats, Aux = {Modulename, FileErl, File
 						Line, "\n"]),
 					%io:format("eq(\"test_~w()\", \"~s\");~n", [LineNo, lists:flatten(io_lib:write(Value))]);
 					file:write(FileJS, ["\teq(\"", Modulename, ":test_", integer_to_list(LineNo) ,"()", "\",\n\t\t",
-						io_lib:write_string(lists:flatten(io_lib:print(Value,1,1000000000000,-1))), ");\n"]),
+						io_lib:write_string(lists:flatten(io_lib:print(Value,1,1000000000000,-1))), ",\n\t\t",
+						io_lib:write_string(Line), ");\n"]),
 					setelement(1, Stats, element(1, Stats)+1);
 				term ->
 					io:format(FileJS, "d2(\"~s\", \"~s\");~n", [Line, lists:flatten(io_lib:write(Value))]),

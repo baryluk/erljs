@@ -110,10 +110,11 @@ function unittest_stats() {
 	return {ok: _unittest_ok, fail: _unittest_fail};
 }
 
-function eq(Input,Expected) {
+function eq(Input,Expected,OriginalCodeForWrapper) {
 	_unittest_fail++;
-	var Output;
 	var failed = true;
+	var ShowAs = Input + (OriginalCodeForWrapper ? " (wrapper for "+OriginalCodeForWrapper +")" : "");
+	var Output;
 	try {
 		Output = erlgo(Input);
 		failed = false;
@@ -124,22 +125,25 @@ function eq(Input,Expected) {
 		if (Expected !== undefined) {
 			if (Output != Expected) {
 				debugh("Input  ="+Input);
+				if (OriginalCodeForWrapper) {
+				debugh("Code    ="+OriginalCodeForWrapper);
+				}
 				debugh("Output  ="+Output);
 				debugh("Expected="+Expected);
-				debughfail(Input + " not evaluated to expected " + Expected);
-				debughfail(Input + " evaluated insted to " + Output);
+				debughfail(ShowAs + " not evaluated to expected " + Expected);
+				debughfail(ShowAs + " evaluated insted to " + Output);
 			} else {
-				debughok(Input + " evaluated to expected " + Expected);
+				debughok(ShowAs + " evaluated to expected " + Expected);
 				_unittest_fail--;
 				_unittest_ok++;
 			}
 		} else {
-			debughok(Input + " executed without error");
+			debughok(ShowAs + " executed without error");
 			_unittest_fail--;
 			_unittest_ok++;
 		}
 	} else {
-		debughfail(Input + " executed with exception");
+		debughfail(ShowAs + " executed with exception");
 	}
 //	debug("---");
 }
