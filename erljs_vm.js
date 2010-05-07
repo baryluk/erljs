@@ -1797,8 +1797,8 @@ mainloop:
 	throw "internal_vm_error_break_at_mainloop";
 
 } catch (err) {
-	Stack.push([ThisFunctionSignature, ThisFunctionCode, IP, ThisModuleName, LocalRegs]);
-	debug("Last OC: "+toJSON(ThisFunctionCode[IP]));
+	Stack.push([ThisFunctionSignature, ThisFunctionCode, IP-1, ThisModuleName, LocalRegs]);
+	debug("Last OC: "+toJSON(OC));
 	debug("exception error: "+err+"");
 	for (var i = Stack.length-1; i >= 0; i--) {
 		var S = Stack[i];
