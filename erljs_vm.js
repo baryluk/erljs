@@ -538,6 +538,7 @@ if (LabelF[1] === 0) {
 	// tracing
 	var TracedModules = {};
 	//TracedModules["example"]=1;
+	//TracedModules["tests_auto"]=1;
 	//TracedModules["random"]=1;
 	//TracedModules["lists"]=1;
 
@@ -556,13 +557,17 @@ if (LabelF[1] === 0) {
 	var assert = vm_assert;
 
 	function erl_throw(E) {
+		// {'EXIT',{E,[{M,F,A},{M,F,A},...]}}.
 		// now we need to traverse stack, up to the proper EH handler
 		// we can ignore stack trace for now
 		var X;
 		while (LocalEH[0] === undefined) {
 			X = Stack.pop();
-			if (X === undefined) { throw E; }
+			if (X === undefined) { return E; }
 			LocalEH = X[5];
+		}
+		if (X === undefined) {
+			return E;
 		}
 // part of return opcode
 		ThisFunctionSignature = X[0];
@@ -574,8 +579,9 @@ if (LabelF[1] === 0) {
 		ThisLabels = Labels[ThisModuleName];
 
 		LocalRegs[LocalEH[0][0]] = E;
-		IP = LocalEH[0][1];
-		// TODO: assert that IP is in the same function
+		var L = ThisLabels[LocalEH[0][1]];
+		IP = L[1];
+		assert(L[0] == ThisFunctionSignature);
 	}
 
 	// execution loop
@@ -594,6 +600,10 @@ mainloop:
 	while (true) {
 
 	OC = ThisFunctionCode[IP];
+
+	if (OC === undefined) {
+		throw "internal_vm_error: No return at the end of function. Terminating.";
+	}
 
 	if (ThisModuleName in TracedModules) {
 	if (FullDebug >= 1) {
@@ -1773,7 +1783,11 @@ mainloop:
 	case "case_end":
 		//opcode_test(OC, 'case_end', 1);
 			var NotMatchedArg = OC[1];
-			throw "case_end";
+			assert(NotMatchedArg.length == 2);
+			assert(NotMatchedArg[0] == "x");
+			NotMatchedArg = get_arg(NotMatchedArg);
+			erl_throw(new ETuple([new EAtom("case_clause"), NotMatchedArg]));
+			break;
 	case "if_end":
 			throw "if_clause";
 	case "badmatch":
