@@ -556,6 +556,8 @@ if (LabelF[1] === 0) {
 	}
 	var assert = vm_assert;
 
+	NativeReductions = 0;
+
 	function erl_throw(E) {
 		// {'EXIT',{E,[{M,F,A},{M,F,A},...]}}.
 		// now we need to traverse stack, up to the proper EH handler
@@ -563,11 +565,12 @@ if (LabelF[1] === 0) {
 		var X;
 		while (LocalEH[0] === undefined) {
 			X = Stack.pop();
-			if (X === undefined) { return E; }
+			if (X === undefined) { throw E; }
 			LocalEH = X[5];
+			NativeReductions++;
 		}
 		if (X === undefined) {
-			return E;
+			throw E;
 		}
 // part of return opcode
 		ThisFunctionSignature = X[0];
@@ -592,8 +595,6 @@ if (LabelF[1] === 0) {
 	// Note: keep all identifiers (function names and variables) disriptive.
 	// They will be compressed automatically using compressor.
 	// TODO: preallocate some atomes: "true","false","undefined" and use the same ref everytime (saves time, memory, and space in code source)
-
-	NativeReductions = 0;
 try {
 
 mainloop:
@@ -636,11 +637,11 @@ mainloop:
 		document.getElementById("X2").value = toJSON(Regs[2]);
 	}
 
-	if (Reductions > MaxReductions) {
+	AllReductions = Reductions + NativeReductions;
+
+	if (AllReductions > MaxReductions) {
 		throw "too_many_reduction";
 	}
-
-	AllReductions = Reductions;
 
 	var opcode0 = OC[0];
 
@@ -1258,8 +1259,27 @@ mainloop:
 					alert("Halted.");
 					return;
 
+				case "error/2":
+					ni(OC);
+				case "error/1":
+					// call_ext
+					var Arguments = new EListNil();
+					var Reason = Regs[0];
+					var StackTrace = new EList(
+						new ETuple([]),
+						new EListNil()
+					);
+					Reason = new ETuple([Reason, StackTrace]);
+					erl_throw(new ETuple([new EAtom("EXIT"), Reason]));
+					break;
 				case "throw/1":
+					// TODO: support for call_ext_last and call_ext
 					erl_throw(Regs[0]);
+					break;
+
+				case "get_stacktrace/0":
+					// [{Module, Function, Arity | Args}]
+					ni(OC);
 					break;
 
 				default:
@@ -1749,6 +1769,28 @@ mainloop:
 			LocalEH.pop();
 
 			break;
+/*
+["l",310],
+	["try",["y",0],["f",311]],
+		["call_ext",1,["extfunc","lists","sum",1]],
+	["try_end",["y",0]],
+		...
+		"r",
+["l",311],
+	["try_case",["y",0]],
+		...
+		"r"
+]],
+*/
+	case "try":
+			uns(OC);
+			break;
+	case "try_end":
+			uns(OC);
+			break;
+	case "try_case":
+			uns(OC);
+			break;
 
 	case "make_fun2":
 		//opcode_test(OC, 'make_fun2', 4); // this make 'local' fun.
@@ -1786,17 +1828,49 @@ mainloop:
 			assert(NotMatchedArg.length == 2);
 			assert(NotMatchedArg[0] == "x");
 			NotMatchedArg = get_arg(NotMatchedArg);
-			erl_throw(new ETuple([new EAtom("case_clause"), NotMatchedArg]));
+			var Reason = new ETuple([new EAtom("case_clause"), NotMatchedArg]);
+			var StackTrace = new EList(
+				new ETuple([]),
+				new EListNil()
+			);
+			Reason = new ETuple([Reason, StackTrace]);
+			erl_throw(new ETuple([new EAtom("EXIT"), Reason]));
 			break;
 	case "if_end":
-			throw "if_clause";
+			var Reason = new EAtom("if_clause");
+			var StackTrace = new EList(
+				new ETuple([]),
+				new EListNil()
+			);
+			Reason = new ETuple([Reason, StackTrace]);
+			erl_throw(new ETuple([new EAtom("EXIT"), Reason]));
+			break;
 	case "badmatch":
 		//opcode_test(OC, 'badmatch', 1);
 			var NotMatchedArg = OC[1];
-			throw "badmatch";
+			assert(NotMatchedArg.length == 2);
+			assert(NotMatchedArg[0] == "x");
+			NotMatchedArg = get_arg(NotMatchedArg);
+			var Reason = new ETuple([new EAtom("badmatch"), NotMatchedArg]);
+			var StackTrace = new EList(
+				new ETuple([]),
+				new EListNil()
+			);
+			Reason = new ETuple([Reason, StackTrace]);
+			erl_throw(new ETuple([new EAtom("EXIT"), Reason]));
+			break;
 	case "func_info": // used by debuger and also when no clause found.
 		//opcode_test(OC, 'func_info', 3);
-			throw "error in "+OC + " at " +ThisFunctionSignature +" IP=" + IP + " last_reason="+last_reason;
+			// TODO: Convert args properly (in fact we will need to remember them)
+			var Arguments = new EListNil();
+			var Reason = new EAtom("function_clause");
+			var StackTrace = new EList(
+				new ETuple([get_arg(OC[1]), get_arg(OC[2]), Arguments]),
+				new EListNil()
+			);
+			Reason = new ETuple([Reason, StackTrace]);
+			erl_throw(new ETuple([new EAtom("EXIT"), Reason]));
+			break;
 	case "label": // labels are already registered in pre execution phase
 		//opcode_test(OC, 'label', 1);
 			//continue;
