@@ -506,3 +506,38 @@ oo3(X) ->
 hasz1(X) ->
 	erlang:phash(X, 1 bsl 32).
 
+
+
+eh1(X) ->
+	Y = lists:sum(X),
+	throw({Y,5}).
+eh2(X) ->
+	Y = lists:sum(X),
+	erlang:error({Y,5}).
+eh3(X) ->
+	Y = try lists:sum(X) of
+		V ->
+			{V,4}
+	catch
+		_:S ->
+			{s, S}
+	end.
+
+eh4(X) ->
+	Y = try lists:sum(X) of
+		V ->
+			{V,4}
+	catch
+		error:S ->
+			{s, S}
+	end.
+eh5(X) ->
+	Y = (catch lists:sum(X)),
+	{blad, Y}.
+
+eh6(X) ->
+	Y = (catch begin
+		ok = (catch lists:sum(X))
+	end),
+	{blad, Y}.
+
