@@ -514,6 +514,9 @@ eh1(X) ->
 eh2(X) ->
 	Y = lists:sum(X),
 	erlang:error({Y,5}).
+eh2b(X) ->
+	Y = lists:sum(X),
+	erlang:error({Y,5},[a,b,c]).
 eh3(X) ->
 	Y = try lists:sum(X) of
 		V ->
@@ -540,4 +543,66 @@ eh6(X) ->
 		ok = (catch lists:sum(X))
 	end),
 	{blad, Y}.
+
+eh7(X) ->
+	try
+		something:x(X)
+	catch
+		throw:Term -> Term;
+		exit:Reason -> {'EXIT', Reason};
+		error:Reason -> {'EXIT', {Reason, [{stack,trace,1}]}}
+	end.
+
+eh7c(X) ->
+	try
+		lists:sum(X)
+	catch
+		other:R -> {what, R}
+	end.
+
+eh7b(X) ->
+	try lists:sum(X) of
+		V ->
+			{V,4}
+	catch
+		error:S ->
+			{s, S}
+	after
+		pss
+	end.
+
+eh7b2(X,Y) ->
+	try lists:sum(X) of
+		V ->
+			{V,4}
+	catch
+		error:S ->
+			{s, S}
+	after
+		lists:sum(Y)
+	end.
+
+eh8(X,Y) ->
+	try lists:sum(X) of
+		Z when Z > 10 ->
+			{ok, Z}
+	after
+		lists:sum(Y)
+	end.
+
+eh9(X,Y) ->
+	try lists:sum(X)
+	catch
+		_:S ->
+			{some_kind_of_error, S}
+	after
+		lists:sum(Y)
+	end.
+
+eh10(X,Y) ->
+	try
+		lists:sum(X)
+	after
+		lists:sum(Y)
+	end.
 

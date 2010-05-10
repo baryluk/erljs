@@ -71,6 +71,61 @@
 
 begin A=(0.4+9.99+3.14), B=A-13.5, C=A-13.53, {A,B,C} end.
 
+catch example:eh1([9,66,12]).
+catch example:eh2([9,66,12]).
+catch example:eh2b([9,66,12]).
+example:eh3([9,66,12]).
+example:eh4([9,66,12]).
+example:eh5([9,66,12]).
+example:eh6([9,66,12]).
+example:eh7([9,66,12]).
+
+catch example:eh1(a).
+catch example:eh2(a).
+example:eh3(a).
+example:eh4(a).
+example:eh5(a).
+example:eh6(a).
+
+example:eh7(a).
+example:eh7c([9,66,12]).
+catch example:eh7c(a).
+catch example:eh7b(a).
+example:eh7b([9,66,12]).
+catch example:eh7b([9,66,12]).
+example:eh7b2([9,66,12],[6,7,8]).
+catch example:eh7b2([9,66,12],xyz).
+catch example:eh7b2(abc,xyz).
+example:eh7b2(abc,[6,7,8]).
+catch example:eh7b2(abc,[6,7,8]).
+
+example:eh8([9,66,12],[6,7,8]).
+catch example:eh8([9,66,12],xyz).
+catch example:eh8([1,2,3],[6,7,8]).
+catch example:eh8([1,2,3],xyz).
+catch example:eh8(abc,xyz).
+catch example:eh8(abc,[6,7,8]).
+catch example:eh8(abc,[6,7,8]).
+
+
+example:eh9([9,66,12],[6,7,8]).
+catch example:eh9([9,66,12],xyz).
+example:eh9([1,2,3],[6,7,8]).
+catch example:eh9([1,2,3],xyz).
+catch example:eh9(abc,xyz).
+example:eh9(abc,[6,7,8]).
+catch example:eh9(abc,[6,7,8]).
+
+
+example:eh10([9,66,12],[6,7,8]).
+catch example:eh10([9,66,12],[6,7,8]).
+catch example:eh10([9,66,12],xyz).
+catch example:eh10(abc,[6,7,8]).
+catch example:eh10(abc,[6,7,8]).
+catch example:eh10(abc,xyz).
+
+
+
 % TODO: tests expection handling of improper lists and bad or incorrect arguments
 
 % lists
