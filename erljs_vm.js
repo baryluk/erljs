@@ -1218,7 +1218,18 @@ mainloop:
 				//	Regs[0] = Regs[0].tuple_arity();
 
 
-				case "atom_to_list/1": ni(OC); break;
+				case "atom_to_list/1":
+					if (!is_atom(Regs[0])) {
+						throw "badarg";
+					}
+					var AtomName = Regs[0].atom_name();
+					if (AtomName.length > 0) {
+						Regs[0] = new EListString(AtomName);
+					} else {
+						Regs[0] = new EListNil();
+					}
+					break;
+
 				case "list_to_atom/1": ni(OC); break;
 				case "list_to_existing_atom/1": ni(OC); break;
 				case "list_to_integer/1": ni(OC); break;
