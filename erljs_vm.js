@@ -1464,7 +1464,8 @@ mainloop:
 	case "bif":
 		switch (OC[1]) {
 		case "hd": // like in erlang:hd/1
-			if (!(Regs[0] instanceof EList)) {
+			var Arg = get_arg(OC[3][0]);
+			if (!(Arg instanceof EListNonEmpty)) {
 				jumpfr(OC[2], "badarg");
 			} else {
 				assert(OC[4][0] == "x");
@@ -1472,7 +1473,8 @@ mainloop:
 			}
 			break;
 		case "tl": // like in erlang:tl/1
-			if (!(Regs[0] instanceof EList)) {
+			var Arg = get_arg(OC[3][0]);
+			if (!(Arg instanceof EListNonEmpty)) {
 				jumpfr(OC[2], "badarg");
 			} else {
 				assert(OC[4][0] == "x");
