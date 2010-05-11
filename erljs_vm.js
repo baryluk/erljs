@@ -1539,6 +1539,12 @@ mainloop:
 			var Arg = get_arg(OC[3][0]);
 			Regs[OC[4][1]] = (is_integer(Arg) ? Etrue : Efalse);
 			break;
+		case "is_atom": // direct call to is_atom or erlang:is_atom in the body of function
+			assert(OC[4][0] == "x");
+			assert(OC[3].length == 1);
+			var Arg = get_arg(OC[3][0]);
+			Regs[OC[4][1]] = (is_atom(Arg) ? Etrue : Efalse);
+			break;
 		default:
 			uns(OC);
 		}
