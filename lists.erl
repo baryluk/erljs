@@ -1,7 +1,3 @@
-%% /usr/lib/erlang/lib/stdlib-1.16.5/src/lists.erl
-
--module(lists).
-
 %%
 %% %CopyrightBegin%
 %% 
@@ -20,7 +16,7 @@
 %% 
 %% %CopyrightEnd%
 %%
-
+-module(lists).
 
 -compile([export_all]).
 
