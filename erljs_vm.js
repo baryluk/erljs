@@ -763,7 +763,7 @@ mainloop:
 				break;
 			case "is_function2":
 				var Arg1 = get_arg(OC[3][0]);
-				var Arg2 = get_arg(OC[3][0]);
+				var Arg2 = get_arg(OC[3][1]);
 				if (!(Arg1 instanceof EFun && Arg1.fun_arity() === Arg2)) {
 					jumpf(OC[2]);
 				}
