@@ -1208,7 +1208,7 @@ mainloop:
 // BUG erlang:fun_to_list(fun 's.d'.'d.h'/5) = "#Fun<s.d.d.h.5>". not very good way.
 // fortunetly there is no general list_to_fun (becuase of garabage collectin of env and lack of reference).
 
-					ni(OC);
+					Regs[0] = new EFunExternal(Regs[0], Regs[1], Regs[2]);
 					break;
 
 				case "put/2": // i.e. random:reseed
@@ -1843,8 +1843,9 @@ mainloop:
 			for (var i = 0; i < NumberOfBindedVariables; i++) {
 				BindedVarValues[i] = Regs[i];
 			}
-			var Arity = 1;
-			Regs[0] = new EFun(ThisModuleName, DstFunction, Arity, NumberOfBindedVariables, HereId, BindedVarValues, Self);
+			var FunArity = OC[1][2] - NumberOfBindedVariables;
+			var Uniq = Something; // This isn't exactly 'Uniq' element.
+			Regs[0] = new EFun(ThisModuleName, DstFunction, FunArity, NumberOfBindedVariables, HereId, BindedVarValues, Self, Uniq);
 
 			break;
 	case "jump":

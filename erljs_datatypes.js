@@ -329,24 +329,27 @@ var EListString = EListNonEmpty.extend({
 
 var EFun = ETerm.extend({
 	// module, fun name in module, fun arity (for call), env arity (for makeing), uniq id, binded values for make
-	init: function(M_, FunF_, FunA_, EnvA, ID_, Env_, Pid_) {
-		assert(Env_.length == EnvA);
+	init: function(M_, FunMFA_, FunA_, EnvA_, ID_, Env_, Pid_, Uniq_) {
+		assert(Env_.length == EnvA_);
+		assert(FunMFA_[2] == FunA_ + EnvA_);
 		this.M = M_;
 		// it is normally "-"+FunctionNameInWhichItIsDefined+"/"+ArityOfFunctionInWhichItIsDefined+"-fun-"+IndexNumberOfFunInThisFunction
-		this.FunF = FunF_;
+		this.FunMFA = FunMFA_;
 		// arity of fun. what is number of arguments needed to be provided be caller in call_fun?
 		this.FunA = FunA_;
 		// it is index of the fun as the funs in the whole module. runtime can store them in some separate table
 		this.ID = ID_;
 		// used to detect module reloading, and call proper (possibly old) module.
-		this.Uniq = "1";
+		this.Uniq = Uniq_;
 		// which pid created this fun (so it can reference it's data).
 		this.Pid = Pid_;
+		// additional variables for the fun function (binded already)
+		this.Env = Env_;
 	},
 	type: function() { return "fun"; },
 	is: function(T) { return T=="fun"; },
 	toString: function() {
-		return "#Fun<"+this.M+"."+this.Uniq+"."+this.ID+">"; // TODO, remember about dots in atoms!
+		return "#Fun<"+this.M+"."+this.ID+"."+this.Uniq+">"; // TODO, remember about dots in atoms!
 	},
 	// arity of function M:FunF whichi implements this fun. it have Env + actuall parameters.
 	function_arity: function() {
@@ -359,17 +362,21 @@ var EFun = ETerm.extend({
 	fun_type: function() { return "local"; }
 });
 var EFunExternal = EFun.extend({
-	init: function(M_,F_,A_) { this.M=M_; this.F=F_; this.A=A_; },
-	fun_type: function() { return "external"; },
+	init: function(M_, F_, A_) {
+		this.M = M_;
+		this.F = F_;
+		this.A = A_;
+	},
 	toString: function() {
-		return "#Fun<"+M+"."+F+"."+A+">"; // TODO, remember about dots in atoms!
+		return "#Fun<"+this.M+"."+this.F+"."+this.A+">";
 	},
 	function_arity: function() {
-		return A;
+		return this.A;
 	},
 	fun_arity: function() {
-		return A;
-	}
+		return this.A;
+	},
+	fun_type: function() { return "external"; }
 });
 
 // we do not need to support fun M/A, because it is done using helper some helper function.
