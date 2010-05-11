@@ -1248,9 +1248,6 @@ mainloop:
 					if(!(is_atom(Regs[0]) && is_atom(Regs[1]) && is_integer(Regs[2]) && Regs[2]>=0)) throw "badarg";
 					// it is not needed to check if M:F/A function exists,
 					// (it can be loaded or reloaded later), so check will be done at call time.
-					
-// BUG erlang:fun_to_list(fun 's.d'.'d.h'/5) = "#Fun<s.d.d.h.5>". not very good way.
-// fortunetly there is no general list_to_fun (becuase of garabage collectin of env and lack of reference).
 
 					Regs[0] = new EFunExternal(Regs[0], Regs[1], Regs[2]);
 					break;

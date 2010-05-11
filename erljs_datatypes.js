@@ -378,11 +378,17 @@ var EFunLocal = EFun.extend({
 });
 
 var EFunExternal = EFun.extend({
+	// Note M, F, A can be both JS string/integer.
+	// But it will more probably be EAtom/EInteger originating from erlang:make_fun/3
+	// TODO: normalize types, so it will be simpler to use in:
+	//    erlang:fun_info/1,2, erlang:apply/2 and call_fun opcode.
 	init: function(M_, F_, A_) {
 		this.M = M_;
 		this.F = F_;
 		this.A = A_;
 	},
+	// BUG erlang:fun_to_list(fun 's.d'.'d.h'/5) = "#Fun<s.d.d.h.5>". not very good way.
+	// fortunetly there is no general list_to_fun (becuase of garabage collectin of env and lack of reference).
 	toString: function() {
 		return "#Fun<"+this.M+"."+this.F+"."+this.A+">";
 	},
