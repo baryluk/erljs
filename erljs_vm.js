@@ -969,8 +969,6 @@ mainloop:
 				}
 			}
 			break;
-			uns(OC);
-			break;
 
 /*
 		M:funkcja(a)  -> [apply_last,1,0]
