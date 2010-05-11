@@ -1783,14 +1783,52 @@ mainloop:
 ]],
 */
 	case "try":
-			uns(OC);
+		// probably just like in catch, so go on
+		opcode_test(OC, 'try', 2);
+			assert(OC[1].length == 2);
+			assert(OC[1][0] == "y");
+			assert(OC[2].length == 2);
+			assert(OC[2][0] == "f");
+			LocalEH.push([ OC[1][1], OC[2][1] ]);
+			assert(LocalRegs[OC[1][1]] === undefined);
 			break;
 	case "try_end":
-			uns(OC);
+		opcode_test(OC, 'try_end', 1);
+			assert(OC[1].length == 2);
+			assert(OC[1][0] == "y");
+			//var V = LocalRegs[OC[1][1]];
+			LocalEH.pop();
 			break;
 	case "try_case":
-			uns(OC);
+		opcode_test(OC, 'try_case', 1);
+			assert(OC[1].length == 2);
+			assert(OC[1][0] == "y");
+			var V = LocalRegs[OC[1][1]];
+			assert(V !== undefined);
+			Regs[0] = V;
+			LocalEH.pop();
 			break;
+	case "try_case_end":
+		opcode_test(OC, 'try_case_end', 1);
+			ni(OC);
+			break;
+
+	case "raise":
+		opcode_test(OC, 'raise', 3);
+		assert(OC[1].length == 2);
+		assert(OC[1][0] == "f");
+		assert(OC[2].length == 2);
+		var ExceptionType = get_arg(OC[2][0]);
+		var ExceptionValue = get_arg(OC[2][1]);
+		assert(OC[3].length == 2);
+		assert(OC[3][0] == "x");
+		var SS = get_arg(OC[3]);
+		alert(ExceptionType);
+//		alert(ExceptionType.toString());
+		alert(ExceptionValue);
+		//alert(ExceptionValue.toString());
+		throw "stop";
+		break;
 
 	case "make_fun2":
 		//opcode_test(OC, 'make_fun2', 4); // this make 'local' fun.
