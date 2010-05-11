@@ -328,6 +328,16 @@ var EListString = EListNonEmpty.extend({
 });
 
 var EFun = ETerm.extend({
+	type: function() { return "fun"; },
+	is: function(T) { return T=="fun"; },
+	function_modulename: function() { throw "abstract fun method"; },
+	function_name: function() { throw "abstract fun method"; },
+	function_arity: function() { throw "abstract fun method"; },
+	fun_arity: function() { throw "abstract fun method"; },
+	fun_type: function() { throw "abstract fun method"; }
+});
+
+var EFunLocal = EFun.extend({
 	// module, fun name in module, fun arity (for call), env arity (for makeing), uniq id, binded values for make
 	init: function(M_, FunMFA_, FunA_, EnvA_, ID_, Env_, Pid_, Uniq_) {
 		assert(Env_.length == EnvA_);
@@ -346,14 +356,19 @@ var EFun = ETerm.extend({
 		// additional variables for the fun function (binded already)
 		this.Env = Env_;
 	},
-	type: function() { return "fun"; },
-	is: function(T) { return T=="fun"; },
 	toString: function() {
 		return "#Fun<"+this.M+"."+this.ID+"."+this.Uniq+">"; // TODO, remember about dots in atoms!
 	},
-	// arity of function M:FunF whichi implements this fun. it have Env + actuall parameters.
+	// modulename, functioname, and arity of function M:FunF whichi implements this fun. it have Env + actuall parameters.
+	function_modulename: function() {
+		return this.FunMFA[0];
+	},
+	function_name: function() {
+		return this.FunMFA[1];
+	},
 	function_arity: function() {
-		return this.FunA + this.Env.length;
+		//return this.FunA + this.Env.length;
+		return this.FunMFA[2];
 	},
 	// actuall paramater number needed for calling
 	fun_arity: function() {
@@ -361,6 +376,7 @@ var EFun = ETerm.extend({
 	},
 	fun_type: function() { return "local"; }
 });
+
 var EFunExternal = EFun.extend({
 	init: function(M_, F_, A_) {
 		this.M = M_;
@@ -369,6 +385,13 @@ var EFunExternal = EFun.extend({
 	},
 	toString: function() {
 		return "#Fun<"+this.M+"."+this.F+"."+this.A+">";
+	},
+	// modulename, functioname, and arity of function
+	function_modulename: function() {
+		return this.M;
+	},
+	function_name: function() {
+		return this.F;
 	},
 	function_arity: function() {
 		return this.A;

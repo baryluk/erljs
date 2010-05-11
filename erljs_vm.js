@@ -1001,17 +1001,61 @@ mainloop:
 			// but it doesn't eat memoery!
 
 */
-	case "call_fun":
-			uns(OC);
-			break;
-
-
 
 	case "apply_last": // to robi compilator jesli zna ilosc argumentow za wczasu.
 	case "apply":
 			uns(OC);
 			break;
 
+	case "call_fun":
+			opcode_test(OC, 'call_fun', 1);
+			var Arity = OC[1];
+			var Fun = Regs[Arity];
+			if (!(Fun instanceof EFun)) {
+				erl_throw(new ETuple([new EAtom("badfun"), Fun]));
+			} else if (Fun.fun_arity() != Arity) {
+				var ListArgs = new EListNil();
+				for (var i = Arity-1; i >= 0; i--) {
+					ListArgs = new EList(Regs[i], ListArgs);
+				}
+				erl_throw(new ETuple([
+						new EAtom("badarity"),
+						new ETuple([Fun, ListArgs])
+				]));
+			} else {
+				Stack.push([ThisFunctionSignature, ThisFunctionCode, IP, ThisModuleName, LocalRegs, LocalEH]);
+				LocalRegs = [];
+				LocalEH = [];
+
+				for (var i = 0; i < Arity; i++) {
+					assert(Regs[i] !== undefined);
+				}
+
+				var FunctionModuleName = Fun.function_modulename();
+				var FunctionName = Fun.function_name();
+				var FunctionArity = Fun.function_arity();
+
+				if (Fun instanceof EFunLocal) {
+					for (var i = Arity, j = 0; i < FunctionArity; i++, j++) {
+						assert(Fun.Env[j] !== undefined);
+						Regs[i] = Fun.Env[j];
+					}
+				}
+
+				var FunctionSignature = func_sig(FunctionModuleName, FunctionName, FunctionArity);
+				// if no such function?
+				ThisFunctionCode = FunctionsCode[FunctionSignature];
+				if (ThisFunctionCode === undefined) {
+					erl_throw(new EAtom("undef"));
+				} else {
+					ThisFunctionSignature = FunctionSignature;
+					ThisModuleName = ModuleName;
+					ThisLabels = Labels[ThisModuleName];
+					//jump(EntryPoint);
+					IP = GeneralEntryPoint;
+				}
+			}
+			break;
 
 	// calls to external modules
 	case "call_lists":
@@ -1845,7 +1889,7 @@ mainloop:
 			}
 			var FunArity = OC[1][2] - NumberOfBindedVariables;
 			var Uniq = Something; // This isn't exactly 'Uniq' element.
-			Regs[0] = new EFun(ThisModuleName, DstFunction, FunArity, NumberOfBindedVariables, HereId, BindedVarValues, Self, Uniq);
+			Regs[0] = new EFunLocal(ThisModuleName, DstFunction, FunArity, NumberOfBindedVariables, HereId, BindedVarValues, Self, Uniq);
 
 			break;
 	case "jump":
