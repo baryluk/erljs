@@ -1494,6 +1494,10 @@ mainloop:
 			assert(OC[4][0] == "x");
 			Regs[OC[4][1]] = (erljs_eq(get_arg(OC[3][0]), get_arg(OC[3][1]), true) ? Etrue : Efalse);
 			break;
+		case "==": // i.e. lists:filter
+			assert(OC[4][0] == "x");
+			Regs[OC[4][1]] = (erljs_eq(get_arg(OC[3][0]), get_arg(OC[3][1]), false) ? Etrue : Efalse);
+			break;
 		case "element": // i.e. proplists:lookup
 			assert(OC[4][0] == "x");
 			var Arg = get_arg(OC[3][1]),
