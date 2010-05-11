@@ -956,12 +956,17 @@ mainloop:
 				var Arity = OC[2][2];
 				//assert(OC[1] == Arity);
 				var FunctionSignature = func_sig(ModuleName, Name, Arity);
-				ThisFunctionCode = FunctionsCode[FunctionSignature]; // TODO: read the same version of module, not newset one
-				ThisFunctionSignature = FunctionSignature;
-				//ThisModuleName = ModuleName;
-				//ThisLabels = Labels[ThisModuleName];
-				//jump(EntryPoint);
-				IP = GeneralEntryPoint;
+				// TODO: read the same version of module, not newset one
+				ThisFunctionCode = FunctionsCode[FunctionSignature];
+				if (ThisFunctionCode === undefined) {
+					erl_throw(new EAtom("undef"));
+				} else {
+					ThisFunctionSignature = FunctionSignature;
+					//ThisModuleName = ModuleName;
+					//ThisLabels = Labels[ThisModuleName];
+					//jump(EntryPoint);
+					IP = GeneralEntryPoint;
+				}
 			}
 			break;
 			uns(OC);
@@ -1367,12 +1372,16 @@ mainloop:
 						var FunctionSignature = func_sig(ModuleName, Name, Arity);
 						// if no such function?
 						ThisFunctionCode = FunctionsCode[FunctionSignature];
-						if (ThisFunctionCode == undefined) { alert("ps "+NA+" undef"); throw "undef"; }
-						ThisFunctionSignature = FunctionSignature;
-						ThisModuleName = ModuleName;
-						ThisLabels = Labels[ThisModuleName];
-						//jump(EntryPoint);
-						IP = GeneralEntryPoint;
+						if (ThisFunctionCode == undefined) {
+							erl_throw(new EAtom("undef"));
+							break;
+						} else {
+							ThisFunctionSignature = FunctionSignature;
+							ThisModuleName = ModuleName;
+							ThisLabels = Labels[ThisModuleName];
+							//jump(EntryPoint);
+							IP = GeneralEntryPoint;
+						}
 					}
 				}
 			}
