@@ -277,6 +277,9 @@ var EListNil = EListAny.extend({
 // slightly more efficient representation and lazy tail
 var EListString = EListNonEmpty.extend({
 	init: function(S_, i_) {
+		if (i_ === undefined) {
+			i_ = 0;
+		}
 		assert(i_ < S_.length);
 		this.S = S_; this.i=i_;
 	},
