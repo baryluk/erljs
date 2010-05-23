@@ -1269,6 +1269,25 @@ mainloop:
 				case "tuple_to_list/1": ni(OC); break;
 				case "append_element/2": ni(OC); break;
 
+				case "setelement/3":
+					var I = Regs[0];
+					if (!is_integer(I) || !is_tuple(Regs[1])) {
+						throw "badarg";
+					}
+					var TupleArity = Regs[1].tuple_arity();
+					if (!(1 <= I && I <= TupleArity)) {
+						throw "badarg";
+					}
+					Regs[0] = new ETuple(TupleArity);
+					for (var i = 1; i <= TupleArity; i++) {
+						if (i != I) {
+							Regs[0].put(i-1,Regs[1].get(i-1));
+						} else {
+							Regs[0].put(i-1,Regs[2]);
+						}
+					}
+					break;
+
 				case "make_fun/3":
 					//erlang:make_fun(M, F, A) creates object (fun M:F/A)
 					if(!(is_atom(Regs[0]) && is_atom(Regs[1]) && is_integer(Regs[2]) && Regs[2]>=0)) throw "badarg";
