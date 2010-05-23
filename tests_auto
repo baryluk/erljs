@@ -124,6 +124,51 @@ catch example:eh10(abc,[6,7,8]).
 catch example:eh10(abc,[6,7,8]).
 catch example:eh10(abc,xyz).
 
+begin is_integer(a) end.
+begin is_integer(x22) end.
+begin is_integer('A') end.
+begin is_integer('4') end.
+begin is_integer('') end.
+begin is_integer('-') end.
+begin is_integer(42) end.
+begin is_integer(-4) end.
+begin is_integer(0) end.
+begin is_integer("ad") end.
+begin is_integer([a,v,a]) end.
+begin is_integer({a,b}) end.
+
+begin is_atom(a) end.
+begin is_atom(xyz) end.
+begin is_atom('A') end.
+begin is_atom('4') end.
+begin is_atom('') end.
+begin is_atom('-') end.
+begin is_atom(42) end.
+begin is_atom(-4) end.
+begin is_atom(0) end.
+begin is_atom("ad") end.
+begin is_atom([a,v,a]) end.
+begin is_atom({a,b}) end.
+
+
+begin atom_to_list(a) end.
+begin atom_to_list(aa) end.
+begin atom_to_list(xyz) end.
+begin atom_to_list('d') end.
+begin atom_to_list('A') end.
+begin atom_to_list('Aaa') end.
+begin atom_to_list('aAa') end.
+begin atom_to_list('1a') end.
+begin atom_to_list('') end.
+begin atom_to_list('-') end.
+begin atom_to_list('0') end.
+begin atom_to_list('true') end.
+begin atom_to_list('null') end.
+begin atom_to_list('false') end.
+begin atom_to_list('nil') end.
+begin atom_to_list('begin') end.
+begin atom_to_list('11') end.
+
 
 
 % TODO: tests expection handling of improper lists and bad or incorrect arguments
