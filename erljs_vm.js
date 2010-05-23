@@ -1350,7 +1350,7 @@ mainloop:
 					break;
 
 				default:
-					throw "not implemented native function: "+ModuleName+":"+NA;
+					throw "not implemented (unknown?) native function: "+ModuleName+":"+NA;
 					break;
 				}
 				native_function=true;
