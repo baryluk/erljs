@@ -169,7 +169,41 @@ begin atom_to_list('nil') end.
 begin atom_to_list('begin') end.
 begin atom_to_list('11') end.
 
-
+begin list_to_atom("a") end.
+begin list_to_atom("aa") end.
+begin list_to_atom("xyz") end.
+begin list_to_atom("d") end.
+begin list_to_atom("A") end.
+begin list_to_atom("Aaa") end.
+begin list_to_atom("aAa") end.
+begin list_to_atom("1a") end.
+begin list_to_atom("") end.
+begin list_to_atom("-") end.
+begin list_to_atom("0") end.
+begin list_to_atom("true") end.
+begin list_to_atom("null") end.
+begin list_to_atom("false") end.
+begin list_to_atom("nil") end.
+begin list_to_atom("begin") end.
+begin list_to_atom("11") end.
+begin list_to_atom([]) end.
+begin list_to_atom([65]) end.
+begin list_to_atom([65,66]) end.
+begin list_to_atom([65,66,67]) end.
+begin list_to_atom([65|"xyz"]) end.
+begin list_to_atom([65,66|"xyz"]) end.
+begin list_to_atom([65|""]) end.
+begin list_to_atom([65,66|""]) end.
+begin list_to_atom([65,66,67|""]) end.
+begin list_to_atom([65|"x"]) end.
+begin list_to_atom([65,66|"x"]) end.
+begin list_to_atom([65,66,67|"x"]) end.
+begin list_to_atom([65|"xy"]) end.
+begin list_to_atom([65,66|"xy"]) end.
+begin list_to_atom([65,66,67|"xy"]) end.
+begin list_to_existing_atom("true") end.
+begin list_to_existing_atom("false") end.
+begin list_to_existing_atom([116,114,117,101]) end.
 
 % TODO: tests expection handling of improper lists and bad or incorrect arguments
 
@@ -364,6 +398,8 @@ begin lists:foldl(fun(X, Prod) -> X * Prod end, 1, [1,2,3,4,5]) end.
 begin lists:keymap(fun(Atom) -> atom_to_list(Atom) end, 2, [{name,jane,22},{name,lizzie,20},{name,lydia,15}]) end.
 % my addition
 begin lists:keymap(fun(Age) -> {age,Age} end, 3, [{name,jane,22},{name,lizzie,20},{name,lydia,15}]) end.
+% my addition
+begin lists:keymap(fun(Atom) -> list_to_atom(Atom) end, 2, [{name,"jane",22},{name,"lizzie",20},{name,"lydia",15}]) end.
 begin lists:mapfoldl(fun(X, Sum) -> {2*X, X+Sum} end,  0, [1,2,3,4,5]) end.
 lists:nth(3, [a, b, c, d, e]).
 lists:nthtail(3, [a, b, c, d, e]).
