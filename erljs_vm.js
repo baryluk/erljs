@@ -1230,8 +1230,20 @@ mainloop:
 					}
 					break;
 
-				case "list_to_atom/1": ni(OC); break;
-				case "list_to_existing_atom/1": ni(OC); break;
+				case "list_to_atom/1":
+				case "list_to_existing_atom/1": // fallthrough
+					if (!is_list(Regs[0])) {
+						throw "badarg";
+					}
+					var s = Regs[0].toByteList();
+					if (s === null) {
+						// list contains out-of-0-255-range integers, or other types
+						throw "badarg";
+					}
+					// TODO: for _existing_ variant, check if it already exist.
+					Regs[0] = new EAtom(s);
+					break;
+
 				case "list_to_integer/1": ni(OC); break;
 				case "integer_to_list/1":
 					var L = Math.round(Math.abs(Regs[0]));
