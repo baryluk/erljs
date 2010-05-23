@@ -225,11 +225,49 @@ var EList = EListNonEmpty.extend({
 		r += x.toStringLimited(l);
 		return r;
 	},
+	// converts lists of integers from range 0-255 to JS string. usefull in list_to_* functions, prints, etc.
+	toByteList: function() {
+		var l = this.is_byte_list();
+		if (l < 0) {
+			return null;
+		}
+		var x = this;
+		// TODO: preallocate array of size l and use it
+		var r = "";
+		while (x instanceof EList) {
+			var i = x.head();
+			var e = str_esc[i];
+			if (e) {
+				r += e;
+			} else {
+				r += String.fromCharCode(i);
+			}
+			x = x.tail();
+		}
+		// At the end we will have EListNil (+="") or EListString (+=something)
+		r += x.toByteList(l);
+		return r;
+	},
 	// TODO: we can memoize this! and use in erlang:length/1 !
 	//       Remember about improper lists.
 	length: function() { return 1+list_len(this); },
+	// similar like bellow, but we check if list contains only 0..255 integers
+	// TODO: make it tail recursive
+	is_byte_list: function() {
+		var h = this.head();
+		if (!is_integer(h)) {
+			return -1;
+		}
+		if (h > 255 || h < 0) {
+			return -1;
+		}
+		var l = this.tail().is_byte_list();
+		if (l < 0) { return l; }
+		return l+1;
+	},
 	// return lenght of string, or -1 if it is not a printable list
 	// TODO: we can memoize memoize this.
+	// TODO: make it tail recursive
 	isastring: function() {
 		var h = this.head();
 		// TODO: make this function iterative
@@ -271,6 +309,8 @@ var EListNil = EListAny.extend({
 	toStringJust: function() { return ""; },
 	toStringLimited: function(l) { return "\""; },
 	length: function() { return 0; },
+	is_byte_list: function() { return 0; },
+	toByteList: function() { return ""; },
 	isastring: function() { return 0; }
 });
 
@@ -327,6 +367,10 @@ var EListString = EListNonEmpty.extend({
 		})+ "\"";
 	},
 	length: function() { return this.S.length-this.i; },
+	is_byte_list: function() { return this.length(); },
+	toByteList: function() {
+		return this.S.substr(this.i);
+	},
 	isastring: function() { return this.length(); }
 });
 
