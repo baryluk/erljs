@@ -205,6 +205,17 @@ begin list_to_existing_atom("true") end.
 begin list_to_existing_atom("false") end.
 begin list_to_existing_atom([116,114,117,101]) end.
 
+begin setelement(1,{1,2,3,4,5},a) end.
+begin setelement(2,{1,2,3,4,5},a) end.
+begin setelement(3,{1,2,3,4,5},a) end.
+begin setelement(5,{1,2,3,4,5},a) end.
+begin setelement(1,{1,2,3,4,5},{a}) end.
+begin setelement(3,{1,2,3,4,5},{a}) end.
+begin setelement(5,{1,2,3,4,5},{a}) end.
+begin setelement(1,{z},[]) end.
+begin setelement(1,{z,z},[]) end.
+begin setelement(2,{z,z},[]) end.
+
 % TODO: tests expection handling of improper lists and bad or incorrect arguments
 
 % lists
