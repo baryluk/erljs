@@ -63,6 +63,7 @@ c(Mod, Opts) ->
 	end,
 
 	Verbose = lists:member(verbose, Opts),
+	Indent = lists:member(indent, Opts),
 
 	% 'S' - will prdue File.S with assembler code.
 	Opts2 = Opts ++ [debug_info,report,inline,{inline_size,24},warn_obsolete_guard],
@@ -126,7 +127,7 @@ c(Mod, Opts) ->
 				case F of
 					{function,FunctionName,FunctionArity,FunctionEntryPoint,Instructions} when is_list(Instructions) ->
 						ok = file:write(File, "[\"function\",\""++atom_to_list(FunctionName)++"\","++integer_to_list(FunctionArity)
-												++","++integer_to_list(FunctionEntryPoint)++",["++[?CRLF, ?TAB]),
+												++","++integer_to_list(FunctionEntryPoint)++",["++[?CRLF]),
 						%ok = file:write(File, [?CRLF, ?TAB]),
 						lists:foldl(fun (Inst, Number) ->
 							InstFiltered = case Inst of
@@ -184,9 +185,12 @@ c(Mod, Opts) ->
 								_ ->
 									TextEncoded = json_simple:encode(InstFiltered),
 									ok = if
-										Number > 1 -> file:write(File, [$,]);
+										Number > 1 ->
+											file:write(File, [$,]),
+											ok = if Indent -> file:write(File, [?CRLF]); true -> ok end;
 										true -> ok
 									end,
+									ok = if Indent -> file:write(File, [?TAB]); true -> ok end,
 									file:write(File, TextEncoded),
 									Number+1
 							end
