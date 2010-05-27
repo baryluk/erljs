@@ -15,8 +15,15 @@
 -define(CRLF, $\n).
 -define(TAB, $\t).
 
+
+-spec ca() ->
+	[{'ok', [any(), ...], [any(), ...]}].
+
 ca() ->
 	ca([]).
+
+-spec ca([atom() | {atom(), _} | {'d', atom(), _}]) ->
+	[{'ok', [any(), ...], [any(), ...]}].
 
 ca(Opts) ->
 	L = [
@@ -36,8 +43,14 @@ ca(Opts) ->
 	],
 	cl(L,Opts).
 
+-spec cl([atom() | string()]) ->
+	[{'ok', [any(), ...], [any(), ...]}].
+
 cl(L) ->
 	cl(L, []).
+
+-spec cl([atom() | string()], [atom() | {atom(), _} | {'d', atom(), _}]) ->
+	[{'ok', [any(),...], [any(),...]}].
 
 cl(L, Opts) ->
 	M = [ c(M, Opts) || M <- L ],
@@ -52,8 +65,14 @@ cl(L, Opts) ->
 	io:format(" <script src=\"erljs_code.js\" type=\"text/javascript\"> </script>~n"),
 	M.
 
+-spec c(atom() | string()) ->
+	{'ok', nonempty_string(), [{'functions', number()} | {'funs',number()} | {'total_ops',number()}, ...]}.
+
 c(Mod) ->
 	c(Mod, []).
+
+-spec c(atom() | string(), [atom() | {atom(), _} | {'d', atom(), _}]) ->
+	{'ok', nonempty_string(), [{'functions', number()} | {'funs',number()} | {'total_ops',number()}, ...]}.
 
 %% Encode module
 c(Mod, Opts) ->

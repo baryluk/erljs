@@ -29,6 +29,8 @@
 %% case of un-convertible input.
 %% Note: object keys may be either strings or atoms.
 
+-spec encode(atom() | [any()] | number() | tuple()) -> [any()].
+
 %encode(true) -> "true";
 %encode(false) -> "false";
 %encode(null) -> "null";
@@ -52,7 +54,11 @@ encode(Bad) -> exit({json_encode, {bad_term, Bad}}).
 %% Encode an Erlang string to JSON.
 %% Accumulate strings in reverse.
 
+-spec encode_string([any()]) -> [any(), ...].
+
 encode_string(S) -> encode_string(S, [$"]).
+
+-spec encode_string([any()], [any(), ...]) -> [any(), ...].
 
 encode_string([], Acc) -> lists:reverse([$" | Acc]);
 encode_string([C | Cs], Acc) ->
@@ -77,6 +83,8 @@ encode_string([C | Cs], Acc) ->
 %% Encode an Erlang tuple as a JSON array.
 %% Order *is* significant in a JSON array!
 
+-spec encode_array(tuple()) -> [[any()] | 91 | 93, ...].
+
 encode_array(T) ->
     M = tuple_fold(fun(E, Acc) ->
 	V = encode(E),
@@ -86,6 +94,8 @@ encode_array(T) ->
 	end
     end, [], T),
     [$[, M, $]].
+
+-spec encode_list([any()]) -> [[any()] | 91 | 93,...].
 
 encode_list(T) ->
     M = lists:foldl(fun(E, Acc) ->
@@ -100,8 +110,12 @@ encode_list(T) ->
 %% A fold function for tuples (left-to-right).
 %% Folded function takes arguments (Element, Accumulator).
 
+-spec tuple_fold(fun((_,_) -> [any()]), [], tuple()) -> [any()].
+
 tuple_fold(F, A, T) when is_tuple(T) ->
     tuple_fold(F, A, T, 1, size(T)).
+
+-spec tuple_fold(fun((_,_) -> [any()]), [any()], tuple(), pos_integer(), non_neg_integer()) -> [any()].
 
 tuple_fold(_F, A, _T, I, N) when I > N ->
     A;

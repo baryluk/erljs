@@ -2,6 +2,8 @@
 
 -export([c/1]).
 
+-spec c(atom()) -> {'ok', string(), [{_,_}, ...]}.
+
 c(Module) when is_atom(Module) ->
 	Modulename = atom_to_list(Module),
 	Filename = Modulename,
@@ -16,6 +18,16 @@ c(Module) when is_atom(Module) ->
 	io:format("Processing lines"),
 	Stats = {0,0,0},
 	process(file:read_line(File), File, [], 1, Stats, {Modulename, FileErl, FileJS}).
+
+-spec process(
+		'eof' | {'ok',string()},
+		pid() | {'file_descriptor', atom(), _},
+		[{[any()],_}],
+		pos_integer(),
+		{non_neg_integer(), non_neg_integer(), non_neg_integer()},
+		{string(), pid() | {'file_descriptor', atom(), _}, pid() | {'file_descriptor', atom(), _}}
+	) ->
+		{'ok', string(), [{_,_}, ...]}.
 
 process(eof, File, _Code, _LineNo, Stats = {StatsWithWrapper, StatsWithTerm, StatsWithCall}, {Modulename, FileErl, FileJS}) ->
 	io:format("~n"),
