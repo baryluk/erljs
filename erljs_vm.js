@@ -790,6 +790,7 @@ mainloop:
 	//case "gc_bif":
 		//opcode_test(OC, 'gc_bif', 5);
 			// OC[3]? // it looks it is is mostly number of args: assert(OC[3] == OC[4].length == 2); // but sometimes it is 3.
+			//assert(OC[4].length == OC[3], "number of arguments and lenght of arg array is different in gc_bif");
 			//assert(OC[5].length == 2);
 			//assert(OC[5][0] == "x");
 			var DstRegNo = OC[5][1];
