@@ -892,7 +892,15 @@ mainloop:
 					if (is_tuple(Arg1)) {
 						V = Arg1.tuple_arity();
 					} else if (is_binary(Arg1)) {
-						V = Arg1.size();
+						V = Arg1.byte_size();
+					} else {
+						jumpfr(OC[2],"badarg");
+					}
+					break;
+				case "byte_size":
+					if (is_binary(Arg1)) {
+						//rounded up to narest 8 bits
+						V = Arg1.byte_size();
 					} else {
 						jumpfr(OC[2],"badarg");
 					}
