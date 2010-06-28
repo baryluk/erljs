@@ -478,6 +478,34 @@ var EPid = ETerm.extend({
 	}
 });
 
+// TODO: typed JS arrays. See:
+//   webgl proposal: https://cvs.khronos.org/svn/repos/registry/trunk/public/webgl/doc/spec/TypedArray-spec.html
+//   other approaches: http://wiki.commonjs.org/wiki/Binary
+//   older webgl proposal: http://people.mozilla.com/~vladimir/jsvec/TypedArray-spec.html
+var EBinary = ETerm.extend({
+	init: function(total_byte_size_) {
+		this.total_byte_size = total_byte_size_;
+		this.raw_data = [];
+	},
+	type: function() { return "binary"; },
+	is: function(T) { return T=="binary"; },
+	toString: function() {
+		var r = "<<";
+		for (var i = 0; i < this.total_byte_size; i++) {
+			if (i) {
+				r += ",";
+			}
+			// decimal representation of byte in raw_data[i]
+			r += this.raw_data[i];
+		}
+		r += ">>";
+		return r;
+	},
+	binary_byte_size: function() {
+		return this.total_byte_size;
+	}
+});
+
 
 /** mini parser of erlang data terms (literals)
  *
