@@ -1848,6 +1848,108 @@ mainloop:
 			Regs[put_tuple_register].put(put_tuple_i++, Arg);
 			// TODO: if next instruction is not put, then reset put_tuple_* variables. Or is this legal to intermix put and other instructions?
 			break;
+
+	case "bs_init_bits":
+		opcode_test(OC, 'bs_init_bits', 6);
+			assert(OC[1].length == 2);
+			assert(OC[1][0] == "f");
+			assert(typeof OC[2] == "number");
+			assert(typeof OC[3] == "number");
+			assert(typeof OC[4] == "number");
+			assert(OC[6].length == 2);
+			assert(OC[6][0] == "f");
+			//["bs_init_bits",["f",0],34,0,2,["field_flags",0],["x",2]],
+			ni(OC);
+			break;
+	case "bs_init2":
+		opcode_test(OC, 'bs_init2', 6);
+			assert(OC[1].length == 2);
+			assert(OC[1][0] == "f");
+			assert(typeof OC[2] == "number");
+			assert(typeof OC[3] == "number");
+			assert(typeof OC[4] == "number");
+			assert(OC[6].length == 2);
+			assert(OC[6][0] == "f");
+			//["f",0],4,0,1,["field_flags",0],["x",1]],
+			ni(OC);
+			break;
+	case "bs_put_string":
+		opcode_test(OC, 'bs_put_string', 2);
+			assert(typeof OC[1] == "number");
+			assert(OC[2].length == 2);
+			assert(OC[2][0] == "string");
+			var s = OC[2][1]; // not using get_arg(OC[2]) !
+			//2,["string","ca"]],
+			//1,["string","h"]],
+			ni(OC);
+			break;
+	case "bs_put_integer":
+		opcode_test(OC, 'bs_put_integer', 5);
+			//["f",0],["integer",8],1,["field_flags",0],["x",0]],
+			//["f",0],["integer",16],1,["field_flags",0],["x",0]],
+			assert(OC[1].length == 2);
+			assert(OC[1][0] == "f");
+			ni(OC);
+			break;
+	case "bs_put_float":
+		// This is problematic. Becuase there is no easy way to know binary representation of float.
+		// We can try use this http://babbage.cs.qc.edu/IEEE-754/64bit.html but this is big and have big overhead.
+		// We can use TypedArray but it is not implemented in any borwser yet, and is a proposition (from WebGL guys).
+		opcode_test(OC, 'bs_put_float', 5);
+			//["bs_put_float",["f",0],["integer",32],1,["field_flags",0],["x",0]],
+			ni(OC);
+			break;
+	case "bs_put_binary":
+		opcode_test(OC, 'bs_put_binary', 5);
+			//["bs_put_binary",["f",0],["atom","all"],8,["field_flags",0],["x",1]],
+			ni(OC);
+			break;
+	case "bs_add":
+		opcode_test(OC, 'bs_add', 3);
+			//["f",0],[["x",2],["x",3],1],["x",2]],
+			//["f",0],[["x",2],["integer",2],1],["x",2]],
+			ni(OC);
+			break;
+	case "bs_append":
+		opcode_test(OC, 'bs_append', 8);
+			//["bs_append",["f",0],["integer",16],0,2,8,["x",0],["field_flags",0],["x",2]],
+			ni(OC);
+			break;
+
+
+
+// testy
+			//["t","bs_start_match2",["f",407],[["x",0],1,0,["x",0]]],
+			//["t","bs_get_integer2",["f",407],[["x",0],1,["integer",8],1,["field_flags",0],["x",1]]],
+			//["t","bs_test_unit",["f",407],[["x",0],8]],
+
+			//["t","bs_start_match2",["f",404],[["x",0],1,0,["x",0]]],
+			//["t","bs_get_integer2",["f",404],[["x",0],1,["integer",8],1,["field_flags",0],["x",1]]],
+			//["t","bs_test_tail2",["f",404],[["x",0],0]],
+
+			//["t","bs_start_match2",["f",410],[["x",0],1,0,["x",0]]],
+			//["t","bs_get_float2",["f",410],[["x",0],1,["integer",32],1,["field_flags",0],["x",1]]],
+			//["t","bs_test_unit",["f",410],[["x",0],8]],
+
+			//["t","bs_start_match2",["f",413],[["x",0],1,0,["x",0]]],
+			//["t","bs_get_binary2",["f",413],[["x",0],1,["integer",64],8,["field_flags",0],["x",1]]],
+			//["t","bs_test_unit",["f",413],[["x",0],8]],
+
+
+		case "bs_start_match2":
+		case "bs_get_integer2":
+		case "bs_get_float2":
+		case "bs_test_tail2":
+		case "bs_test_unit":
+			ni(OC);
+			break;
+
+	case "bs_context_to_binary":
+		opcode_test(OC, 'bs_context_to_binary', 1);
+			//["bs_context_to_binary",["x",0]],
+			ni(OC);
+			break;
+
 	case "catch":
 		opcode_test(OC, 'catch', 2);
 			assert(OC[1].length == 2);
