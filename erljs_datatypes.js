@@ -542,6 +542,8 @@ var EBinary = ETerm.extend({
  *
  * Note: This procedure is not Unicode-aware.
  *
+ * TODO: put size of big lists, strings and binaries at the begining of them, so two pass algorithm isn't needed.
+ *
  * See Also: also http://www.erlang.org/eeps/eep-0018.html
  * http://www.erlang.org/eeps/eep-0021.html
 */
@@ -621,11 +623,34 @@ list_loop:
 			if (s[i]!="\\") {
 				return [s.charCodeAt(i), i+1]; // TODO: is this safe to perform ++ ?
 			} else {
+// this looks to be not correct, as it is identical as first branch.
 				return [s.charCodeAt(i), i+1];
 			}
 		case "#":
+			throw "not supported pid, port, ref or fun at "+i;
 		case "<":
-			throw "not supported pid,port,ref or fun at "+i;
+			if (s[i++] == "<") {
+				throw "Binaries parsing not fully implemented yet. Binary at "+i;
+				// binary
+				// now performing double pass algorithm, first to determine size of binary, second to fill it with values.
+				// TODO: to communication with Erlang side we should use better approach where size of binary is at the begining.
+				if (s[i++] == "\"") {
+					// binary string syntax, <<"xyz">>
+				} else {
+					// simple binary syntax <<3,5,6,7,8:3>>, we can also assume that no integer is bigger than 3 decimal digits.
+				}
+				// as input it is allowed to also use more complex syntax for binary,
+				// but it will be serialized to simpler syntax so we do not need it right now
+				//   <<1:1,3:127>> == <<128,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3>>.
+				//   <<"xyz","abc">> == <<"xyzabc">>
+				//   <<"xyz",77,"X",23,$f>> == <<120,121,122,77,88,23,102>>
+				//   <<5:6,22:7,56:12,44:1>> == <<20,176,28,0:2>>
+				//   <<6.21e4/float>> == <<64,238,82,128,0,0,0,0>> // double precision (default :64), one can also use :32 as single precision.
+				//   <<6.1/float>> == <<64,24,102,102,102,102,102,102>>
+				return b;
+			} else {
+				throw "not supported pid, port, ref or fun at "+i;
+			}
 		case "\"": // list in the string form
 			i--;
 			// TODO: add | for tail notation: "asd"|"bce", but also "asd"|13, or "asd"|[3,6666,123,555]|"asdczx"
