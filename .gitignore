@@ -17,6 +17,7 @@ queue.erl
 random.erl
 sets.erl
 string.erl
+regexp.erl
 
 tests_auto.erl
 tests_auto.js
