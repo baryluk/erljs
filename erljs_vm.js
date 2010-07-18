@@ -96,6 +96,7 @@ function erljs_vm_init(Modules) {
 	if (erljs_vm_initalized) {
 		return true;
 	}
+	debug("Initializing vm...");
 	erljs_vm_initalized = true;
 	var start = (new Date).getTime(), diff = 0;
 
