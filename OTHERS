@@ -13,3 +13,7 @@ Using Erlang style concurenncy in JS:
 
 There is also other systems, languages and libraries for some languages which are influenced by Erlang.
 
+
+Alternative Erlang runtime and VM. Actually interpreter, not VM. By Maxim Kharchenko
+  http://github.com/maximk/teeterl#readme
+  http://taooferlang.blogspot.com/
