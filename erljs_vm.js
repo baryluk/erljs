@@ -421,14 +421,12 @@ function erljs_ge(A,B) {
 var AllReductions = 0;
 var NativeReductions = 0;
 
-function erljs_vm_call_prepare(Modules, StartFunctionSignature0, Args, MaxReductions, FullDebug) {
-	erljs_vm_init(Modules);
-
+function erljs_vm_call_prepare(StartFunctionSignature0, Args, MaxReductions, FullDebug) {
 	var P = new Proc();
 	P.Pid = new EPid();
 
 	P.Labels = Labels;
-	P.Modules = Modules;
+//	P.Modules = Modules;
 	P.FunctionsCode = FunctionsCode;
 
 	P.Args = Args;
@@ -450,8 +448,8 @@ function erljs_vm_call_prepare(Modules, StartFunctionSignature0, Args, MaxReduct
 		P.Regs[i] = Args[i];
 	}
 
-	P.ThisModuleName = P.StartFunctionSignature0[0];
 	P.ThisFunctionSignature = P.StartFunctionSignature;
+	P.ThisModuleName = P.ThisFunctionSignature[0];
 
 	switch (P.ThisModuleName) {
 	case "math":
@@ -482,17 +480,8 @@ function erljs_vm_call_prepare(Modules, StartFunctionSignature0, Args, MaxReduct
 }
 
 
-// function usefull when doing simple testing
-function erljs_vm_call_(Modules, StartFunctionSignature0, Args, MaxReductions, FullDebug) {
-	var P = erljs_vm_call_prepare(Modules, StartFunctionSignature0, Args, MaxReductions, FullDebug);
-	var r = erljs_vm_call__(P);
-	if (r == true) {
-		//return P.Regs[0];
-		return P.Returned;
-	}
-}
 
-function erljs_vm_call__(P) {
+function erljs_vm_steps_(P) {
 	var Stack = P.Stack;
 	var Regs = P.Regs; // x(0), x(1), ... , x(N)
 	var LocalRegs = P.LocalRegs;
@@ -512,12 +501,12 @@ function erljs_vm_call__(P) {
 	var MaxReductions = P.MaxReductions;
 	var FullDebug = P.FullDebug;
 
-	var ThisLabels = P.Labels[P.ThisModuleName];
-
 	var ThisFunctionCode = P.FunctionsCode[P.ThisFunctionSignature];
 	if (ThisFunctionCode === undefined) {
 		throw "no such function: " + P.ThisFunctionSignature;
 	}
+
+	var ThisLabels = P.Labels[P.ThisModuleName];
 
 	function save_context() {
 		// save local variables back to P
@@ -589,6 +578,7 @@ if (LabelF[1] === 0) {
 
 	// tracing
 	var TracedModules = {};
+	//TracedModules["erljs_kernel"]=1;
 	//TracedModules["example"]=1;
 	//TracedModules["tests_auto"]=1;
 	//TracedModules["random"]=1;
@@ -676,8 +666,6 @@ mainloop:
 	}
 	}
 
-	IP++;
-
 	Reductions++;
 
 	if (FullDebug > 2) {
@@ -698,6 +686,9 @@ mainloop:
 		save_context();
 		return false;
 	}
+
+	// Must be after save_context() above. It is properly saved and restored.
+	IP++;
 
 	var opcode0 = OC[0];
 
@@ -1408,12 +1399,12 @@ mainloop:
 					alert("Halted:"+Regs[0]);
 					P.Returned = "Halted";
 					save_context();
-					return false;
+					return true;
 				case "halt/1":
 					alert("Halted.");
 					P.Returned = "Halted";
 					save_context();
-					return false;
+					return true;
 
 				case "error/2":
 					ni(OC);
@@ -2197,7 +2188,7 @@ mainloop:
 			uns(OC);
 			P.Returned = "Unknown opcide";
 			save_context();
-			return false;
+			return true;
 	} // switch (opcode0)
 	} // while (true)
 
@@ -2214,7 +2205,7 @@ mainloop:
 
 	P.Returned = "Exception: "+err;
 	save_context();
-	return false;
+	return true;
 }
 
 	P.Returned = "Out of loop.";
@@ -2222,6 +2213,28 @@ mainloop:
 	return true;
 }
 
+/** Standalone API, without scheduler below */
+
+// functions usefull when doing simple testing
+
+// prepare function exectuion
+function erljs_vm_call_prepare_full(Modules, StartFunctionSignature0, Args, MaxReductions, FullDebug) {
+	erljs_vm_init(Modules);
+	return erljs_vm_call_prepare(StartFunctionSignature0, Args, MaxReductions, FullDebug);
+}
+
+// prepare and execute
+function erljs_vm_call_(Modules, StartFunctionSignature0, Args, MaxReductions, FullDebug) {
+	var P = erljs_vm_call_prepare_full(Modules, StartFunctionSignature0, Args, MaxReductions, FullDebug);
+	var r = erljs_vm_steps_(P);
+	if (r == true) {
+		//return P.Regs[0];
+		return P.Returned;
+	}
+	throw "not enaugh reductions";
+}
+
+// execute with given debuging options
 function erljs_vm_call0(Modules, StartFunctionSignature0, Args, ShowResult, ShowProfile, ShowTime, ShowStats) {
 	//console.time("main loop");
 	//console.timeEnd("main loop");
@@ -2257,8 +2270,9 @@ function erljs_vm_call0(Modules, StartFunctionSignature0, Args, ShowResult, Show
 	return R;
 }
 
+// execute standalone one-shot system.
+// Note: inter-process comunication, spawn, messaging, timers, will not work.
 function erljs_vm_call(Modules, StartFunctionSignature0, Args) {
 //	return erljs_vm_call0(Modules, StartFunctionSignature0, Args, true, true, true, true);
 	return erljs_vm_call0(Modules, StartFunctionSignature0, Args);
 }
-
