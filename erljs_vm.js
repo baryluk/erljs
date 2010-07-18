@@ -1390,6 +1390,44 @@ mainloop:
 					ni(OC);
 					break;
 
+				case "spawn/1": // Fun
+				case "spawn/2": // Node, Fun
+				case "spawn/4": // Node, Module, Function, [Args]
+					ni(OC);
+					break;
+				case "spawn/3": // Module, Function, [Args]
+					if (!(is_atom(Regs[0]) && is_atom(Regs[1]) && is_list(Regs[2]))) {
+						throw "badarg";
+					}
+					var Arity = Regs[2].length();
+					var NewP = erljs_vm_call_prepare([Regs[0].toString(), Regs[1].toString(), Arity], Regs[2], 1000, true);
+					erljs_spawn(NewP);
+					Regs[0] = NewP.Pid;
+					break;
+
+				case "spawn_link/1": // Fun
+				case "spawn_link/2": // Node, Fun
+				case "spawn_link/4": // Node, Module, Function, [Args]
+				case "spawn_link/3": // Module, Function, [Args]
+					ni(OC);
+					break;
+
+				case "spawn_monitor/1": // Fun
+				case "spawn_monitor/3": // Module, Function, [Args]
+					ni(OC);
+					break;
+
+				case "spawn_opt/2": // Fun, [Opts]
+				case "spawn_opt/3": // Node, Fun, [Opts]
+				case "spawn_opt/5": // Node, Module, Function, [Args], [Opts]
+					ni(OC);
+					break;
+				case "spawn_opt/4": // Module, Function, [Args], [Opts]
+					ni(OC);
+					break;
+
+
+
 				//case "abs/1": ni(OC); break; // abs value of float or int // in gc_bif
 				case "min/2": ni(OC); break;
 				case "max/2": ni(OC); break;
