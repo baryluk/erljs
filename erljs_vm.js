@@ -444,8 +444,20 @@ function erljs_vm_call_prepare(StartFunctionSignature0, Args, MaxReductions, Ful
 	P.Stack = [];
 
 	// insert initial parameters of first function
-	for (i = 0; i < Args.length; i++) {
-		P.Regs[i] = Args[i];
+	if (Args instanceof Array) {
+		for (i = 0; i < Args.length; i++) {
+			P.Regs[i] = Args[i];
+		}
+	} else if (Args instanceof EList) {
+		var A = Args;
+		for (i = 0; i < StartFunctionSignature0[2]; i++) {
+			if (Args instanceof EList) {
+				P.Regs[i] = A.head();
+				A = A.tail();
+			} else {
+				P.Regs[i] = A;
+			}
+		}
 	}
 
 	P.ThisFunctionSignature = P.StartFunctionSignature;
