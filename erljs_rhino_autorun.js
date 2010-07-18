@@ -3,6 +3,10 @@
 //load("prototype.js");
 
 load("erljs_datatypes.js");
+
+load("erljs_scheduler_list.js");
+load("erljs_scheduler.js");
+
 load("erljs_vm.js");
 
 // stdlib
