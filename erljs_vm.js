@@ -1177,8 +1177,9 @@ mainloop:
 					Regs[0] = 0;
 					break;
 				case "console_log/1":
+					var k = Regs[0].toString();
+					console.log(k);
 					Regs[0] = 0;
-					console.log(Regs[0]);
 					break;
 				default:
 					alert("erljs "+NA+" undef");
