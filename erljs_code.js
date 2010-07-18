@@ -1,6 +1,8 @@
 /* Copyritgh 2008 Witold Baryluk. Special thanks to Michal Kolarz, author of IL2JS freamwork */
 
 var all_modules = [
+	["erljs_kernel", module_erljs_kernel],
+
 	["random", module_random],
 	["lists", module_lists],
 	["orddict", module_orddict],

@@ -27,6 +27,8 @@ ca() ->
 
 ca(Opts) ->
 	L = [
+		erljs_kernel,
+
 		random,
 		lists,
 		orddict,
@@ -39,6 +41,7 @@ ca(Opts) ->
 		gb_trees,
 		gb_sets,
 		regexp,
+
 		example
 	],
 	cl(L,Opts).
