@@ -196,6 +196,10 @@ c(Mod, Opts) ->
 								{put, T1} ->
 									{'P', T1};
 
+								send ->
+									'!';
+
+
 								% warning letters used above are not the same as bellow!!
 
 								_ ->
@@ -397,9 +401,13 @@ cfi(timeout) ->
 
 
 eval(X) ->
-	throw (callable_only_at_client_side).
+	%throw (callable_only_at_client_side).
+	ignored.
 
 alert(X) ->
-	throw (callable_only_at_client_side).
+	%throw (callable_only_at_client_side).
+	ignored.
 
-
+listen(Id, Type) ->
+	%throw (callable_only_at_client_side).
+	ignored.
