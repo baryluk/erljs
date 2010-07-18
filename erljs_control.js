@@ -122,6 +122,7 @@ function eq(Input,Expected,OriginalCodeForWrapper) {
 		failed = false;
 	} catch (err) {
 		failed = true;
+		var exception = err;
 	}
 	if (failed === false) {
 		if (Expected !== undefined) {
@@ -150,11 +151,10 @@ function eq(Input,Expected,OriginalCodeForWrapper) {
 			_unittest_ok++;
 		}
 	} else {
-		debughfail(ShowAs + " executed with exception");
+		debughfail(ShowAs + " executed with exception " + exception);
 		debugh("<hr/>");
 	}
 }
-
 
 function unittest__run_examples() {
 	eq("example:sum1(333)");
