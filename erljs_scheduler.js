@@ -84,6 +84,12 @@ VMengine.prototype = {
  * initialize all needed values
  */
 function erljs_scheduler_setup() {
+	Array.prototype.enqueue = function(x) {
+		alert("msg="+x);
+		this.push(x);
+		return false;
+	};
+
 	ThisNode  = new NodeConfig();
 
 	//vm = new VMengine();
@@ -333,7 +339,7 @@ function erljs_scheduler_continue_event(event, data, external, element) {
 			var p = ProcNode.data;
 			if (p.State != 6) { // not EXITING
 				// TODO: synchronize or re-send localy, if process in on the different Worker
-				p.MsgQueue.push(e);
+				p.MsgQueue.enqueue(e);
 				if (p.State == 4) { // BLOCKED
 					p.State = 5; // BLOCKED_RETRY
 				}
@@ -383,7 +389,12 @@ var ProcessHash;
  * This will improve response time in client-server scenario, and small-workers+wait scenario.
  */
 function erljs_spawn(Proc) {
+	Proc.State = 3;
+
 	var node = new LinkedList.Node(Proc);
+
+	ProcessHash[Proc.Pid] = node;
+
 	ProcessList.append(node);
 }
 
@@ -397,13 +408,17 @@ function erljs_spawn(Proc) {
  */
 function erljs_terminate(ProcNode) {
 	ProcNode.State = 6;
+
 	if (LastProcessNode === ProcNode) {
 		LastProcessNode = LastProcessNode.prev;
 	}
 	if (LastProcessNode === ProcNode) {
 		LastProcessNode = null;
 	}
+
 	ProcessList.remove(ProcNode);
+
+	delete ProcessHash[Proc.Pid];
 
 	// Extract returned (exit) value, or exception info.
 	// Iterate over all linked process (also remove) and send appropriate messages.
@@ -607,7 +622,6 @@ function erljs_start_vm() {
 	var Modules = all_modules;
 	erljs_vm_init(Modules);
 	var InitProcess = erljs_vm_call_prepare(["erljs_kernel", "init", 0], [], 1000, true);
-	InitProcess.State = 3;
 	erljs_spawn(InitProcess);
 	erljs_timeout_timer_id = window.setTimeout(erljs_scheduler_continue_increment, erljs_timeout_timer_timeout);
 }

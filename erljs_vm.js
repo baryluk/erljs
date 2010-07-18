@@ -1708,6 +1708,41 @@ mainloop:
 		}
 		break;
 
+	case "!":
+		opcode_test(OC, '!', 0);
+			assert(Regs[0] !== undefined);
+			assert(Regs[1] !== undefined);
+			if (is_pid(Regs[0])) {
+				// never fails
+				if (Regs[0].pid_type() == "local") {
+					var P2 = ProcessHash[Regs[0]];
+					if (P2) {
+						P2 = P2.data;
+					}
+					if (P2 && !(P2.State == 6 || P2.State == 7)) { // exists and not ENDED or EXITED
+						if (P2.MsgQueue.enqueue(Regs[1])) {
+							// Reschedule local processes to the reciver side if needed
+							Regs[0] = Regs[1];
+							save_context();
+							return false;
+						}
+					}
+				} else { // "remove" process
+					ni(OC);
+					// also never fails
+				}
+			} else if (is_atom(Regs[0])) {
+				// if no such registered process - badarg
+				ni(OC);
+			} else if (is_tuple(Regs[0]) && Regs[0].tuple_arity() == 2) {
+				// is no such reisgered process - no error
+				ni(OC);
+			} else {
+				throw "badarg";
+			}
+			Regs[0] = Regs[1];
+			break;
+
 /*
 	case "bif0":
 		opcode_test(OC, 'bif0', 2);
