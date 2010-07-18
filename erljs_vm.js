@@ -421,58 +421,115 @@ function erljs_ge(A,B) {
 var AllReductions = 0;
 var NativeReductions = 0;
 
-function erljs_vm_call_(Modules, StartFunctionSignature0, Args, MaxReductions, FullDebug) {
-//	var Heap = [];
-	var Stack = [];
-	var Reg0 = 0; // x(0)
-	var Regs = []; // x(1), ... x(N)
-	var FloatRegs = []; // floating point
-	var Self = new EPid();
-	var Node = 0;
-	var IP = 0; // pointer in current node
-	var Reductions = 0;
-	var LocalRegs = []; // unify Regs and LocalRegs into [2] array, and choose from them using 0 or 1 pointer.
-	var LocalEH = []; // local exception handlers (in this function)
-
-//	var FunctionsCode = {};
-//	var Labels = {};
-
-	var ThisFunctionCode = [];
-	var FloatError = false;
-
+function erljs_vm_call_prepare(Modules, StartFunctionSignature0, Args, MaxReductions, FullDebug) {
 	erljs_vm_init(Modules);
 
+	var P = new Proc();
+	P.Pid = new EPid();
+
+	P.Labels = Labels;
+	P.Modules = Modules;
+	P.FunctionsCode = FunctionsCode;
+
+	P.Args = Args;
+	P.MaxReductions = MaxReductions;
+	P.FullDebug = FullDebug;
+
+	P.StartFunctionSignature0 = StartFunctionSignature0;
+
 	// start execution point
-	var StartFunctionSignature = func_sig(StartFunctionSignature0[0], StartFunctionSignature0[1], StartFunctionSignature0[2]);
+	P.StartFunctionSignature = func_sig(StartFunctionSignature0[0], StartFunctionSignature0[1], StartFunctionSignature0[2]);
+
+	P.Regs = [];
+	P.LocalRegs = [];
+	P.LocalEH = [];
+	P.Stack = [];
 
 	// insert initial parameters of first function
 	for (i = 0; i < Args.length; i++) {
-		Regs[i] = Args[i];
+		P.Regs[i] = Args[i];
 	}
 
-	var ThisModuleName = StartFunctionSignature0[0];
-	var ThisFunctionSignature = StartFunctionSignature;
+	P.ThisModuleName = P.StartFunctionSignature0[0];
+	P.ThisFunctionSignature = P.StartFunctionSignature;
 
-	switch (ThisModuleName) {
+	switch (P.ThisModuleName) {
 	case "math":
 	case "erljs":
 	// even if allowed in some point, problem with erlang:* is that some functions are 'bif' and some are called using 'special opcodes' and some using 'call_ext*'
 	case "erlang":
-		throw "module "+ThisModuleName+" not allowed in direct calls yet.";
+		throw "module "+P.ThisModuleName+" not allowed in direct calls yet.";
 	}
-	var ThisLabels = Labels[ThisModuleName];
 
-	var ThisFunctionCode = FunctionsCode[ThisFunctionSignature];
+	P.last_reason = "noreason";
 
+	P.GeneralEntryPoint = 1; // 2 with labels.
+
+	P.IP = P.GeneralEntryPoint;
+
+	P.FloatError = false;
+
+	P.NativeReductions = 0;
+
+	// erlang:put/get
+	P.PDict = {}; // process dictionary
+
+	// bif put/put_tuple
+	P.put_tuple_register = -1;
+	P.put_tuple_i = -1;
+
+	return P;
+}
+
+
+// function usefull when doing simple testing
+function erljs_vm_call_(Modules, StartFunctionSignature0, Args, MaxReductions, FullDebug) {
+	var P = erljs_vm_call_prepare(Modules, StartFunctionSignature0, Args, MaxReductions, FullDebug);
+	var r = erljs_vm_call__(P);
+	if (r == true) {
+		//return P.Regs[0];
+		return P.Returned;
+	}
+}
+
+function erljs_vm_call__(P) {
+	var Stack = P.Stack;
+	var Regs = P.Regs; // x(0), x(1), ... , x(N)
+	var LocalRegs = P.LocalRegs;
+	var FloatRegs = P.FloatRegs; // f()
+
+	var LocalEH = P.LocalEH; // local exception handlers (in this function)
+
+	var Reductions = P.Reductions;
+	var NativeReductions = P.NativeReductions;
+	var ReductionsHere = 0;
+
+	var Node = P.Node;
+
+	var IP = P.IP; // pointer in current node
+
+	var Modules = P.Modules;
+	var MaxReductions = P.MaxReductions;
+	var FullDebug = P.FullDebug;
+
+	var ThisLabels = P.Labels[P.ThisModuleName];
+
+	var ThisFunctionCode = P.FunctionsCode[P.ThisFunctionSignature];
 	if (ThisFunctionCode === undefined) {
-		throw "no such function: " + ThisFunctionSignature;
+		throw "no such function: " + P.ThisFunctionSignature;
 	}
 
-	var last_reason = "noreason";
-
-	var GeneralEntryPoint = 1; // 2 with labels.
-
-	IP = GeneralEntryPoint;
+	function save_context() {
+		// save local variables back to P
+		P.Stack = Stack;
+		P.Regs = Regs;
+		P.LocalRegs = LocalRegs;
+		P.FloatRegs = FloatRegs;
+		P.LocalEH = LocalEH;
+		P.Reductions = Reductions;
+		P.NativeReductions = NativeReductions;
+		P.IP = IP;
+	}
 
 	function get_arg(What) {
 		if (What == "nil") return new EListNil(); // we can return static Nil reference really.
@@ -504,14 +561,14 @@ function erljs_vm_call_(Modules, StartFunctionSignature0, Args, MaxReductions, F
 	function jumpf(LabelF) {
 		//assert(LabelF.length == 2);
 		//assert(LabelF[0] == "f");
-		last_reason = "noreason";
+		P.last_reason = "noreason";
 		assert(LabelF[1] != 0);
 		jump(LabelF[1]);
 	}
 	function jumpfr(LabelF,Reason) {
 		//assert(LabelF.length == 2);
 		//assert(LabelF[0] == "f");
-		last_reason = Reason;
+		P.last_reason = Reason;
 if (LabelF[1] === 0) {
 		// special case in which we should throw error because of some invalide operation, like badarith.
 		//it should look like this:
@@ -529,12 +586,6 @@ if (LabelF[1] === 0) {
 		jump(LabelF[1]);
 }
 	}
-
-	// erlang:put/get
-	var PDict = {}; // process dictionary
-
-	// bif put/put_tuple
-	var put_tuple_register = -1, put_tuple_i = -1;
 
 	// tracing
 	var TracedModules = {};
@@ -557,8 +608,6 @@ if (LabelF[1] === 0) {
 	}
 	var assert = vm_assert;
 
-	NativeReductions = 0;
-
 	function erl_throw(E) {
 		// {'EXIT',{E,[{M,F,A},{M,F,A},...]}}.
 		// now we need to traverse stack, up to the proper EH handler
@@ -574,18 +623,19 @@ if (LabelF[1] === 0) {
 			throw E;
 		}
 // part of return opcode
-		ThisFunctionSignature = X[0];
+		P.ThisFunctionSignature = X[0];
 		ThisFunctionCode = X[1];
 		//IP = X[2];
-		ThisModuleName = X[3];
+		P.ThisModuleName = X[3];
 		LocalRegs = X[4];
 		//LocalEH = X[5];
-		ThisLabels = Labels[ThisModuleName];
+		ThisLabels = Labels[P.ThisModuleName];
+
 
 		LocalRegs[LocalEH[0][0]] = E;
 		var L = ThisLabels[LocalEH[0][1]];
 		IP = L[1];
-		assert(L[0] == ThisFunctionSignature);
+		assert(L[0] == P.ThisFunctionSignature);
 	}
 
 	// execution loop
@@ -596,6 +646,7 @@ if (LabelF[1] === 0) {
 	// Note: keep all identifiers (function names and variables) disriptive.
 	// They will be compressed automatically using compressor.
 	// TODO: preallocate some atomes: "true","false","undefined" and use the same ref everytime (saves time, memory, and space in code source)
+
 try {
 
 mainloop:
@@ -607,7 +658,7 @@ mainloop:
 		throw "internal_vm_error: No return at the end of function. Terminating.";
 	}
 
-	if (ThisModuleName in TracedModules) {
+	if (P.ThisModuleName in TracedModules) {
 	if (FullDebug >= 1) {
 		if (FullDebug >= 1) {
 			try {
@@ -620,7 +671,7 @@ mainloop:
 				debug("  y1: "+ss(LocalRegs[1]));
 			} catch (err) { debug("  not displaying registers -- too long values or tuple construction"); }
 		}
-		debug("Function: "+ThisFunctionSignature+"  IP: " + IP + "  (Reduction counter: "+Reductions+", Native reduction counter: "+NativeReductions+").");
+		debug("Function: "+P.ThisFunctionSignature+"  IP: " + IP + "  (Reduction counter: "+Reductions+", Native reduction counter: "+NativeReductions+").");
 		debug("Instruction: "+toJSON(OC));
 	}
 	}
@@ -640,8 +691,12 @@ mainloop:
 
 	AllReductions = Reductions + NativeReductions;
 
-	if (AllReductions > MaxReductions) {
-		throw "too_many_reduction";
+	ReductionsHere++;
+
+	if (ReductionsHere > MaxReductions) {
+		//throw "too_many_reduction";
+		save_context();
+		return false;
 	}
 
 	var opcode0 = OC[0];
@@ -652,13 +707,13 @@ mainloop:
 		opcode_profiler[opcode0]=1;
 	}
 
-	if (ThisModuleName in TracedModules) {
+	if (P.ThisModuleName in TracedModules) {
 	if (FullDebug>1) {
 		debug("profile: "+toJSON(opcode_profiler));
 	}
 	}
 
-	if (ThisModuleName in TracedModules) {
+	if (P.ThisModuleName in TracedModules) {
 	if (FullDebug) {
 		debug("-----");
 	}
@@ -956,7 +1011,7 @@ mainloop:
 			switch (opcode0) {
 			case "C":
 			//case "call":
-				Stack.push([ThisFunctionSignature, ThisFunctionCode, IP, ThisModuleName, LocalRegs, LocalEH]);
+				Stack.push([P.ThisFunctionSignature, ThisFunctionCode, IP, P.ThisModuleName, LocalRegs, LocalEH]);
 				LocalRegs = [];
 			default: // fall-throught
 				LocalEH = [];
@@ -967,15 +1022,15 @@ mainloop:
 				//assert(OC[1] == Arity);
 				var FunctionSignature = func_sig(ModuleName, Name, Arity);
 				// TODO: read the same version of module, not newset one
-				ThisFunctionCode = FunctionsCode[FunctionSignature];
+				ThisFunctionCode = P.FunctionsCode[FunctionSignature];
 				if (ThisFunctionCode === undefined) {
 					erl_throw(new EAtom("undef"));
 				} else {
-					ThisFunctionSignature = FunctionSignature;
-					//ThisModuleName = ModuleName;
-					//ThisLabels = Labels[ThisModuleName];
+					P.ThisFunctionSignature = FunctionSignature;
+					//P.ThisModuleName = ModuleName;
+					//ThisLabels = Labels[P.ThisModuleName];
 					//jump(EntryPoint);
-					IP = GeneralEntryPoint;
+					IP = P.GeneralEntryPoint;
 				}
 			}
 			break;
@@ -1036,7 +1091,7 @@ mainloop:
 						new ETuple([Fun, ListArgs])
 				]));
 			} else {
-				Stack.push([ThisFunctionSignature, ThisFunctionCode, IP, ThisModuleName, LocalRegs, LocalEH]);
+				Stack.push([P.ThisFunctionSignature, ThisFunctionCode, IP, P.ThisModuleName, LocalRegs, LocalEH]);
 				LocalRegs = [];
 				LocalEH = [];
 
@@ -1057,15 +1112,15 @@ mainloop:
 
 				var FunctionSignature = func_sig(FunctionModuleName, FunctionName, FunctionArity);
 				// if no such function?
-				ThisFunctionCode = FunctionsCode[FunctionSignature];
+				ThisFunctionCode = P.FunctionsCode[FunctionSignature];
 				if (ThisFunctionCode === undefined) {
 					erl_throw(new EAtom("undef"));
 				} else {
-					ThisFunctionSignature = FunctionSignature;
-					ThisModuleName = ModuleName;
-					ThisLabels = Labels[ThisModuleName];
+					P.ThisFunctionSignature = FunctionSignature;
+					P.ThisModuleName = ModuleName;
+					ThisLabels = Labels[P.ThisModuleName];
 					//jump(EntryPoint);
-					IP = GeneralEntryPoint;
+					IP = P.GeneralEntryPoint;
 				}
 			}
 			break;
@@ -1077,7 +1132,7 @@ mainloop:
 	case "call_lists_only":
 	case "call_ext_last":
 	case "call_last":
-			last_reason = "";
+			P.last_reason = "";
 			var native_function = false; // 'native' keyword is reserved in the Rhino JS :(
 		//opcode_test(OC, 'call_ext', 2) || opcode_test(OC, 'call_ext_only', 2) || opcode_test(OC, 'call_lists', 2) || opcode_test(OC, 'call_lists_only', 2);
 		//opcode_test(OC, 'call_ext_last', 3/4 ?); // ? last parameters is integer, i.e. 1
@@ -1207,8 +1262,8 @@ mainloop:
 					if (!(is_atom(Regs[0]) && is_atom(Regs[1]) && is_list(Regs[2]))) {
 						throw "badarg";
 					}
-					ModuleName = Regs[0].toString; // atom // warning this can be erlang or erljs!
-					Name = Regs[1].toString; // atom
+					ModuleName = Regs[0].toString(); // atom // warning this can be erlang or erljs!
+					Name = Regs[1].toString(); // atom
 					Arity = Regs[2].length();
 					//LocalRegs2 = Regs[0 .. Arity];
 					//Regs[0] <- Regs[2].hd();
@@ -1328,8 +1383,9 @@ mainloop:
 					if (Name=="erase") PDict[Regs[0].toString()]=undefined; // or delete?
 					break;
 				case "get_keys/1": ni(OC); break;
-				case "erase/0": ni(OC); break;
-				case "erase/1": ni(OC); break;
+				case "erase/0":
+					ni(OC);
+					break;
 
 				//case "abs/1": ni(OC); break; // abs value of float or int // in gc_bif
 				case "min/2": ni(OC); break;
@@ -1350,10 +1406,14 @@ mainloop:
 				case "yield/0": continue mainloop; break; // ignore
 				case "halt/0":
 					alert("Halted:"+Regs[0]);
-					return;
+					P.Returned = "Halted";
+					save_context();
+					return false;
 				case "halt/1":
 					alert("Halted.");
-					return;
+					P.Returned = "Halted";
+					save_context();
+					return false;
 
 				case "error/2":
 					ni(OC);
@@ -1415,7 +1475,7 @@ mainloop:
 					switch (opcode0) {
 					case 'call_ext':
 					case 'call_lists':
-						Stack.push([ThisFunctionSignature, ThisFunctionCode, IP, ThisModuleName, LocalRegs, LocalEH]);
+						Stack.push([P.ThisFunctionSignature, ThisFunctionCode, IP, P.ThisModuleName, LocalRegs, LocalEH]);
 						LocalRegs = [];
 					default: // fallthrough
 						LocalEH = [];
@@ -1426,11 +1486,11 @@ mainloop:
 							erl_throw(new EAtom("undef"));
 							break;
 						} else {
-							ThisFunctionSignature = FunctionSignature;
-							ThisModuleName = ModuleName;
-							ThisLabels = Labels[ThisModuleName];
+							P.ThisFunctionSignature = FunctionSignature;
+							P.ThisModuleName = ModuleName;
+							ThisLabels = Labels[P.ThisModuleName];
 							//jump(EntryPoint);
-							IP = GeneralEntryPoint;
+							IP = P.GeneralEntryPoint;
 						}
 					}
 				}
@@ -1440,15 +1500,17 @@ mainloop:
 			Regs = [Regs[0]];
 			if (Stack.length != 0) {
 				var X = Stack.pop();
-				ThisFunctionSignature = X[0];
+				P.ThisFunctionSignature = X[0];
 				ThisFunctionCode = X[1];
 				IP = X[2];
-				ThisModuleName = X[3];
+				P.ThisModuleName = X[3];
 				LocalRegs = X[4];
 				LocalEH = X[5];
-				ThisLabels = Labels[ThisModuleName];
+				ThisLabels = Labels[P.ThisModuleName];
 			} else {
-				return Regs[0];
+				P.Returned = Regs[0];
+				save_context();
+				return true;
 			}
 
 			}
@@ -1459,15 +1521,17 @@ mainloop:
 			Regs = [Regs[0]];
 			if (Stack.length != 0) {
 				var X = Stack.pop();
-				ThisFunctionSignature = X[0];
+				P.ThisFunctionSignature = X[0];
 				ThisFunctionCode = X[1];
 				IP = X[2];
-				ThisModuleName = X[3];
+				P.ThisModuleName = X[3];
 				LocalRegs = X[4];
 				LocalEH = X[5];
-				ThisLabels = Labels[ThisModuleName];
+				ThisLabels = Labels[P.ThisModuleName];
 			} else {
-				return Regs[0];
+				P.Returned = Regs[0];
+				save_context();
+				return true;
 			}
 			break;
 
@@ -1583,7 +1647,7 @@ mainloop:
 		case "self": // well, pretty everywhere.
 			//		["bif", "self", "nofail", "", ["x", 0]]
 			assert(OC[4][0] == "x");
-			Regs[OC[4][1]] = Self;
+			Regs[OC[4][1]] = P.Pid;
 			break;
 		case "is_integer": // direct call to is_integer or erlang:is_integer in the body of function
 			assert(OC[4][0] == "x");
@@ -1832,22 +1896,22 @@ mainloop:
 			break;
 	case "put_tuple":
 		//opcode_test(OC, 'put_tuple', 2);
-			put_tuple_register = OC[2][1];
+			P.put_tuple_register = OC[2][1];
 			var put_tuple_size = OC[1];
-			put_tuple_i = 0;
-			Regs[put_tuple_register] = new ETuple(put_tuple_size);
+			P.put_tuple_i = 0;
+			Regs[P.put_tuple_register] = new ETuple(put_tuple_size);
 			break;
 	case "P":
 	//case "put":
 		//opcode_test(OC, 'put', 1);
 			var Arg = get_arg(OC[1]);
-			if (put_tuple_i < 0 || put_tuple_register < 0) {
+			if (P.put_tuple_i < 0 || P.put_tuple_register < 0) {
 				throw "error in put";
 			}
 			// if (put_tuple_size < 0 || put_tuple_i >= put_tuple_size) {
 			//	throw "error2 in put";
 			//}
-			Regs[put_tuple_register].put(put_tuple_i++, Arg);
+			Regs[P.put_tuple_register].put(P.put_tuple_i++, Arg);
 			// TODO: if next instruction is not put, then reset put_tuple_* variables. Or is this legal to intermix put and other instructions?
 			break;
 
@@ -2059,7 +2123,7 @@ mainloop:
 			}
 			var FunArity = OC[1][2] - NumberOfBindedVariables;
 			var Uniq = Something; // This isn't exactly 'Uniq' element.
-			Regs[0] = new EFunLocal(ThisModuleName, DstFunction, FunArity, NumberOfBindedVariables, HereId, BindedVarValues, Self, Uniq);
+			Regs[0] = new EFunLocal(P.ThisModuleName, DstFunction, FunArity, NumberOfBindedVariables, HereId, BindedVarValues, P.Pid, Uniq);
 
 			break;
 	case "jump":
@@ -2131,23 +2195,31 @@ mainloop:
 	default:
 			alert("unknown opcode "+OC);
 			uns(OC);
-			return;
+			P.Returned = "Unknown opcide";
+			save_context();
+			return false;
 	} // switch (opcode0)
 	} // while (true)
 
 	throw "internal_vm_error_break_at_mainloop";
 
 } catch (err) {
-	Stack.push([ThisFunctionSignature, ThisFunctionCode, IP-1, ThisModuleName, LocalRegs]);
+	Stack.push([P.ThisFunctionSignature, ThisFunctionCode, IP-1, P.ThisModuleName, LocalRegs]);
 	debug("Last OC: "+toJSON(OC));
 	debug("exception error: "+err+"");
 	for (var i = Stack.length-1; i >= 0; i--) {
 		var S = Stack[i];
 		debug((i==Stack.length-1 ? "in function " : "in call from ") + S[0] +" IP:" + S[2] );
 	}
-	//throw err;
-	return "Error: "+err;
+
+	P.Returned = "Exception: "+err;
+	save_context();
+	return false;
 }
+
+	P.Returned = "Out of loop.";
+	save_context();
+	return true;
 }
 
 function erljs_vm_call0(Modules, StartFunctionSignature0, Args, ShowResult, ShowProfile, ShowTime, ShowStats) {
