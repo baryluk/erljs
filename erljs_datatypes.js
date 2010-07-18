@@ -250,7 +250,7 @@ var EList = EListNonEmpty.extend({
 	},
 	// TODO: we can memoize this! and use in erlang:length/1 !
 	//       Remember about improper lists.
-	length: function() { return 1+list_len(this); },
+	length: function() { return list_len(this); },
 	// similar like bellow, but we check if list contains only 0..255 integers
 	// TODO: make it tail recursive
 	is_byte_list: function() {
