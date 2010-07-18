@@ -673,7 +673,7 @@ function erljs_scheduler_continue_increment() {
  */
 function erljs_vm_consume() {
 	// what is the total time to be consumed by this function (sum of all processes executed here)
-	var max_reductions = 1000;
+	var max_reductions = 40000;
 	var max_time = 30; // miliseconds
 
 	// how big is a maximal time-slot we are giving to each process.
