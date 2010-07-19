@@ -1186,7 +1186,7 @@ mainloop:
 					Regs[0] = 0;
 					break;
 				case "console_log/1":
-					var k = Regs[0].toString();
+					var k = P.Pid.toString() + " log: " + Regs[0].toString();
 					console.log(k);
 					Regs[0] = 0;
 					break;
