@@ -1465,7 +1465,13 @@ mainloop:
 					break;
 				case "get_module_info/1": ni(OC); break;
 				case "get_module_info/2": ni(OC); break;
-				case "yield/0": continue mainloop; break; // ignore
+				case "yield/0":
+					/*
+					save_context();
+					return false;
+					*/
+					continue mainloop; // ignore
+					//break; // unreachable break
 				case "halt/0":
 					alert("Halted:"+Regs[0]);
 					P.Returned = "Halted";
