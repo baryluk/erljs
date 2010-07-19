@@ -499,7 +499,10 @@ function erljs_schedule() {
 /* Run scheduled process */
 function erljs_schedule_run() {
 	if (LastProcessNode) {
-		erljs_go(LastProcessNode.data);
+		var r = erljs_go(LastProcessNode.data);
+		if (!r) {
+			erljs_terminate(LastProcessNode);
+		}
 		return 0;
 	}
 	return -1;
@@ -515,13 +518,11 @@ function erljs_go(P) {
 	var r = erljs_vm_steps_(P);
 	if (r) {
 		P.State = 6; // ENDED
+		return false;
 	} else {
-		erljs_scheduler_log(toJSON(P.ThisModuleName));
-		erljs_scheduler_log(toJSON(P.IP));
-		erljs_scheduler_log(toJSON(P.Regs));
 		P.State = 3; // READY
 	}
-	return;
+	return true;
 }
 
 /** Examines single process state.
