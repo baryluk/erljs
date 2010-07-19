@@ -1506,6 +1506,18 @@ mainloop:
 					ni(OC);
 					break;
 
+				case "whereis/1":
+					if (!(is_atom(Regs[0]))) {
+						throw "badarg";
+					}
+					Regs[0] = new EAtom("undefined");
+					break;
+
+				case "nodes/0":
+					Regs[0] = new EList( new EAtom("nonode@nohost"), new EListNil() );
+					break;
+
+
 				default:
 					throw "not implemented (unknown?) native function: "+ModuleName+":"+NA;
 					//break; // unreachale break
@@ -1712,10 +1724,50 @@ mainloop:
 				Regs[OC[4][1]] = (is_true(Arg1)&&is_true(Arg2) ? Etrue : Efalse);
 			}
 			break;
+		case "node": // i.e. gen_server
+			//		["bif", "node", ["f", 184], [["x",0]], ["x",2]]
+			//assert(OC[4][0] == "x");
+			if (OC[3].length == 0) {
+				var R = new EAtom("nonode@nohost");
+			} else if (OC[3].length == 1) {
+				Arg = get_arg(OC[3][0]);
+				if (is_pid(Arg)) {
+					//var R = new EAtom("nonode@nohost");
+					var R = new EAtom("undefined");
+				} else if (false) { //is_port(Arg)) {
+					var R = new EAtom("undefined");
+				} else if (false) { //is_ref(Arg)) {
+					var R = new EAtom("undefined");
+				} else {
+					throw "badarg";
+				}
+			} else {
+				throw "badarg";
+			}
+			switch (OC[4][0]) {
+			case "x":
+				Regs[OC[4][1]] = R;
+				break;
+			case "y":
+				LocalRegs[OC[4][1]] = R; // i.e. gen_server
+				break;
+			default:
+				uns(OC);
+			}
+			break;
 		case "self": // well, pretty everywhere.
 			//		["bif", "self", "nofail", "", ["x", 0]]
-			assert(OC[4][0] == "x");
-			Regs[OC[4][1]] = P.Pid;
+			//assert(OC[4][0] == "x");
+			switch (OC[4][0]) {
+			case "x":
+				Regs[OC[4][1]] = P.Pid;
+				break;
+			case "y":
+				LocalRegs[OC[4][1]] = P.Pid; // i.e. gen_server
+				break;
+			default:
+				uns(OC);
+			}
 			break;
 		case "is_integer": // direct call to is_integer or erlang:is_integer in the body of function
 			assert(OC[4][0] == "x");
