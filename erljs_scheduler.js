@@ -691,6 +691,7 @@ function erljs_vm_consume() {
 
 	var reductions = 0;
 	var start = (new Date()).getTime();
+	var end = start;
 	do {
 		var next_process = erljs_schedule();
 
@@ -724,11 +725,11 @@ function erljs_vm_consume() {
 			}
 		}
 
-		var end = (new Date()).getTime();
+		end = (new Date()).getTime();
 	} while (
 		reductions < max_reductions
 		&&
-		(end - start) > max_time
+		(end - start) < max_time
 	);
 
 	erljs_scheduler_log("Ended consuming (too many consumption: red="+reductions+", time="+(end-start)+"ms). Doing quick rentry using incremental timeout, or event.");
