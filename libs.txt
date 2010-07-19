@@ -29,6 +29,8 @@ Compressing:
      wersja 3.1 http://base2.googlecode.com/svn/trunk/src/apps/packer/packer.html
    http://www.crockford.com/javascript/jsmin.html
  http://javascriptcompressor.com/
+ http://www.bananascript.com/index.php?compress
+    - strips comments, white spaces, and performs aggressive dictionary compression
 
 http://razorsharpcode.blogspot.com/2010/02/lightweight-javascript-and-css.html
 http://shrinksafe.dojotoolkit.org/
@@ -47,16 +49,25 @@ http://www.julienlecomte.net/blog/2007/08/13/
 
 Minifiers:
  JSMin http://www.crockford.com/javascript/jsmin.html
+   JS Minifier http://fmarcia.info/jsmin/test.html (JS version of JSMin)
  Dojo http://shrinksafe.dojotoolkit.org/
  YUI http://developer.yahoo.com/yui/compressor/
  Closure http://code.google.com/closure/compiler/
  Caja http://caja.appspot.com/tools/index
 
 JSKB (strips dead code based on detecting browser, based on rules and heuristics of newer versions):
+ http://www.browserscope.org/jskb/about
  http://google-caja.googlecode.com/svn/trunk/doc/html/jskb.html
-
 
 SSJS http://en.wikipedia.org/wiki/Server-side_JavaScript
 
 http://nodejs.org/
 
+Linting:
+  http://www.jslint.com/
+  http://jsutility.pjoneil.net/?
+  http://www.javascriptlint.com/online_lint.php
+
+Analiza wydajności stron WWW
+  Google Page Speed http://code.google.com/speed/page-speed/
+  Yahoo YSlow http://developer.yahoo.com/yslow/
