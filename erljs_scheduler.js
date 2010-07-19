@@ -399,6 +399,8 @@ function erljs_spawn(Proc) {
 	ProcessHash[Proc.Pid] = node;
 
 	ProcessList.append(node);
+
+	erljs_scheduler_log("New process "+Proc.Pid+" created, spawned, and added to the process list");
 }
 
 /* Removes existing process list node from ProcessList,
@@ -428,6 +430,8 @@ function erljs_terminate(ProcNode) {
 	// Iterate over all linked process (also remove) and send appropriate messages.
 
 	// Remove all timers, dom and ajax listeners.
+
+	erljs_scheduler_log("Process "+Proc.Pid+" destroyed, ended and removed from process list.");
 }
 
 /* Choice process from ProcessList to be run now. Return null, if there is no processes or all are in blocked state
@@ -622,12 +626,17 @@ var erljs_timeout_timer_timeout = 50; // miliseconds
 
 // main entry point for starting whole system
 function erljs_start_vm() {
+	erljs_scheduler_log("Starting VM and scheduler");
 	erljs_scheduler_setup();
 	var Modules = all_modules;
+	erljs_scheduler_log("Initializing modules");
 	erljs_vm_init(Modules);
+	erljs_scheduler_log("Starting erljs_kernel:init/0");
 	var InitProcess = erljs_vm_call_prepare(["erljs_kernel", "init", 0], [], 1000, true);
 	erljs_spawn(InitProcess);
+	erljs_scheduler_log("Setting timeouts");
 	erljs_timeout_timer_id = window.setTimeout(erljs_scheduler_continue_increment, erljs_timeout_timer_timeout);
+	erljs_scheduler_log("System started.");
 }
 
 
@@ -639,6 +648,7 @@ function erljs_start_vm() {
  * Pid is undefined or a Pid object of the process, which we are hiting timeout for
  */
 function erljs_scheduler_continue_timeout(Pid) {
+	erljs_scheduler_log("*** Context switch in - 'continue timeout'");
 	erljs_vm_consume();
 }
 
@@ -647,9 +657,11 @@ function erljs_scheduler_continue_timeout(Pid) {
  * long runing erljs jobs, and to receive events from DOM and/or AJAX.
  */
 function erljs_scheduler_continue_increment() {
+	erljs_scheduler_log("*** Context switch in - 'continue increment'");
 	erljs_vm_consume();
 }
 
+var erljs_vm_consumptions = 0;
 
 /** We are using hybrid scheduling.
  *
@@ -676,9 +688,11 @@ function erljs_scheduler_continue_increment() {
  *
  */
 function erljs_vm_consume() {
+	erljs_vm_consumptions++;
+
 	// what is the total time to be consumed by this function (sum of all processes executed here)
-	var max_reductions = 40000;
-	var max_time = 30; // miliseconds
+	var max_reductions = 50000;
+	var max_time = 80; // miliseconds
 
 	// how big is a maximal time-slot we are giving to each process.
 	// (it can be smaller if process ended or entered a blocked state)
@@ -705,7 +719,7 @@ function erljs_vm_consume() {
 			var r = erljs_schedule_run();
 			if (r < 0) { throw "Internal error"; }
 			reductions += S.Reductions;
-			erljs_scheduler_log("Process execution done (VM returned)");
+			erljs_scheduler_log("Process execution done (interpreter returned, after "+S.Reductions+" reductions)");
 		} else {
 			erljs_scheduler_log("Scheduler did not found any process to run.");
 			// no process to run
