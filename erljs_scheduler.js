@@ -407,7 +407,8 @@ function erljs_spawn(Proc) {
  * (we could send it to the 'default' process, etc.)
  */
 function erljs_terminate(ProcNode) {
-	ProcNode.State = 6;
+	var Proc = ProcNode.data;
+	Proc.State = 6;
 
 	if (LastProcessNode === ProcNode) {
 		LastProcessNode = LastProcessNode.prev;
