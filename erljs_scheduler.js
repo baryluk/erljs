@@ -613,7 +613,7 @@ var erljs_timeout_timer_id;
 
 // there is minimal delay of 10ms in most browsers (10ms in IE, 5ms in Gecko).
 // HTML5 defines minimal delay of reexecution as 4ms
-var erljs_timeout_timer_timeout = 50; // miliseconds
+var erljs_timeout_timer_timeout = 10; // miliseconds
 /* for 0ms delay one can use:
  *   on starting side:  window.postMessage(message, targetOrigin)
  *   on ending site:
