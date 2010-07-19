@@ -85,9 +85,12 @@ VMengine.prototype = {
  */
 function erljs_scheduler_setup() {
 	Array.prototype.enqueue = function(x) {
-		alert("msg="+x);
+		erljs_scheduler_log("Enqueued message "+x.toString());
 		this.push(x);
 		return false;
+	};
+	Array.prototype.dequeue = function(x) {
+		return this.shift();
 	};
 
 	ThisNode  = new NodeConfig();
