@@ -1893,7 +1893,13 @@ mainloop:
 
 	case "loop_rec":
 		opcode_test(OC, 'loop_rec', 2);
-			uns(OC);
+			assert(OC[1][0] == "f");
+			assert(OC[2][0] == "x");
+			if (P.MsgQueue.length == 0) {
+				jump(OC[1][1]);
+			} else {
+				P.remove_message_register = OC[2][1];
+			}
 			break;
 	case "select_val":
 		opcode_test(OC, 'select_val', 3); // ozywana tez np. w if
@@ -1919,15 +1925,35 @@ mainloop:
 			break;
 	case "remove_message":
 		opcode_test(OC, 'remove_message', 0);
-			uns(OC);
+			assert(P.MsgQueue.length > 0);
+			Regs[P.remove_message_register] = P.MsgQueue.dequeue();
 			break;
+	case "wait":
+		opcode_test(OC, 'wait', 1);
+			assert(OC[1][0] == "f");
+			jump(OC[1][1]);
+			save_context();
+			return false;
 	case "wait_timeout":
 		opcode_test(OC, 'wait_timeout', 2);
-			uns(OC);
+			assert(OC[1][0] == "f"); // if new message jump(OC[1][1]);, if no new message in the OC[2][1] miliseconds, then go to next opcode
+			Arg = get_arg(OC[2]);
+			if (is_integer(Arg) && Arg >= 0) {
+				P.Timeout = Arg;
+				P.JumpLabelOnNewMessage = OC[1][1];
+				save_context();
+				return false;
+			} else if (is_atom(Arg) && Arg.atom_name() == "infinity") {
+				jump(OC[1][1]);
+				save_context();
+				return false;
+			} else {
+				throw "timeout_value";
+			}
 			break;
 	case "timeout":
 		opcode_test(OC, 'timeout', 0);
-			uns(OC);
+			// do nothing
 			break;
 	case "select_tuple_arity":
 		//opcode_test(OC, 'select_tuple_arity', 3);
