@@ -1796,13 +1796,13 @@ mainloop:
 					var P2 = ProcessHash[Regs[0]];
 					if (P2) {
 						P2 = P2.data;
-					}
-					if (P2 && !(P2.State == 6 || P2.State == 7)) { // exists and not ENDED or EXITED
-						if (P2.MsgQueue.enqueue(Regs[1])) {
-							// Reschedule local processes to the reciver side if needed
-							Regs[0] = Regs[1];
-							save_context();
-							return false;
+						if (P2 && !(P2.State == 6 || P2.State == 7)) { // exists and not ENDED or EXITED
+							if (P2.MsgQueue.enqueue(Regs[1])) {
+								// Reschedule local processes to the reciver side if needed
+								Regs[0] = Regs[1];
+								save_context();
+								return false;
+							}
 						}
 					}
 				} else { // "remove" process
