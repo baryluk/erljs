@@ -466,7 +466,7 @@ function erljs_vm_call_prepare(StartFunctionSignature0, Args, MaxReductions, Ful
 	}
 
 	P.ThisFunctionSignature = P.StartFunctionSignature;
-	P.ThisModuleName = P.ThisFunctionSignature[0];
+	P.ThisModuleName = P.StartFunctionSignature0[0];
 
 	switch (P.ThisModuleName) {
 	case "math":
@@ -498,7 +498,7 @@ function erljs_vm_call_prepare(StartFunctionSignature0, Args, MaxReductions, Ful
 
 
 
-function erljs_vm_steps_(P) {
+function erljs_vm_steps__(P) {
 	var Stack = P.Stack;
 	var Regs = P.Regs; // x(0), x(1), ... , x(N)
 	var LocalRegs = P.LocalRegs;
@@ -571,6 +571,36 @@ function erljs_vm_steps_(P) {
 		assert(LabelF[1] != 0);
 		jump(LabelF[1]);
 	}
+
+	function erl_throw(E) {
+		// {'EXIT',{E,[{M,F,A},{M,F,A},...]}}.
+		// now we need to traverse stack, up to the proper EH handler
+		// we can ignore stack trace for now
+		var X;
+		while (LocalEH[0] === undefined) {
+			X = Stack.pop();
+			if (X === undefined) { throw E; }
+			LocalEH = X[5];
+			NativeReductions++;
+		}
+		if (X === undefined) {
+			throw E;
+		}
+// part of return opcode
+		P.ThisFunctionSignature = X[0];
+		ThisFunctionCode = X[1];
+		//IP = X[2];
+		P.ThisModuleName = X[3];
+		LocalRegs = X[4];
+		//LocalEH = X[5];
+		ThisLabels = Labels[P.ThisModuleName];
+
+		LocalRegs[LocalEH[0][0]] = E;
+		var L = ThisLabels[LocalEH[0][1]];
+		IP = L[1];
+		assert(L[0] == P.ThisFunctionSignature);
+	}
+
 	function jumpfr(LabelF,Reason) {
 		//assert(LabelF.length == 2);
 		//assert(LabelF[0] == "f");
@@ -615,36 +645,6 @@ if (LabelF[1] === 0) {
 	}
 	var assert = vm_assert;
 
-	function erl_throw(E) {
-		// {'EXIT',{E,[{M,F,A},{M,F,A},...]}}.
-		// now we need to traverse stack, up to the proper EH handler
-		// we can ignore stack trace for now
-		var X;
-		while (LocalEH[0] === undefined) {
-			X = Stack.pop();
-			if (X === undefined) { throw E; }
-			LocalEH = X[5];
-			NativeReductions++;
-		}
-		if (X === undefined) {
-			throw E;
-		}
-// part of return opcode
-		P.ThisFunctionSignature = X[0];
-		ThisFunctionCode = X[1];
-		//IP = X[2];
-		P.ThisModuleName = X[3];
-		LocalRegs = X[4];
-		//LocalEH = X[5];
-		ThisLabels = Labels[P.ThisModuleName];
-
-
-		LocalRegs[LocalEH[0][0]] = E;
-		var L = ThisLabels[LocalEH[0][1]];
-		IP = L[1];
-		assert(L[0] == P.ThisFunctionSignature);
-	}
-
 	// execution loop
 	// TODO: optimalise it by:
 	//    using smaller number of variables,
@@ -665,8 +665,8 @@ mainloop:
 		throw "internal_vm_error: No return at the end of function. Terminating.";
 	}
 
-	if (P.ThisModuleName in TracedModules) {
 	if (FullDebug >= 1) {
+	if (P.ThisModuleName in TracedModules) {
 		if (FullDebug >= 1) {
 			try {
 				debug("  x0: "+ss(Regs[0]));
@@ -687,11 +687,11 @@ mainloop:
 
 	if (FullDebug > 2) {
 		document.getElementById("Red").value = Reductions;
-	}
 	if (FullDebug > 3) {
 		document.getElementById("X0").value = toJSON(Regs[0]);
 		document.getElementById("X1").value = toJSON(Regs[1]);
 		document.getElementById("X2").value = toJSON(Regs[2]);
+	}
 	}
 
 	AllReductions = Reductions + NativeReductions;
@@ -2310,6 +2310,14 @@ mainloop:
 	P.Returned = "Out of loop.";
 	save_context();
 	return true;
+}
+
+function erljs_vm_steps_(P) {
+	var r = erljs_vm_steps__(P);
+	if (r == true) {
+		P.State = 8; // ENDED
+	}
+	return r;
 }
 
 /** Standalone API, without scheduler below */
