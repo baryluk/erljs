@@ -1437,7 +1437,14 @@ mainloop:
 					ni(OC);
 					break;
 				case "spawn_opt/4": // Module, Function, [Args], [Opts]
-					ni(OC);
+					if (!(is_atom(Regs[0]) && is_atom(Regs[1]) && is_list(Regs[2]) && is_list(Regs[3]))) {
+						throw "badarg";
+					}
+					// TODO: use Opts in Regs[3] !!
+					var Arity = Regs[2].length();
+					var NewP = erljs_vm_call_prepare([Regs[0].toString(), Regs[1].toString(), Arity], Regs[2], 1000, true);
+					erljs_spawn(NewP);
+					Regs[0] = NewP.Pid;
 					break;
 
 
