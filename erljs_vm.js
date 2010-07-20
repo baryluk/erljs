@@ -1947,6 +1947,8 @@ mainloop:
 		opcode_test(OC, 'wait', 1);
 			assert(OC[1][0] == "f");
 			jump(OC[1][1]);
+			P.JumpLabelOnNewMessage = OC[1][1];
+			P.WaitingIn = IP-1;
 			save_context();
 			return false;
 	case "wait_timeout":
@@ -1956,9 +1958,11 @@ mainloop:
 			if (is_integer(Arg) && Arg >= 0) {
 				P.Timeout = Arg;
 				P.JumpLabelOnNewMessage = OC[1][1];
+				P.WaitingIn = IP;
 				save_context();
 				return false;
 			} else if (is_atom(Arg) && Arg.atom_name() == "infinity") {
+				P.WaitingIn = IP-1;
 				jump(OC[1][1]);
 				save_context();
 				return false;
