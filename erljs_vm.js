@@ -1503,7 +1503,11 @@ mainloop:
 
 				case "get_stacktrace/0":
 					// [{Module, Function, Arity | Args}]
-					ni(OC);
+					Regs[0] = new EListNil();
+					break;
+
+				case "group_leader/0":
+					Regs[0] = P.Pid;
 					break;
 
 				case "whereis/1":
@@ -1511,6 +1515,17 @@ mainloop:
 						throw "badarg";
 					}
 					Regs[0] = new EAtom("undefined");
+					break;
+
+				case "register/2":
+					if (!(is_atom(Regs[0]))) {
+						throw "badarg";
+					}
+					if (!(is_pid(Regs[1]) || is_port(Regs[1]))) {
+						throw "badarg";
+					}
+					Regs[0] = new EAtom("true");
+					// throw "badarg" // if already registered
 					break;
 
 				case "nodes/0":
