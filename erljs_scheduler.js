@@ -715,12 +715,13 @@ function erljs_vm_consume() {
 
 		if (next_process) {
 			var S = next_process.data;
-			erljs_scheduler_log("Scheduled and running process "+S.Pid);
+			erljs_scheduler_log("Process "+S.Pid+" scheduled. Running...");
 			S.MaxReductions = max_reductions;
 			var r = erljs_schedule_run();
 			if (r < 0) { throw "Internal error"; }
 			reductions += S.Reductions;
-			erljs_scheduler_log("Process execution done (interpreter returned, after "+S.Reductions+" reductions)");
+			erljs_scheduler_log("Process "+S.Pid+" execution done (interpreter returned, after "+S.Reductions+" reductions)");
+			erljs_scheduler_log("Process "+S.Pid+" is now in state "+S.State+" in "+S.ThisFunctionSignature+" +"+S.IP +" (waiting in +"+S.WaitingIn+")");
 		} else {
 			erljs_scheduler_log("Scheduler did not found any process to run.");
 			// no process to run
