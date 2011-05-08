@@ -22,3 +22,4 @@ regexp.erl
 tests_auto.erl
 tests_auto.js
 
+__doc*.js
