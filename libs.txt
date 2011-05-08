@@ -15,6 +15,32 @@ YUI3
 UIZE
   http://www.uize.com/
 
+
+Frameworki do RIA (rich internet applications):
+qooxdoo
+  http://qooxdoo.org/
+  Mają fajny i wspaniały inspector: http://demo.qooxdoo.org/1.2.x/inspector/
+  Nie dużo, ale ładne widgety, stylowalne, w wielu językach.
+  Ciekawe możliwości.
+openlaszlo
+  Kompiluje do Flasha lub HTML+JS !
+  Aplikacje pisze się w xml'o języku łączącym html, widgety, stany, style i kod.
+QWT
+  http://qooxdoo.org/contrib/project/qwt
+  translate qooxdoo like Java to JavaScript!
+  Similar to GWT
+Pustefix
+  MVC based on qooxdoo.
+  Views written in XML+XSLT.
+  Automatyczna serializacja ajaxa do Javy, ze sprawdzaniem constrainów.
+  http://pustefix-framework.org/
+RAP
+  http://eclipse.org/rap/
+  Dużo ciekawych aplikacji (np. mandżer dependenji eclipsa do łatwego ściągania,
+    albo to http://migrate.numiton.com/ - konwerter PHP do Javy, w przyszłości innych jęyzków)
+  Fajne Javowe kontrolki, i cała platforma. Kontrolki danowe, formularze, arkusze, drzewa, wizualizacje, mapy.
+  Wydaje mi się że używają qooxdoo w warstwie prezentacyjnej! Poprostu dodalai więcej kontrolek i translacje z Javy.
+
 %http://caja.appspot.com/tools/index
 
 Compacting:
@@ -71,3 +97,8 @@ Linting:
 Analiza wydajności stron WWW
   Google Page Speed http://code.google.com/speed/page-speed/
   Yahoo YSlow http://developer.yahoo.com/yslow/
+
+JavaScript Lint - http://www.javascriptlint.com/
+http://adsafe.org/ - Making JavaScript Safe for Advertising.
+"use strict"; - http://ejohn.org/blog/ecmascript-5-strict-mode-json-and-more/
+
