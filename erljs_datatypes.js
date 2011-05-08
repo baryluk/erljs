@@ -3,7 +3,7 @@
 // Inspired by base2 and Prototype
 // http://ejohn.org/blog/simple-javascript-inheritance/
 (function(){
-var initializing = false, fnTest = /xyz/.test(function(xyz){xyz("xyz");}) ? /\b_super\b/ : /.*/;
+var initializing = false, fnTest = (/xyz/).test(function(xyz){xyz("xyz");}) ? /\b_super\b/ : /.*/;
 // The base Class implementation (does nothing)
 this.Class = function(){};
 // Create a new Class that inherits from this class
@@ -17,19 +17,22 @@ Class.extend = function(prop) {
 	// Copy the properties over onto the new prototype
 	for (var name in prop) {
 		// Check if we're overwriting an existing function
-		prototype[name] = typeof prop[name] == "function" && typeof _super[name] == "function" && fnTest.test(prop[name])
-				? (function(name, fn){
+		prototype[name] =
+				(typeof prop[name] == "function" && typeof _super[name] == "function" && fnTest.test(prop[name]))
+				?
+				(function(name1, fn){
 					return function() {
 						var tmp = this._super;
 						// Add a new ._super() method that is the same method but on the super-class
-						this._super = _super[name];
+						this._super = _super[name1];
 						// The method only need to be bound temporarily, so we remove it when we're done executing
 						var ret = fn.apply(this, arguments);
 						this._super = tmp;
 						return ret;
 					};
 				})(name, prop[name])
-				: prop[name];
+				:
+				prop[name];
 	}
 	// The dummy class constructor
 	function Class() {
@@ -75,7 +78,7 @@ var EAtom = ETerm.extend({
 		}
 	},
 	type: function() { return "atom"; },
-	is: function(T) { return T=="atom"; },
+	is: function(T) { return (T=="atom"); },
 	atom_id: function() { return this.A; },
 	atom_name: function() { return AllAtomsNamesFromInt[this.A]; },
 	toString: function() {
@@ -111,17 +114,17 @@ function get_atom(AtomName_, existing) {
 }
 
 var EInteger = ETerm.extend({
-	init: function(Integer_) { this.IntegerValue = Integer_ },
+	init: function(Integer_) { this.IntegerValue = Integer_; },
 	type: function() { return "integer"; },
-	is: function(T) { return T=="integer"; },
+	is: function(T) { return (T=="integer"); },
 	toString: function() {
 		return this.IntegerValue; // be sure to include decimal dot
 	}
 });
 var EFloat = ETerm.extend({
-	init: function(Float_) { this.FloatValue = Float_ },
+	init: function(Float_) { this.FloatValue = Float_; },
 	type: function() { return "float"; },
-	is: function(T) { return T=="float"; },
+	is: function(T) { return (T=="float"); },
 	toString: function() {
 		return this.FloatValue; // be sure to include decimal dot
 	}
@@ -129,14 +132,16 @@ var EFloat = ETerm.extend({
 var ETuple = ETerm.extend({
 	init: function(X) { if (X instanceof Array) { this.TupleArity=X.length; this.TupleData=X; } else { this.TupleArity=X; this.TupleData=[]; } },
 	type: function() { return "tuple"; },
-	is: function(T) { return T=="tuple"; },
+	is: function(T) { return (T=="tuple"); },
 	put: function(Index, Value) { this.TupleData[Index] = Value; },
-	get: function(Index) { if (Index>this.TupleArity) throw ""; return this.TupleData[Index];  },
+	get: function(Index) { if (Index > this.TupleArity) { throw ""; } return this.TupleData[Index];  },
 	tuple_arity: function() { return this.TupleArity; },
 	toString: function() {
 		var r = "";
 		for (var i = 0; i < this.TupleArity; i++) {
-			if (i) r += ",";
+			if (i) {
+				r += ",";
+			}
 			if (this.TupleData[i] !== undefined) {
 				r += this.TupleData[i].toString();
 			} else {
@@ -169,7 +174,7 @@ var EList = EListNonEmpty.extend({
 	this._=[Head_,Tail_];
 	},
 	type: function() { return "list"; },
-	is: function(T) { return T=="list"; },
+	is: function(T) { return (T=="list"); },
 	empty: function() { return false; },
 	head: function() {
 		return this._[0];
@@ -292,7 +297,7 @@ function list_len(t) {
 	if (t instanceof EListString) {
 		l += t.length();
 	} else if (t instanceof EListNil) {
-		;
+		
 	} else {
 		throw "improper list";
 	}
@@ -303,7 +308,7 @@ function list_len(t) {
 var EListNil = EListAny.extend({
 	init: function() { },
 	type: function() { return "list"; },
-	is: function(T) { return T=="list"; },
+	is: function(T) { return (T=="list"); },
 	empty: function() { return true; },
 	toString: function() { return "[]"; },
 	toStringJust: function() { return ""; },
@@ -324,11 +329,11 @@ var EListString = EListNonEmpty.extend({
 		this.S = S_; this.i=i_;
 	},
 	type: function() { return "list"; },
-	is: function(T) { return T=="list"; },
+	is: function(T) { return (T=="list"); },
 	// this.empty(), should be always false, because there is EListNil for empty list
 	// there is also no reason for EListString with empty string, EListNil is just fine.
 	// only real reason can be to have display "", and not [].
-	empty: function() { return this.S.length==this.i; },
+	empty: function() { return (this.S.length==this.i); },
 	head: function() { return this.S.charCodeAt(this.i); },
 	tail: function() {
 /*
@@ -555,7 +560,9 @@ function eterm_decode_existing_atoms(s) {
 }
 function eterm_decode_(s,existing) {
 	var t = get_next(s,0,existing);
-	if (t[1] != s.length) throw "excesive data";
+	if (t[1] != s.length) {
+		throw "excesive data";
+	}
 	return t[0];
 }
 // Logical xor. Thanks for this short and universally working version. http://www.howtocreate.co.uk/xor.html :)
@@ -569,14 +576,16 @@ decode_again:
 while (true) {
 	switch (s[i++]) {
 		case "{":
-			if (s[i] == "}") return [new ETuple(0),i+1];
+			if (s[i] == "}") {
+				return [new ETuple(0), i+1];
+			}
 			var k = new Array();
 			var n = 0;
 tuple_loop:
 			while (true) {
 				var t = get_next(s, i, existing);
-				k[n++]=t[0];
-				i=t[1];
+				k[n++] = t[0];
+				i = t[1];
 				switch (s[i++]) {
 					case ",":
 						continue tuple_loop; // TODO: allow trailing comma as proposed in EEP
@@ -586,9 +595,11 @@ tuple_loop:
 						throw "syntax error in tuple at "+i;
 				}
 			}
-			return [new ETuple(k),i];
+			return [new ETuple(k), i];
 		case "[":
-			if (s[i] == "]") return [new EListNil(),i+1];
+			if (s[i] == "]") {
+				return [new EListNil(), i+1];
+			}
 			var proper = true;
 			var r0 = new EList(-1233,-4123), r = r0;
 list_loop:
@@ -597,12 +608,12 @@ list_loop:
 				var r2 = new EList(t[0],-142);
 				r.settail(r2);
 				r = r2;
-				i=t[1];
+				i = t[1];
 				switch (s[i++]) {
 					case ",": // TODO: allow trailing comma in proper lists as proposed in EEP
 						continue list_loop;
 					case "|":
-						proper=false;
+						proper = false;
 					case "]": // fallthrough
 						break list_loop;
 					default:
@@ -610,14 +621,16 @@ list_loop:
 				}
 			}
 			if (proper) {
-				r.settail(new EListNil);
+				r.settail(new EListNil());
 			} else {
 				var t = get_next(s, i, existing);
 				r.settail(t[0]);
-				i=t[1];
-				if (s[i++] != "]") throw "bad list at about "+i;
+				i = t[1];
+				if (s[i++] != "]") {
+					throw "bad list at about "+i;
+				}
 			}
-			return [r0.tail(),i];
+			return [r0.tail(), i];
 		case "$": // integer, asci code
 			// exceptions: not $\ but $\\, $\n, etc. 
 			if (s[i]!="\\") {
@@ -658,8 +671,10 @@ list_loop:
 			// '
 			rS.lastIndex = i;
 			m = rS.exec(s);
-			if (!m || m.index!=i) { throw "bad syntax in string at about "+i; }
-			if (m[1].length==0) {
+			if (!m || m.index != i) {
+				throw "bad syntax in string at about "+i;
+			}
+			if (m[1].length === 0) {
 				return [new EListNil(), rS.lastIndex];
 			} else {
 				// TODO: \o, \oo, \ooo, \xFF syntax
@@ -714,7 +729,9 @@ list_loop:
 				//  we use it for \666  case.  becuase \66,6  is currect, but removing , will create octal 666 which larger than 255
 				rA.lastIndex = i;
 				m = rA.exec(s);
-				if (!m || m.index!=i) { throw "bad syntax in atom at "+i; }
+				if (!m || m.index != i) {
+					throw "bad syntax in atom at "+i;
+				}
 				// TODO: perform actuall unescaping.
 				// TODO: is_existing_atom?
 				//if (existing)
@@ -726,8 +743,12 @@ list_loop:
 				var ra = /([a-z][a-zA-Z_0-9@]*)/g; // TODO: dots
 				ra.lastIndex = i;
 				m = ra.exec(s);
-				if (!m || m.index!=i) { throw "internal error 7 at "+i; }
-				if (/^(try|fun|catch|end|begin|if|case|when|or(else)?|and(also)?|b(or|and|xor|not|sr|sl))$/.test(m[1])) { throw "reserved keyword at "+i; }
+				if (!m || m.index != i) {
+					throw "internal error 7 at "+i;
+				}
+				if (/^(try|fun|catch|end|begin|if|case|when|or(else)?|and(also)?|b(or|and|xor|not|sr|sl))$/.test(m[1])) {
+					throw "reserved keyword at "+i;
+				}
 				// TODO: is_existing_atom?
 				//if (existing)
 				return [new EAtom(m[1]), ra.lastIndex];
@@ -743,19 +764,23 @@ list_loop:
 				if (!m) {
 					throw "syntax error (looks like number but isn't) 1. internal error in decder 0. please report at "+i;
 				}
-				if (m.index!=i) {
+				if (m.index != i) {
 					throw "syntax error (not anchored number) 2 at "+i;
 				}
 				//debug("m="+toJSON(m));
 				//debug("m0='"+m[0]+"' m1='"+m[1]+"' m2='"+m[2]+"'");
-				if (lnotxor(m[1],m[2])) { throw "internal error in decoder 1. please report. at "+i; }
+				if (lnotxor(m[1], m[2])) {
+					throw "internal error in decoder 1. please report. at "+i;
+				}
 				if (m[2]) {
 					assert(m[2].length == rfi.lastIndex-i);
 					return [parseInt(m[2], 10), rfi.lastIndex];
 				} else if (m[1]) {
 					assert(m[1].length == rfi.lastIndex-i);
 					var x = parseFloat(m[1]);
-					if (x==Infinity || x==-Infinity || isNaN(x)) throw "bad float at "+i;
+					if (x == Infinity || x == -Infinity || isNaN(x)) {
+						throw "bad float at "+i;
+					}
 					return [x, rfi.lastIndex];
 				} else {
 					throw "internal error in decoder 2: please report. at "+i;

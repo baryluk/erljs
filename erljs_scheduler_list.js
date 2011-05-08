@@ -5,7 +5,8 @@
  * We will need to reimplement it, and remove all unacassary functions / fields / functionalities.
  */
 
-function LinkedList() {};
+function LinkedList() {
+}
 
 LinkedList.prototype = {
 	length: 0,
