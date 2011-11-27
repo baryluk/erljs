@@ -1,0 +1,21 @@
+
+ - ets
+ - tracing subsystem
+ - dynamic code loading and reloading
+ - monitoring processes
+
+
+ - includes/modules (header files) and conditional complilation (use C pre-processor - cpp)
+   - binaries support
+   - browser / rhino
+   - ajax subsystem
+   - dom subsystem
+   - messaging subsystem
+   - with scheduler or standalone (single process)
+   - worker support or not
+   - supported: transports - ajax, web sockets, server events
+   - tracing and debuging subsystem
+   - dynamic code loading
+   - fabric support to interconnect browser with server side
+
+ dom and css selectors based on Erlang pattern matchin and pattern compilation (like ets or mnesia, or fun2ms).

@@ -51,6 +51,37 @@ Class.extend = function(prop) {
 }; // Class.extend
 })();
 
+/* Similar to Prototype's bind, or ES5 bind
+ * It basically ensures that when calling 'f', the 'this' in the body will reffer to 'newThis'
+ * Note: use returned function as a new 'f'
+ * Use as bind(foo, obj2) or foo.bind(obj2)
+ * epscially usefull as ff = obj.foo.bind(obj),
+ * to make ff real delegate which will have 'this' pointing to original object
+ *
+ * Note: In prototype, Function.prototype.bind have additional arguments which will be prepended to function call
+ * Note: In ES5, there is already function behaving exaclty like Prototype's one.
+ *
+ * Here we are just adding simple emulation, in case it is missing.
+ */
+if (!Function.prototype.bind) {
+	Function.prototype.bind = function(newThis) {
+		var f = this; // need a copy
+		return function() {
+			f.apply(newThis, arguments);
+		};
+	};
+	function bind(f, newThis) {
+		return function() {
+			f.apply(newThis, arguments);
+		};
+	}
+} else {
+	function bind(f, newThis) {
+		return f.bind(newThis);
+	}
+}
+
+
 // Erlang type system
 var ETerm = Class.extend({
 	type: function() { return "unknown"; },
@@ -643,14 +674,28 @@ list_loop:
 			throw "not supported pid, port, ref or fun at "+i;
 		case "<":
 			if (s[i++] == "<") {
-				throw "Binaries parsing not fully implemented yet. Binary at "+i;
 				// binary
 				// now performing double pass algorithm, first to determine size of binary, second to fill it with values.
 				// TODO: to communication with Erlang side we should use better approach where size of binary is at the begining.
 				if (s[i++] == "\"") {
 					// binary string syntax, <<"xyz">>
+					throw "Binaries parsing not fully implemented yet. Binary string at "+i;
 				} else {
 					// simple binary syntax <<3,5,6,7,8:3>>, we can also assume that no integer is bigger than 3 decimal digits.
+					// we need count number of comas ",", and position of ">>"
+					var rS = /<<(\d{1,3}(,\d{1,3})*)?>>/ig;
+					rS.lastIndex = i-3;
+					m = rS.exec(s);
+					if (!m || m.index != i-3) {
+						throw "bad syntax in string at about "+(i-3);
+					}
+					var b = m[1].split(",");
+					var b_size = b.length;
+					var b2 = new EBinary(b_size);
+					for (var j = 0; j < b_size; j++) {
+						b2.raw_data[j] = parseInt(b[j], 10);
+					}
+					return [b2, rS.lastIndex];
 				}
 				// as input it is allowed to also use more complex syntax for binary,
 				// but it will be serialized to simpler syntax so we do not need it right now
@@ -854,29 +899,39 @@ throw "internal error 11";
 function phash(T, M) {
 
 	var r = 0;
-	switch (T.type()) {
+	var type;
+	if (T instanceof ETerm) {
+		type = T.type();
+	} else {
+		if ((T instanceof Number) || (typeof T == "number")) {
+			type = "integer";
+		} else {
+			throw "not supported datatype "+(typeof T);
+		}
+	}
+	switch (type) {
 		case "atom":
 		// atoms are solved completly.
 			var x = T.atom_name();
 			var r2 = r;
 			for (var i = 0; i < x.length; i++) {
-				r2 = (16*r2 + x.charCodeAt(i))
-				//if (i == 5) {
-				//	//r -= (1 << 28);
-				//	r = (r + r2) % M;
-				//	r2 = 0;
+				r2 = (16*r2 + x.charCodeAt(i));
+				//if (i % 4 == 1) {
+					//r -= (1 << 28);
+					r = (r + r2) % M;
+					//r2 = 0;
 				//}
 			}
 			//r = (r + r2) % M;
 			//return ((1 + r) % (1 << 28)) % M;
 			//return (1 + r) % M;
-			return 1 + r2;
+			return (1 + r2) % M;
 
 		case "tuple":
 		// tuples are solved practically.
 			var c = 268439627;
-			for (var i = Tuple.arity(); i > 0; i--) {
-				r = (r + 1 + c*(phash(Tuple.get(i), M)-1)) % M;
+			for (var i = T.tuple_arity()-1; i >= 0; i--) {
+				r = (r + 1 + c*(phash(T.get(i), M)-1)) % M;
 				c = (c*268440163 % M);
 			}
 			return (r + 1) % M;

@@ -23,9 +23,32 @@
  <script src="erljs_code/gb_sets.beam.js" type="text/javascript"> </script>
  <script src="erljs_code/regexp.beam.js" type="text/javascript"> </script>
  <script src="erljs_code/example.beam.js" type="text/javascript"> </script>
+ <script src="erljs_code/erlang.beam.js" type="text/javascript"> </script>
+ <script src="erljs_code/otp_ring0.beam.js" type="text/javascript"> </script>
+ <script src="erljs_code/init.beam.js" type="text/javascript"> </script>
+ <script src="erljs_code/sys.beam.js" type="text/javascript"> </script>
+ <script src="erljs_code/supervisor.beam.js" type="text/javascript"> </script>
+ <script src="erljs_code/supervisor_bridge.beam.js" type="text/javascript"> </script>
+ <script src="erljs_code/proc_lib.beam.js" type="text/javascript"> </script>
+ <script src="erljs_code/gen.beam.js" type="text/javascript"> </script>
+ <script src="erljs_code/gen_event.beam.js" type="text/javascript"> </script>
+ <script src="erljs_code/gen_fsm.beam.js" type="text/javascript"> </script>
+ <script src="erljs_code/gen_server.beam.js" type="text/javascript"> </script>
+ <script src="erljs_code/error_logger.beam.js" type="text/javascript"> </script>
 
  <script src="erljs_code/tests_auto.beam.js" type="text/javascript"> </script>
  <script src="tests_auto.js" type="text/javascript"> </script>
+
+ <script src="erljs_code/genser_test.beam.js" type="text/javascript"> </script>
+ <script src="erljs_code/genser_test2.beam.js" type="text/javascript"> </script>
+
+ <script src="erljs_code/erl_internal.beam.js" type="text/javascript"> </script>
+ <script src="erljs_code/erl_scan.beam.js" type="text/javascript"> </script>
+ <script src="erljs_code/erl_parse.beam.js" type="text/javascript"> </script>
+ <script src="erljs_code/erl_lint.beam.js" type="text/javascript"> </script>
+ <script src="erljs_code/erl_eval.beam.js" type="text/javascript"> </script>
+ <script src="erljs_code/erl_pp.beam.js" type="text/javascript"> </script>
+
 
  <script src="erljs_code.js" type="text/javascript"> </script>
 
@@ -34,6 +57,9 @@
 <script src="erljs_scheduler_list.js" type="text/javascript"> </script>
 <script src="erljs_scheduler.js" type="text/javascript"> </script>
 <script src="erljs_control.js" type="text/javascript"> </script>
+
+ <script src="javascript-stacktrace/stacktrace.js" type="text/javascript"> </script>
+
 </head>
 <!--<body style="background-color: #222222; color: #aaaaaa;" onload="erljs_init()">-->
 <body style="background-color: #222222; color: #aaaaaa;" onload="erljs_start_vm()">
@@ -82,6 +108,35 @@ Registers:
 Tracing:
 <div style=" border: 1px solid green; height: 180px; overflow-y: scroll; overflow-x: scroll; width: 100%; font-family: Courier, monospace; font-size: 10px;" id="debugdiv">
 </div>
+
+ <br />
+ <br />
+<input id="przycisk_pi_start1" type="button" value="Licz 1" /> <br />
+<input id="przycisk_pi_start2" type="button" value="Licz 2" /> <br />
+
+<input id="przycisk1" type="button" value="Testowanie eventów 1 :)" />
+<input id="przycisk2" type="button" value="Testowanie eventów 2 :)" />
+ <br />
+<input id="pole1" type="text" size="100" value="" />
+ <br />
+<input id="pole_pi1" type="text" size="100" value="" />
+<input id="pole_pi2" type="text" size="100" value="" />
+ <br />
+<input id="digit1" type="button" value="1" />
+<input id="digit2" type="button" value="2" />
+<input id="digit3" type="button" value="3" />
+<input id="digit4" type="button" value="4" />
+<input id="digit5" type="button" value="5" />
+<input id="digit6" type="button" value="6" />
+<input id="digit7" type="button" value="7" />
+<input id="digit8" type="button" value="8" />
+<input id="digit9" type="button" value="9" />
+<input id="digit0" type="button" value="0" />
+
+ <br />
+
+<input id="digits_clear" type="button" value="Clear" />
+
 
 </div>
 </body>

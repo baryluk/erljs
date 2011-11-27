@@ -560,3 +560,29 @@ regexp:parse("(\\+|-)?[0-9]+\\.[0-9]+((E|e)(\\+|-)?[0-9]+)?").
 begin {ok,P} = regexp:parse("(jo)?an+a"), {regexp:match("joanna", P), regexp:match("joe", P), regexp:match("anna", P), regexp:match("joannnnna", P)} end.
 begin {ok,P} = regexp:parse("an+a"), regexp:matches("joanna dala janowia jana, a anna miela manna w wannach", P) end.
 
+
+
+begin [2,3,4]++ee end.
+
+lists:sublist([],1,0).
+lists:sublist([],1,1).
+lists:sublist([a],1,0).
+lists:sublist([a],1,1).
+lists:sublist([a],1,2).
+lists:sublist([a,b,c,d,e,f,g,h],1,0).
+lists:sublist([a,b,c,d,e,f,g,h],1,1).
+lists:sublist([a,b,c,d,e,f,g,h],1,3)
+lists:sublist([a,b,c,d,e,f,g,h],1,8).
+lists:sublist([a,b,c,d,e,f,g,h],1,100).
+lists:sublist([a,b,c,d,e,f,g,h],2,1).
+lists:sublist([a,b,c,d,e,f,g,h],2,2).
+lists:sublist([a,b,c,d,e,f,g,h],3,0).
+lists:sublist([a,b,c,d,e,f,g,h],3,3).
+lists:sublist([a,b,c,d,e,f,g,h],8,1).
+
+erl_scan:string("fun() -> ok end.").
+erl_scan:string("1+3.").
+erl_scan:string("{d,f,g,[4,2,dd3]}.").
+
+% -> erl_parse:parse_exprs(AAA)
+erl_scan:string("fun(X,Y) -> case lists:max(X) of Y -> {big,Y}; Z -> {smaller,Z} end end.").

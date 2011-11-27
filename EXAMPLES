@@ -1,0 +1,10 @@
+Examples to do:
+
+ - games: sudoku, or something with AI (but simple enaugh to be easy to write)
+ - simple search box and search results inline
+ - search suggestions
+ - twitter badge showing last messages, and allowing to navigate, and refreshing every 5 some time
+ - intensive computations (100x100 matrix multiplication, text search, compression, encryption),
+ - small gallery with slideshow, right/left arrows
+ - small chat, with multiple room, and direct messaging
+ -

@@ -1,0 +1,2 @@
+begin SpecInString = "-spec my_function(some_type()) -> 42 | 'gazonk'.",  {ok, Toks, 1} = erl_scan:string(SpecInString) end.
+begin SpecInString = "-spec my_function(some_type()) -> 42 | 'gazonk'.",  {ok, Toks, 1} = erl_scan:string(SpecInString), erl_parse:parse_form(Toks) end.

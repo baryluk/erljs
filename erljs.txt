@@ -1,0 +1,274 @@
+erljs allows you to run Erlang code directly in the web browser
+
+erljs takes Erlang source (or already available BEAM bytecode) and recompiles it so it can be executed using JavaScript.
+In web browser JavaScript basically executes small Erlang virtual machine and tries to mimic
+all its behviour. Compiler performs also some optimalisations to make size and time overhead as small as possible.
+
+erljs isn't the fastest way to perform general computation, but for
+usage in modern interactive and dynamic web application with lots of
+communication with server and other browser it fits ideally,
+and can drastically reduce development and integration time,
+by exposing direct Erlang feature to solve many problems of today's complex modern Web Applications
+based on JavaScript.
+
+erljs is runtime system for Erlang:
+  * All language features of Erlang are supported, this includes:
+    * language constructs:
+      * functions,
+      * case, if, try, catch,
+      * send, receive, after,
+      * pattern matching in functions, cases, try, recive
+      * binary pattern matching,
+      * funs,
+      * list and binary comprehension,
+      * macros.
+    * tail recursion,
+    * all primitve types (atoms, integers, big integers, floats, characters, binaries, pids, ports) and
+      * lists,
+      * tuples,
+      * records,
+      * funs.
+    * all guard BIFs and most of other BIFs.
+  * You can run multiple Erlang processes without blocking other JavaScript on the page to process long-runing calculation or wait for other event
+  * You can use standard message passing primitives to communicate with:
+      * other processes in the same browser,
+      * timers,
+      * emulated file I/O.
+  * You can use ETS (Erlag Term Storage).
+  * You can use dynamic code reloading.
+  * You can use both compiled modules as well as interpreted code.
+  * Should work correctly in all modern web browsers supporting JavaScript
+    * Tested on Firefox 3.5, Opera 10.50, Chrome 5.0
+  * Support for running inside Rhino engine.
+  * Supports also running LFE (Lips Flavored Erlang) and Efene programs.
+
+erljs is also Web Browser language for interactive applications:
+  * Additionally you can use message passing for communication with:
+    * processes on server (firewall included),
+    * erljs processes in other browsers (some limitations in Rhino),
+    * existing JSON/XML services.
+  * You can also use message passing for:
+    * event handling in DOM document,
+    * AJAX to Erlang server, or any other webserver for resources,
+    * emulated file I/O,
+    * comunication native JavaScript code.
+  * One can transparently call server functions:
+    * They can be called explicitly or implicitly (if they are marked so)
+    * Server-only functions or modules do not need exposing of their source code or bytecode to web browser
+    * Serialization of arguments and return value is automatic
+    * Simplifies code reuse beetween client and server (i.e. validation of input data)
+    * Automatic handling of exceptions (optionally hide some information from stack trace or exception) by passing it back to client, or server
+  * One can also transparently call client-side from server:
+    * Again automatic
+    * One can pass funs around for this without bigger problem
+  * Comes with extensible API for writing Web Applications both for client and server:
+    * HTML's DOM and CSS access, creation and modification, both on client and server and interaction beetwen both,
+    * multiple ways to interact with existing JavaScript codes, libraries, APIs,
+    * bundle of usefull binding for some popular APIs and libraries:
+      * native API:
+        * local Storage
+        * HTML5 video and audio
+        * HTML5 canvas with 2d context
+        * WebSockets
+        * EventSource
+        * XMLHttpRequest
+        * CORS
+      * libraries:
+        * jQuery, YUI, Raphael
+    * own library of usefull effects, layouts, etc, as in popular JavaScript frameworks but written in pure Erlang and Erlangish way
+  * Dynamic or static loading of resources (including code to run or reload).
+  * Supports 
+  * And other crazy stuff.
+
+Supported Erlang apps:
+  * Most of OTP features are supported.
+  * All usefull modules can be used sensibly without modification in their source code,
+    or have slightly changed or optimimized JavaScript version provided.
+    * erts:
+      * erlang: most BIFs implemented nativly in JavaScript, other without changes.
+      * other avilable but not very usefull for anything in the web browser.
+    * stdlib:
+      * math, base64, calendar, random,
+      * lists, proplists, string, unicode,
+      * dict, gb_trees, gb_sets, sets, orddict, ordsets, queue, digraph, sofs,
+      * gen_server, gen_fsm, gen_event, error_logger,
+      * regexp, re,
+      * ets,
+      * qlc,
+      * io_lib,
+      * epp, erl_scan, erl_parse, erl_eval, erl_lint, erl_compile, escript,
+      * pg, shell, console,
+      * timer, sys.
+    * compiler, dialyzer, typer, parsetools, syntax_tools, edoc, docbuilder, erl_docgen,
+    * xmerl
+    * mnesia
+    * sasl, tools,
+    * eunit, common_test, test_server
+  * and others (not so usefull): ic,
+  * comming soon: debugger, tools (cover, cprof, eprof, fprof)
+  * considering: inviso, orber, tv, et, pman, percept, appmon, etc. (problem with GUI porting)
+  * Any module or function can be marked as being server side, which will mean that it will be automatically called on server on call.
+
+For what it can be usefull?
+  * Highly interactive, dynamic web applications with lots of concurancy and communication, for example:
+    * instant messanging, email systems,
+    * games,
+    * colaboration tools,
+    * distributed computing and databases,
+    * realtime searching, editing, etc.
+  * Teaching Erlang.
+    * One can run Erlang code directly in the browser, quickly and safly.
+    * Without downloding, installing or executing anything.
+    * One can easly run multiple browsers and create cluster in class room or on the single desktop.
+  * In environments where one cannot run Erlang virtual machine but can run JavaScript
+  * Implemeneting novel Erlang extensions using simple and managed JavaScript.
+
+Why this project started? Is it better than just JavaScript?
+  * It isn't nacassarly better, but we think that some problems with JavaScript motivates this project:
+    * Success of GWT
+    * Simplicity of concurancy, event handling, error control and distributed communication in Erlang
+    * And complication of the same in JavaScript or Java
+  * We created this project becuase we think it is big chalange and cool idea.
+
+What are the problems in JavaScript then?
+  * Problems with blocking JavaScript code on long runing computation
+    * JavaScript is generally single threaded
+    * Sometimes hacked using timers to break and continue computation after small time
+      * process scheduler for poor pepole
+      * explosion of handlers, callbacks, timers, etc.
+    * We should not block inside JavaScript for any reason:
+      * long intensive computation,
+      * long animation,
+      * waiting for user interaction (alert, confirm, input, clicking element),
+      * waiting for server for answer for our request.
+  * Handlers:
+    * Lots of event chaotic handlers for interacting with user interface
+    * Lots ot other event handlers for interacting with server
+    * They just tries to hide fact that JavaScript in Web Browser is single threaded
+    * Writing explicitly non-blocking, asynchronous code with handlers is hard and error-prone.
+  * Problematic error handling:
+    * developers mostly ignore writing proper error handlers or do not test them.
+
+How we can solve this?
+  * Erlang naturally fits into event handling paradigm.
+  * Use message passing for everything,
+    * DOM events,
+    * AJAX and Comet-type communication,
+    * error handling,
+    * RPC.
+  * Allow running any set of processes and preempt them, if needed.
+    * Perform real process scheduling
+    * Long computation or looping in control loop of any document elements, will not block whole web browser.
+    * Network communication will not block whole web browser.
+    * AJAX and Comet-type or RPC communication will not block whole web browser.
+    * Still one can use simple code which semantically block in this scenario and performs only on simple thing.
+
+But what about X?
+  * Isn't Web Workers (Worker) allow me to run multiple threads?
+    * Yes, but writing multithreaded applications is much harder using them
+    * Web Workers are supported only by few browsers currently, and even if supported used only for loading resources
+      and executing very simple code in parallel without complex interaction,
+    * Still event or AJAX processing isn't natural as in Erlang
+    * Web Workers can be used be erljs to use multiple cores effectively and still allows for safe communication.
+  * How about WorkerPool API?
+    * Yes you can use message passing interface with it, but doesn't remove problem with handlers for them, errors, other events or AJAX.
+    * This API is available only in Gears.
+  * Then what about Web Sockets, they allow me for communication with server?
+    * This again adds handlers which are hard to use
+    * They can also be used by erljs to improve performance of some message passing
+  * And about Server-Sent Events (EventSource)?
+    * Again the same
+    * They can also be used by erljs to improve performance of some message passing
+  * How Thread.js, Er.js, towel.js, Arrowlets, threading using iframes, timing module in dojo?
+    * This are just hacks which tries to remove some problems with JavaScript by mimicing how Erlang or other functional languages works.
+    * Unfortunetly there are still many limitations and can't be used for usefull applications.
+  * How about JavaScript 1.7 generators?
+    * Well they are not for emulating multiple processes or message passing, and supported only by one web browser.
+  * Is is fast?
+    * Not very fast, but not slow.
+    * If you need something fast in you web application write this fragment in pure JavaScript and use it from erljs.
+    * For general usage with mostly controling GUI, communication and small ammount of computation it is fast and more than enaugh.
+    * Some critical modules and functions are hand optimized, like list, string processing, regular expressions.
+    * We are still working on some optimalisations, much clever translation, but we now basically interpret opcode by opcode.
+  * Is script files big?
+    * Well we don't think they are very big, we compact them pretty well on generation, core functions are moderately big.
+    * All scripts can be cached and reused beetwen many pages.
+    * You can seletivly compile and publish only modules or functions which are needed and nothing more. This is automated, but can be adjusted manually.
+  * Can I use it with jQuery, dojo, mootools, prototype, YUI, UIZE, MochiKit, ...?
+    * Yes.
+    * We are using prototype.js for few things (part of AJAX and JSON processing), but this can be easly changed, and can live side-by-sidey other frameworks.
+    * We also provide some Erlangish way to perform similar things like selectors, event handling, effects, validation, etc.
+  * Can I execute JavaScript code from erljs running in web browser?
+    * Generally yes. There are few mechanisms to choose for running native JavaScript code from Erlang code..
+      We also provide bindings for few popular libraries to simplify this and show how this can be performed.
+  * Can I run JavaScript code in Erlang?
+    * Not generally, this project isn't about this problem. Look at erlyjs project.
+  * Can I run Erlang library/application/code in Web Browser then?
+    * Depends. If library is mostly functional one, there should be no problem. If it interact havly with files, code loading, networking, graphical system,
+      then there will be problems, but sometimes this can be easly fixed.
+
+Limitations:
+  * most of kernel functionality is not possible:
+    * direct networking,
+    * direct file IO and disc access,
+    * distribution protocol,
+    * executing external programs.
+    * All this can be optionally be emulated in some ways (probably in not so safe way):
+      * file IO for example can mean using file from server or usage of HTML5 local storage or File API,
+      * executing external program could mean running on server or using some kind of plugin,
+      * networking could be emulated with simplistic TCP/UDP stack and could be usefull for some legacy applications talking with this protocols.
+  * modules which uses any C extensions, port programs, or NFI are not supported if not emulated.
+  * some modules uses native JavaScript functionalities:
+    * re: uses JavaScript regular expressions which can be different both in capabilities, syntax and performance)
+    * crypto: emulated using JavaScript code if needed
+    * xmerl: emulated using JavaScript
+  * tracing mechanisms isn't implemented yet, this prevents using tracing, profiling and debuging features.
+  * because of this limitations (or because using them directly in web browser is very improbably for any reason) it is not possible to use fully system specific applications or modules:
+    * stdlib module dets cann't be used, so also mnesia disc storage isn't possible
+    * debug, tracing and profiling tools:
+      * et  (WIP)
+      * debugger  (WIP)
+      * invisio (WIP)
+      * tv (WIP)
+      * orber (WIP)
+      * observer (WIP)
+      * appmon (WIP)
+      * pman (WIP)
+      * They generally doesn't work becuase tracing function isn't implemented, or becuase of GUI issues. After writing trace support and HTML port they should work.
+    * hipe (not usefull, not implementable)
+    * inets (emulation of httpc could be usefull, depends of networking)
+    * webtool (depends on inets, and networking)
+    * asn1 (not needed, C code)
+    * os_mon (dummy module can be created but this isn't usefull)
+    * snmp, otp_mibs (not needed, depends on asn1)
+    * reltool (not needed)
+    * jinterface (not needed, not implementable)
+    * odbc (not needed, not implementable)
+    * gs (not needed, not implementable)
+    * wx (generally not possible, not needed and not implementable, still it could be interesting to create
+    * direct usage of compiler, dialyzer, typer, edoc, ic, etc. (mostly releated to file read/write or running as standalone application)
+    * megaco (not tested, not needed)
+    * ssl, ssh (not needed, too hard to implement)
+    * erl_interface (not implementeable, not needed, erljs-JavaScript interface avaiable directly in erljs)
+  * most of this modules (marked 'not needed') are not usefull in web browser so it is not a problem.
+  * many (crazy) operations are slow (like compiling erlang program to BEAM, decompiling, recompiling to JavaScript, loading and executing).
+
+Real limitations:
+  * sending funs or some particular datastructures in one way or another can have slight limitations.
+  * soft-real time behaviour isn't guaranted:
+    * All processes share own heap,
+    * single garbage collector,
+    * some code can block other processes,
+      * especially complicated regular expressions,
+      * some list processing (but this is fast or will not block),
+      * JavaScript code executed from erljs
+    * time granulity bellow 1ms isn't guranted.
+  * Messages are passed by reference (well this isn't limitation actually).
+  * bigintegers introduces big overhead or will not work at all!
+    * BTW: Mozilla is working on introducing BigInt to next version of JavaScript
+  * Sometimes floating points number and integers can't be distnguished (they are the same type in JavaScript)
+  * Floating point numbers can have slightly different exception handling.
+  * Passing exception handling beetween JS code and Erlang code (in both direction) is problematic.
+  * Counting reductions is not the same as original Erlang. In erljs it is based on opcodes executed.
+  * Scheduling is based not only on reduction counts, but also on time and "native reduction" count (i.e. number of elementer loop passes in list processing functions).
+ 

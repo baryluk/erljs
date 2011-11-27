@@ -1,0 +1,87 @@
+<html>
+<erljs:header />
+<body>
+
+<erljs:both>
+-record(state, {counter, name}).
+
+is_valid({A,B}) when is_integer(A), is_integer(B) -> true;
+is_valid(_) -> false.
+</erljs:both>
+
+
+<input type='text' id='p0' erljs:value="{44,55}" />
+<input type='button' id='p1' erljs:onclick_once="bzz ! {mydata,1}" />
+<input type='button' id='p2' erljs:onclick_once="bzz ! {mydata,2}" />
+<input type='button' id='p3' erljs:onclick_once="bzz ! {mydata,3}" />
+
+<erljs:client>
+init() ->
+	Server = fabric:remote_whereis(clicker_logger),
+	Pid = spawn(fun() -> loop(#state{}, Server) end),
+	register(Pid, bzz),
+	ok.
+
+loop(State, Server) ->
+	receive
+		{dom, E, _, click, _, {mydata,X}} ->
+			V = erljs_dom:get_value(status),
+			case is_valid(V) of
+				true ->
+					erljs:disable(E),
+					erljs:append(status, {clicked, X, V}),
+					Server ! {self(), clicked, X, V},
+					receive
+						{Server, Msg} ->
+							erljs:alert(Msg)
+					end;
+				false ->
+					erljs:alert("Please specify valid input. It must be a term of the form {integer(),integer()}")
+			end,
+			loop(State, Server);
+		_ ->
+			erljs:set(status, "Unknown message received. quiting."),
+			error
+	end.
+</erljs:client>
+
+<erljs:server spawn="fun server_init/0">
+server_init() ->
+	Pid = spawn(fun() -> server_loop(#state{}) end),
+	register(Pid, clicker_logger),
+	fabric:allow(clicker_logger),
+	ok.
+
+server_loop(State = #state{counter=Counter}) ->
+	receive
+		{Client, clicked, X, V} ->
+			case is_valid(V) of
+				true ->
+					{A, B} = V,
+					io:format("Client ~p (~p) clicked button ~p~n", [Client, fabric:info(Client), X]),
+					Client ! {self(), {A + X*X, B + X*X*X, Counter}},
+					server_loop(State#server{counter=Counter+1});
+				false ->
+					io:format("Client ~p (~p) send invalid context V = ~p~n", [Client, fabric:info(Client), V]),
+					server_loop(State)
+			end;
+		{'EXIT', Client, Why} ->
+			io:format("Client ~p (~p) terminated ~p~n", [Client, fabric:info(Client), Why]),
+			server_loop(State)
+	end.
+
+% for similar example, but which persists accross refreshes (by using cookies)
+%   http://yaws.hyber.org/cookies.yaws
+%   http://yaws.hyber.org/pcookie.yaws  (version which saves process state into the ets/dets for persitance)
+%
+% best way is a hybrid approach:
+%    live server process for a while, or until session is destroyed
+%    if nothing happens, go into hibernation, and setup timer for a slightly more time
+%    if nothing happens, in this time, notify deregistering process, and save into ets/dets/mnesia proper state
+%
+</erljs:server>
+
+
+
+</body>
+</html>

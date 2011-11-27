@@ -6,12 +6,53 @@
 /** Debug all scheduler decisions, state of scheduler, processes, process in/out, spawn, exit, timeouts, and message scheduling. */
 function erljs_scheduler_log(X) {
 //	print(X);
-	console.log(X);
+//	console.log(X);
 //	alert(X);
+
+return;
+	try { // block for webbrower, but try for Rhino
+		var r = document.createElement("div");
+		r.innerText = X;
+		document.getElementById("debugdiv").appendChild(r);
+
+		//document.getElementById("debugform"). += X;
+		//document.getElementById("debugform").innerText += "\n\r";
+	} catch (e) {
+		try { // Rhino
+			print(X);
+		} catch (e2) { }
+	}
+}
+
+var States = [
+	"PREPARING",
+	"RUNNING",
+	"RUNNING_KERNEL",
+	"READY",
+	"BLOCKED",
+	"BLOCKED_RETRY",
+	"ENDED",
+	"EXITED"
+];
+function state(s) {
+	return s+"("+States[s]+")";
 }
 
 // Process
-var Proc = function() {};
+var Proc = function() {
+	// need to initialize it here, becasue without this, all Proc's instances will have this fields pointing to the same objects
+	this.Stack = [];
+	this.LocalEH = [];
+	this.Regs = [];
+	this.LocalRegs = [];
+	this.FloatRegs = [];
+	this.ProcessDict = {};
+	this.MsgQueue = [];
+	this.Links = [];
+
+	this.ListenersArray = [];
+	this.ListenersHash = {};
+};
 
 // state of Process
 // some fields are commented, becuase to save space we only create them if nacassary, and when they are not used anymore, are deleted
@@ -84,13 +125,17 @@ VMengine.prototype = {
  * initialize all needed values
  */
 function erljs_scheduler_setup() {
-	Array.prototype.enqueue = function(x) {
-		erljs_scheduler_log("Enqueued message "+x.toString());
-		this.push(x);
+	Proc.prototype.msg_enqueue = function(x) {
+		erljs_scheduler_log("Enqueued message "+x.toString()+" in process "+this.Pid.toString());
+		this.MsgQueue.push(x);
+		if (this.State == 4) { // BLOCKED
+			erljs_scheduler_log("Changing process "+this.Pid.toString()+" state BLOCKED to BLOCKED_RETRY");
+			this.State = 5; // BLOCKED_RETRY
+		}
 		return false;
 	};
-	Array.prototype.dequeue = function(x) {
-		return this.shift();
+	Proc.prototype.msg_dequeue = function() {
+		return this.MsgQueue.shift();
 	};
 
 	ThisNode  = new NodeConfig();
@@ -115,6 +160,80 @@ var erljs_events_hash;
 
 /* It is safe to remove listener, when processin. It is is guaranted the the given listener will not be called if it was removed.
  * Removing listener which isn't registers do not have any effect (no error, no exception).
+ *
+ * For some workaround for bugs in few browsers look at
+ *   http://code.google.com/p/base2/source/browse/trunk/src/base2/dom/events/EventTarget.js
+ * There are problems with:
+ *   - mousewheele in Gecko, mouse* in WebKit, mouse buttons in KHTML, 
+ *     http://unixpapa.com/js/mouse.html
+ *   - repeated keydown/keypress, and messed key/char codes practically everywhere.
+ *     http://unixpapa.com/js/key.html
+ *
+ * Differences in mouse in modern browsers (Linux):
+ *
+ *  Left click:
+ *   All: mousedown, then mouseup,mouseclick
+ *
+ *  Right click:
+ *   In Firefox 3.6.8, Chromium 6.0, Ephpiphany 2.30: mousedown,contextmenu, then mouseup
+ *   In Opera 10.60: mousedown, then mouseup,contextmenu (I would say it is buggy)
+ *   In Epiphany 2.28: contextmenu, then mouseup
+ *
+ *  Right click, holding, then clicking left, releasing right gives:
+ *   In Opera - mousedown, then gesture
+ *   In Firefox - mousedown(R),contextmenu, then mousedown(L), then mouseup(L),click(L) and then mouseup(R)
+ *   In Chromium - them but, if R,L is fast, then it fires additionally dbclick(L) after click(L)
+ *
+ *
+ *  Middle click:
+ *   In Opera and Firefox - mousedown, then mouseup,opens-new-tab (cannot stop it using return false)
+ *   In Chromium - mousedown, then mouseup,click  (no new tab)
+ *
+ * Double click left:
+ *   In Opera and Firefox: mousedown,moseup,click,mousedown,mouseup,click,dblclick
+ *   In Chromium: normally the same, but, if just befor this we was clicking something other (other element, or even empty space)
+ *                  then it goes: mousedown,mouseup,click,dblclick,mousedown,mouseup,click   (the dblclick is doubleclick with other's element click)
+ *
+ * Double right click do nothing additonal.
+ *
+ * Double click middle:
+ *   In Opera and Firefox - no dblclick event  (as there are also no click for middle button)
+ *   In Chromium, dbclick event after second click.
+ *
+ *  Canceling: right click, hold, then click left, hold, release RIGHT, release LEFT
+ *    In Opera - mousedown(R), then mouse gesture after clicking left
+ *    Firefox - mousedown(R),contextmenu(R), then mousedown(L), then mouseup(R), then mouseup(L),click(L)
+ *    Chromium - mousedown(R),contextmenu(R), then mousedown(L), then mouseup(R), then mouseup(L) - i think this is correct (not sending click)
+ *
+ * Canceling 2: left down, hold, right down, hold, left up, right up:
+ *   In Opera: mousedown(L), then tries to perform right gesture (but if fails, no other events fired)
+ *   Firefox: mousedown(L), then mousedown(R),contextmenu(R), then mouseup(L),click(L), then mouseup(R)   - yes issues click(L), consistent with above
+ *   Chromium: same as Firefox
+ *
+ * In chromium canceling is additionally broken by incorrect dblclick detection:
+ *      doing fast downL-downR-upL-upR, gives: mousedown(L), then mousedown(R),contextmenu, then 
+ *
+ * In Chromium repeated fast left clicking sends only single click,click,dbclick,click,click,click,click,click,click,click...
+ *  In Firefox send click,click,dblclick repeadly.
+ *  In Opera similary.
+ *  Not exactly in Firefox - it depends if you move mouse in beetwen first dblclick and next dblclick
+ *  Also not exactly in Opera - it also depends on mouse movement.
+ *  It is very strange.
+ *
+ * Clicking somewhere else end releasing on element:
+ *   Left - works everywhere - fires mouseup.
+ *   Right - Firefox works. Chromium and Opera do not work.
+ *   Middle - Firefox and Chromium work, Opera do not work.
+ *
+ * All browser have bugs:
+ *    Firefox and Opera: do not firef middle click and cannot prevent middle click from fireing default action  (Chromium do it right)
+ *    Opera: contextmenu is fired after releasing right button, should be fired just after executing mousedown  (Firefox and Chromium do it right)
+ *    Chromium: incorrectly detects double clicks (Opera and Firefox do it right)
+ *    Firefox: when doing downR-downL-upR-upL, Firefox should not send clickL (Chromium do it right)
+ *    Opera: downR-downL-... and downL-downR-... (canceling) interact badly with mouse gestures
+ *               it's not very bad, as user still can cancel by moving mouse out of the element
+ *    Opera and Chromium: downR on something else and upR on element
+ *
  */
 function add_handler(x, type, dg, useCapture, data, once) {
 if (x.addEventListener) {
@@ -129,6 +248,9 @@ if (x.addEventListener) {
 			x.removeEventListener(type, this, useCapture);
 			this.event = event;
 			dg(this);
+			if (d.onRemove) {
+				d.onRemove(d);
+			}
 		};
 	} else {
 		listener.handleEvent = function(event) {
@@ -138,6 +260,9 @@ if (x.addEventListener) {
 		};
 		listener.remove = function() {
 			x.removeEventListener(type, this, useCapture);
+			if (d.onRemove) {
+				d.onRemove(d);
+			}
 		};
 	};
 	x.addEventListener(type, listener, useCapture);
@@ -159,6 +284,9 @@ if (x.addEventListener) {
 	};
 	d.remove = function() {
 		x.removeEventListener(type, d.handleEvent, false);
+		if (d.onRemove) {
+			d.onRemove(d);
+		}
 	};
 	x.addEventListener(type, d.handleEvent, false);
 	return d;
@@ -171,10 +299,41 @@ alert("DOM2 enabled browser needed for now.");
 
 }
 
-function erljs_create_listener(element, type, external, useCapture, data) {
-	var listener = add_handler(x, "click", function(d) {
-		return erljs_scheduler_continue_event(d.event, d.ctx, external, element);
-	}, false, {}, true);
+/*
+var EventHash = {};
+
+function erljs_events_hash(element) {
+	return EventHash[element];
+}
+*/
+
+
+Array.prototype.removeOne = function(s){
+	var i = this.indexOf(s);
+	if (i != -1) {
+		this.splice(i, 1);
+	}
+}
+
+function erljs_create_listener(P, element, type, external, useCapture, once, data) {
+	var listener = add_handler(element, type, function(d) {
+		return erljs_scheduler_continue_event(d.event, d.ctx, external, element, P);
+	}, false, data, once);
+
+	erljs_events_hash[element] = [P.Pid];
+	//EventHash[element] = [P.Pid];
+
+	// TODO: this should be double linked list probably, so removing from it will be faster
+	//P.ListenersArray.push(listener); // so we can remove them on termination (note: it shold be safe even if event already happened)
+
+	P.ListenersHash[listener] = element;
+	listener.P = P;
+	listener.onRemove = function() {
+		listener.P = undefined;
+		//P.ListenersArray.removeOne(listener);
+		P.ListenersHash[listener] = undefined;
+		delete P.ListenersHash[listener];
+	}
 
 	return listener;
 }
@@ -306,9 +465,13 @@ function http_go() {
  *
  * TODO: possibly add support for JS custom events, (currently not used in any major framework)
  */
-function erljs_scheduler_continue_event(event, data, external, element) {
+function erljs_scheduler_continue_event(event, data, external, element, P) {
 	window.clearTimeout(erljs_timeout_timer_id);
-	var Pids = erljs_events_hash(event);
+//	var Pids = erljs_events_hash(element);
+	var Pids = erljs_events_hash[element];
+	if (P !== undefined) {
+		Pids = [P.Pid];
+	}
 	if (!Pids) {
 		throw "Internal error - unknown event!";
 	}
@@ -321,34 +484,36 @@ function erljs_scheduler_continue_event(event, data, external, element) {
 		// find AJAX request reference.
 		var ref = 0;
 
-		e = new ETuple(new EAtom('ajax_progress'), ref, 12312, 18172837);
-		e = new ETuple(new EAtom('ajax_data'), ref, "data"); // headers? mime-type? status code?
-		e = new ETuple(new EAtom('ajax_error'), ref, new EAtm("abort")); // abort, timeout, other
+		e = new ETuple([new EAtom('ajax_progress'), ref, 12312, 18172837]);
+		e = new ETuple([new EAtom('ajax_data'), ref, "data"]); // headers? mime-type? status code?
+		e = new ETuple([new EAtom('ajax_error'), ref, new EAtom("abort")]); // abort, timeout, other
 	} else {
 		// this is something from the DOM
 
 		// Find a DOM element reference.
 		var ref = 0;
-		var event = new EAtom("click");
+		var event_type = new EAtom("click");
+		var event = new EAtom("additional_data");
 
-		e = new ETuple(new EAtom('dom'), ref, event);
+		e = new ETuple([new EAtom('dom'), data.id, ref, event_type, event, data.aux]);
 	}
 
-	for (Pid in Pids) {
+	for (i in Pids) {
+		if (Pids.hasOwnProperty(i)) {
+		var Pid = Pids[i];
 		// some events are registered once in DOM, but was registered multiple times in the Erlang, so dispatch them.
 		// this doesn't happen for AJAX, but this is generic.
 		var ProcNode = ProcessHash[Pid];
+		erljs_scheduler_log("Trying delivering message to "+Pid.toString());
 		if (ProcNode) {
 			var p = ProcNode.data;
 			if (p.State != 6) { // not EXITING
 				// TODO: synchronize or re-send localy, if process in on the different Worker
-				p.MsgQueue.enqueue(e);
-				if (p.State == 4) { // BLOCKED
-					p.State = 5; // BLOCKED_RETRY
-				}
+				p.msg_enqueue(e);
 			}
 		} else {
 			throw "Internal error";
+		}
 		}
 	}
 	erljs_vm_consume();
@@ -374,7 +539,7 @@ function erljs_scheduler_continue_from_js(comm_handler, value, continuer) {
 	throw "Not implementd yet";
 }
 
-// List of all processes
+// Circular list of all processes
 var ProcessList;
 
 // Process list node which have been scheduled on previous tick and have been run then
@@ -382,6 +547,12 @@ var LastProcessNode;
 
 // Mapping of Pid -> ProcessNode
 var ProcessHash;
+
+
+// Registered processes: atom -> Pid
+var Register_Names = {};
+// Registered processes: Pid -> atom
+var Register_Pids = {};
 
 
 /* Add new process to the ProcessList.
@@ -393,6 +564,8 @@ var ProcessHash;
  */
 function erljs_spawn(Proc) {
 	Proc.State = 3;
+
+	Proc.FullDebug = 0;
 
 	var node = new LinkedList.Node(Proc);
 
@@ -424,10 +597,47 @@ function erljs_terminate(ProcNode) {
 
 	ProcessList.remove(ProcNode);
 
+	// remove process from registred processes
+	var n = Register_Pids[Proc.Pid];
+	if (n) {
+		delete Register_Names[n];
+		delete Register_Pids[Proc.Pid];
+	}
+
+	// remove process from all processes
 	delete ProcessHash[Proc.Pid];
 
 	// Extract returned (exit) value, or exception info.
+	var Reason = new EAtom("normal");
+
 	// Iterate over all linked process (also remove) and send appropriate messages.
+	for (var i in Proc.Links) {
+		if (Proc.Links.hasOwnProperty(i)) {
+			var LinkedPid = Proc.Links[i];
+			if (LinkedPid) {
+				erljs_scheduler_log("Sending 'EXIT' signal of process "+Proc.Pid+" using link #"+i+" to linked process "+LinkedPid);
+				var LinkedProc = ProcessHash[LinkedPid];
+				if (!LinkedProc) {
+					continue;
+				}
+				LinkedProc = LinkedProc.data;
+				if (LinkedProc.trap_exit) {
+					var m = new ETuple([new EAtom("EXIT"), Proc.Pid, Reason]);
+					LinkedProc.msg_enqueue(m);
+				} else {
+					erljs_scheduler_log("Process terminated, is linked to other process without trap_exit - this is not implemented yet");
+				}
+				for (var i2 in  LinkedProc.Links) {
+					if (LinkedProc.Links.hasOwnProperty(i2)) {
+						if (LinkedProc.Links[i2] == Proc.Pid) { // This do not need to be the same object, they must just mean same process/pid
+							erljs_scheduler_log("Removing link #"+i2+" from "+LinkedPid+" to "+Proc.Pid);
+							LinkedProc.Links[i2] = undefined;
+						}
+					}
+				}
+			}
+		}
+	}
 
 	// Remove all timers, dom and ajax listeners.
 
@@ -467,6 +677,8 @@ function erljs_schedule() {
 
 	if (!ProcNode_first) {
 		ProcNode_first = ProcessList.first;
+	} else {
+		ProcNode_first = ProcNode_first.next;
 	}
 
 	if (!ProcNode_first) {
@@ -475,7 +687,7 @@ function erljs_schedule() {
 
 	var min;
 
-	var ProcNode = ProcNode_first.next;
+	var ProcNode = ProcNode_first;
 
 	do {
 		var min2 = erljs_schedule_examine(ProcNode.data);
@@ -514,13 +726,18 @@ function erljs_go(P) {
 	}
 	//P.state = 2; // RUNING_NATIVE
 	P.State = 1; // RUNING
+	P.Waiting = false;
 	//P.FullDebug = 1;
 	var r = erljs_vm_steps_(P);
 	if (r) {
 		P.State = 6; // ENDED
 		return false;
 	} else {
-		P.State = 3; // READY
+		if (P.Waiting) {
+			P.State = 4; // BLOCKED
+		} else {
+			P.State = 3; // READY
+		}
 	}
 	return true;
 }
@@ -533,14 +750,19 @@ function erljs_go(P) {
  *      -1 - if this process cannot be scheduled, becuase there is no timeout, timer or it already dead.
  */
 function erljs_schedule_examine(Proc) {
-//erljs_schedule_log("examining Pid="+Proc.Pid + " State="+Proc.State);
+erljs_scheduler_log("examining Pid="+Proc.Pid + " State="+state(Proc.State));
 	if (Proc.State == 3 || Proc.State == 5) { // READY state // we can immiedietly run this code
 		                                      // or BLOCKED_RETRY // we should immiedietly run this code to process new messages
 		return 0;
 	}
 	if (Proc.State == 4) { // BLOCKED state // we are in receive statment and no message matched.
-		if (Proc.Timeout !== null) {
-			return Proc.Timeout;
+		if (Proc.Timeout !== null && Proc.Timeout !== Infinity) {
+			var T = Proc.Timeout - ((new Date()) - Proc.TimeoutStart);
+			if (T <= 0) {
+				return 0;
+			} else {
+				return T;
+			}
 		} else {
 			return -1; // no "after T" construct or "after infinity" construct.
 		}
@@ -632,8 +854,15 @@ function erljs_start_vm() {
 	var Modules = all_modules;
 	erljs_scheduler_log("Initializing modules");
 	erljs_vm_init(Modules);
-	erljs_scheduler_log("Starting erljs_kernel:init/0");
-	var InitProcess = erljs_vm_call_prepare(["erljs_kernel", "init", 0], [], 1000, true);
+
+	var BootArgs = new EListNil();
+/*
+	erljs_scheduler_log("Starting otp_ring0:start/2");
+//	var BootArgs = new EList(new EListString("-root"), new EList(new EListString("/"), new EListNil()));
+	var InitProcess = erljs_vm_call_prepare(["otp_ring0", "start", 2], [new EListNil(), BootArgs], 1000, true);
+*/
+	var InitProcess = erljs_vm_call_prepare(["erljs_kernel", "start", 1], [BootArgs], 1000, true);
+
 	erljs_spawn(InitProcess);
 	erljs_scheduler_log("Setting timeouts");
 	erljs_timeout_timer_id = window.setTimeout(erljs_scheduler_continue_increment, erljs_timeout_timer_timeout);
@@ -692,7 +921,7 @@ function erljs_vm_consume() {
 	erljs_vm_consumptions++;
 
 	// what is the total time to be consumed by this function (sum of all processes executed here)
-	var max_reductions = 50000;
+	var max_reductions = 10000;
 	var max_time = 80; // miliseconds
 
 	// how big is a maximal time-slot we are giving to each process.
@@ -715,13 +944,13 @@ function erljs_vm_consume() {
 
 		if (next_process) {
 			var S = next_process.data;
-			erljs_scheduler_log("Process "+S.Pid+" scheduled. Running...");
+			erljs_scheduler_log("Process "+S.Pid+" in state "+state(S.State)+" scheduled. Running...");
 			S.MaxReductions = max_reductions;
 			var r = erljs_schedule_run();
 			if (r < 0) { throw "Internal error"; }
 			reductions += S.Reductions;
 			erljs_scheduler_log("Process "+S.Pid+" execution done (interpreter returned, after "+S.Reductions+" reductions)");
-			erljs_scheduler_log("Process "+S.Pid+" is now in state "+S.State+" in "+S.ThisFunctionSignature+" +"+S.IP +" (waiting in +"+S.WaitingIn+")");
+			erljs_scheduler_log("Process "+S.Pid+" is now in state "+state(S.State)+" in "+S.ThisFunctionSignature+" +"+S.IP +" (waiting in +"+S.WaitingIn+")");
 		} else {
 			erljs_scheduler_log("Scheduler did not found any process to run.");
 			// no process to run

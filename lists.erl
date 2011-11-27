@@ -2467,3 +2467,14 @@ rufmerge2_2(H1, T1, Fun, [], M, H2M) ->
     end.
 
 
+
+
+keyfind(Key, N, L) when is_integer(N), is_list(L) ->
+	keyfind3(Key, N, L).
+
+keyfind3(Key, N, []) -> false;
+keyfind3(Key, N, [Tuple|Tail]) ->
+	case element(N, Tuple) of
+		Key -> Tuple;
+		_ -> keyfind3(Key, N, Tail)
+	end.

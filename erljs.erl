@@ -26,7 +26,7 @@ ca() ->
 	[{'ok', [any(), ...], [any(), ...]}].
 
 ca(Opts) ->
-	L = [
+	L1 = [
 		erljs_kernel,
 
 		random,
@@ -42,8 +42,47 @@ ca(Opts) ->
 		gb_sets,
 		regexp,
 
-		example
+		erlang,
+		otp_ring0,
+		init,
+%		erl_prim_loader,
+		"/usr/lib/erlang/lib/erts-5.8.5/ebin/erl_prim_loader.beam",
+
+		sys,
+
+		supervisor,
+		supervisor_bridge,
+		proc_lib,
+		gen,
+		gen_event,
+		gen_fsm,
+		gen_server,
+
+		error_logger,
+
+		tests_auto,
+
+		example,
+		genser_test,
+		genser_test2
 	],
+
+	L2 = [
+	"erl_bits.beam",
+	"erl_compile.beam",
+	"erl_eval.beam",
+	"erl_expand_records.beam",
+	"erl_internal.beam",
+	"erl_lint.beam",
+	"erl_parse.beam",
+	"erl_posix_msg.beam",
+	"erl_pp.beam",
+	"erl_scan.beam",
+	"erl_tar.beam"
+	],
+
+	L = L1 ++ [ "/usr/lib/erlang/lib/stdlib-1.17.5/ebin/" ++ M || M <- L2 ],
+
 	cl(L,Opts).
 
 -spec cl([atom() | string()]) ->
@@ -78,18 +117,25 @@ c(Mod) ->
 	{'ok', nonempty_string(), [{'functions', number()} | {'funs',number()} | {'total_ops',number()}, ...]}.
 
 %% Encode module
-c(Mod, Opts) ->
+c(Mod, Opts) when is_list(Mod) ->
+	case lists:suffix(".beam", Mod) of
+		true -> c2(Mod, Opts);
+		false -> c1(Mod, Opts)
+	end;
+c(Mod, Opts) when is_atom(Mod) ->
+	c1(Mod, Opts).
+
+
+%% Encode module
+c1(Mod, Opts) ->
 	ModName = if
 		is_atom(Mod) -> atom_to_list(Mod);
 		is_list(Mod) -> Mod
 	end,
 
-	Verbose = lists:member(verbose, Opts),
-	Indent = lists:member(indent, Opts),
-
 	% 'S' - will prdue File.S with assembler code.
-	Opts2 = Opts ++ [debug_info,report,inline,{inline_size,24},warn_obsolete_guard],
-	%Opts2 = Opts ++ [debug_info,report,warn_obsolete_guard],
+	%Opts2 = Opts ++ [debug_info,report,inline,{inline_size,24},warn_obsolete_guard],
+	Opts2 = Opts ++ [debug_info,report,warn_obsolete_guard],
 	io:format("Recompiling: ~p with options ~p ~n", [Mod, Opts2]),
 	% compile file to .beam for sure. it doesn't load it into VM.
 	{ok, _} = case compile:file(Mod, Opts2) of
@@ -100,7 +146,16 @@ c(Mod, Opts) ->
 			throw (compilation_error)
 	end,
 
-	io:format("Disasembling~n"),
+	c2(Mod, ModName, Opts).
+
+c2(Mod, ModName, Opts) ->
+	c2(ModName, Opts).
+
+c2(ModName, Opts) ->
+	Verbose = lists:member(verbose, Opts),
+	Indent = lists:member(indent, Opts),
+
+	io:format("Disasembling file ~p~n", [ModName]),
 	{beam_file,Mod3,Exports,Versions,Options,Disasm} = case beam_disasm:file(ModName) of
 		{error, _, {file_error, _ ,_}} = E2 ->
 			io:format("compile error: ~p~n", [E2]),
@@ -109,6 +164,8 @@ c(Mod, Opts) ->
 			A2
 	end,
 	io:format("Options: ~p~n", [Options]),
+
+	Mod = Mod3,
 
 	Mod4 = atom_to_list(Mod3),
 
@@ -400,14 +457,47 @@ cfi(timeout) ->
 %	ok.
 
 
+
+verify(B) ->
+	todo.
+	% chec that all registers are used properly
+	% check arity of functions
+	% that after function return only x[0] is readed
+	% that at least x[0.. arity] is writen before calling known arity functions
+	% that x[0] and x[1] are valid before bifs, like send ('!'), 't', 'is_atom', etc...
+	% that labels are inside the same function as its usage
+	% that 'jump' opcode wil not introduce unbound loops
+	% that there are no opcodes after tail-call
+	% that 'put'/'put_tuple' are used correctly (correct number of 'put''s, in correct order, consecutivly)
+	% that there is always 'r' or tail-call at the end of each exec path
+	% that 'try'/'try_case'/'catch'/'catch_end',  'case'/'case_end', 'loop_rec'/
+	% that label referenced in 'wait'/'wait_timeout' is point to 'loop_rec'
+	% that 'remove_message' is used after 'loop_rec'
+	% that 'wait'/'timeout' is after 'loop_rec', and that error label referenced in 'loop_rec' points to 'wait'/'wait_timeout'/'timeout'
+	
+
+% TODO: ponizej zakomentowano wiele -spec bo kompilator krzyczy w nower werji
+
+%-spec eval(io_list()) -> {ok, term()} | {error, term()}.
 eval(X) ->
 	%throw (callable_only_at_client_side).
 	ignored.
 
+-spec alert(any()) -> ok | {error, term()}.
 alert(X) ->
 	%throw (callable_only_at_client_side).
 	ignored.
 
-listen(Id, Type) ->
+-spec confirm(any()) -> ok | cancel | {error, term()}.
+confirm(X) ->
 	%throw (callable_only_at_client_side).
+	ignored.
+
+-spec monit(any()) -> {ok, term()} | {cancel, term()} | {error, term()}.
+monit(X) ->
+	%throw (callable_only_at_client_side).
+	ignored.
+
+-spec console_log(any()) -> ok | {error, term()}.
+console_log(X) ->
 	ignored.

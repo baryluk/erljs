@@ -1,0 +1,85 @@
+Most important web browsers we will like to test in,
+and have reasonable status.
+
+To be filled in and tested.
+
+Microsoft Internet Explorer 5.0 (Windows)*
+Microsoft Internet Explorer 5.2 (Mac)*
+Firefox 1.0 ... 8.0
+Opera 7.5
+Netscape 6.0
+Safari 1.2
+Camino 1.0
+Konqueror 3.4
+
+Opera 8.0
+Opera 9.0
+Opera 9.50
+Opera 10.0
+Opera 10.10
+Opera 10.50
+Opera 10.60
+Opera 11.0
+Opera 11.52
+Opera 11.60
+
+
+Internet Explorer 6
+Internet Explorer 7
+Internet Explorer 8
+Internet Explorer 9
+
+Chrome 1.0 .. 13
+
+Safari
+
+Epiphany
+
+
+http://andrewdupont.net/test/double-dollar/
+
+
+
+
+
+Similary we can test engines, instead of browsers
+
+
+standalone or embedable engines:
+
+node - nodejs (korzysta z v8, tego co w Chromium/Chrome, napisany w C++ przez Google)
+smjs - spidermonkey-bin (korzysta z spidermonkey, tego co w Firefox/Iceweasel, napisany w C++ przez Mozilla. w rzeczywistosci jest to tracemonkey chyba juz)
+rhino - rhino (oddzielne implementacja, napisana w Java przez Mozilla)
+ds - dmdscript (implementacja ECMA 232, napisana w D, lub C++, przez DigitalMars)
+jscript - tylko windows w IE (trident) i WSH (niezaleznie)
+jscript .net
+njs - niezalezny silnik JS, ostatnie wydanie 2009
+
+in-browser engines:
+
+spidermonkdey/tracemonkey - firefox 2.0, 3.0, 3.5, 3.6, 4.0, 5.0
+v8 - chromium , 7, 8, 9, 10, 11, 12, 13
+presto+linear_a,linear_b,futhark,caraken - opera 6.12, 7.0, 8.0, 9.0, 9.27, 9.50, 10, 10.20, 10.50, 11, 11.10, 11.50
+trident - internet explorer 6, 7, 8, 9
+webkit - safari 5
+khtml - konqueror (3.0, 3.5, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6)
+kjs - konqueror
+webkit / apple javascriptcore
+elinks - uzywa spidermonkey lub njs
+
+derivative browsers:
+
+galeon - gecko
+k-meleon - gecko
+maxthon - gecko / trident / webkit
+flock - gecko
+camino - gecko
+netscape - gecko
+mozilla suite - gecko
+seamonkey - gecko
+abrowse - khtml
+arora - webkit
+midori - webkit
+epiphany - gecko / webkit
+kazehakase - gecko / apple webcore
+rekonq - webkit

@@ -46,7 +46,8 @@ encode([C|_] = L) when is_integer(C), C >= $\000, C =< $\377  ->
 encode(L) when is_list(L) -> encode_list(L);
 encode({}) -> "[]";
 encode(T) when is_tuple(T) -> encode_array(T);
-encode(A) when is_atom(A) -> encode(atom_to_list(A));
+encode(A) when is_atom(A) -> encode_atom(A);
+encode(B) when is_binary(B) -> encode({binary,binary_to_list(B)});
 encode(Bad) -> exit({json_encode, {bad_term, Bad}}).
 
 % todo: encode directly to IoDecive
@@ -56,7 +57,13 @@ encode(Bad) -> exit({json_encode, {bad_term, Bad}}).
 
 -spec encode_string([any()]) -> [any(), ...].
 
-encode_string(S) -> encode_string(S, [$"]).
+encode_string(S) ->
+	R = encode_string0(S),
+%	["{s:",R,"}"].
+	%["\\\"",R,"\\\""].
+	R.
+
+encode_string0(S) -> encode_string(S, [$"]).
 
 -spec encode_string([any()], [any(), ...]) -> [any(), ...].
 
@@ -122,3 +129,7 @@ tuple_fold(_F, A, _T, I, N) when I > N ->
 tuple_fold(F, A, T, I, N) ->
     A2 = F(element(I, T), A),
     tuple_fold(F, A2, T, I + 1, N).
+
+encode_atom(A) ->
+	%["{a:",encode_string(atom_to_list(A)),"}"].
+	encode_string0(atom_to_list(A)).

@@ -40,18 +40,11 @@ function debugh(X) {
 }
 
 function debug(X) {
-	try { // block for webbrower, but try for Rhino
-		var r = document.createElement("div");
-		r.innerText = X;
-		document.getElementById("debugdiv").appendChild(r);
+	erljs_scheduler_log(X);
+}
 
-		//document.getElementById("debugform"). += X;
-		//document.getElementById("debugform").innerText += "\n\r";
-	} catch (e) {
-		try { // Rhino
-			print(X);
-		} catch (e2) { }
-	}
+function debug_zew(X) {
+	erljs_scheduler_log(X);
 }
 
 // assert test, for internal error, or situation which should never occur in proper bytecode.
@@ -84,11 +77,14 @@ function func_sig(ModuleName, Name, Arity) {
 
 var opcode_profiler = {};
 
+var function_profiler = {};
+
 
 function uns(OC) {
 	throw "not yet supported opcode "+toJSON(OC);
 }
 
+// TODO: inline this (very frequently used)
 function get_opcode(O) {
 	return (typeof(O) == "string" ? O : O[0]); // to accomodate "return", and another 0-length OC
 }
@@ -133,7 +129,7 @@ function erljs_vm_init(Modules) {
 					var opcode0 = get_opcode(OC);
 					if (opcode0 == "label" || opcode0 == "l") {
 						//opcode_test(OC, 'label', 1)
-						//console.log("dodaje label " + OC[1] + "(z pozycji org "+k+") na pozycji "+l+ " w funkcji "+ FunctionSignature);
+						//debug("dodaje label " + OC[1] + " (z pozycji org "+k+") na pozycji "+l+ " w funkcji "+ FunctionSignature);
 						Labels[ModuleName][OC[1]] = [FunctionSignature, l];
 					} else {
 						
@@ -184,7 +180,7 @@ function is_float(E) {
 	return false;
 }
 function is_binary(E) {
-	return false;
+	return E instanceof EBinary;
 }
 function is_boolean(E) {
 	return is_atom(E) && (E.atom_name()=="true" || E.atom_name()=="false");
@@ -198,6 +194,9 @@ function is_ref(E) {
 }
 function is_pid(E) {
 	return E instanceof EPid;
+}
+function is_fun(E) {
+	return E instanceof EFun;
 }
 
 function erljs_eq(A,B,strict) {
@@ -468,14 +467,6 @@ function erljs_vm_call_prepare(StartFunctionSignature0, Args, MaxReductions, Ful
 	P.ThisFunctionSignature = P.StartFunctionSignature;
 	P.ThisModuleName = P.StartFunctionSignature0[0];
 
-	switch (P.ThisModuleName) {
-	case "math":
-	case "erljs":
-	// even if allowed in some point, problem with erlang:* is that some functions are 'bif' and some are called using 'special opcodes' and some using 'call_ext*'
-	case "erlang":
-		throw "module "+P.ThisModuleName+" not allowed in direct calls yet.";
-	}
-
 	P.last_reason = "noreason";
 
 	P.GeneralEntryPoint = 1; // 2 with labels.
@@ -492,6 +483,26 @@ function erljs_vm_call_prepare(StartFunctionSignature0, Args, MaxReductions, Ful
 	// bif put/put_tuple
 	P.put_tuple_register = -1;
 	P.put_tuple_i = -1;
+
+	// Process links
+	P.Links = [];
+
+	switch (P.ThisModuleName) {
+	case "math":
+	case "erljs":
+	// even if allowed in some point, problem with erlang:* is that some functions are 'bif' and some are called using 'special opcodes' and some using 'call_ext*'
+	case "erlang":
+		// we will emulate such calls using aritficial opcode. such pseudo-functions are cached here, and never removed. it is not a problem.
+		// but we must be cearfull to not enter infinite loop here!
+		if (!P.FunctionsCode[P.ThisFunctionSignature]) {
+			P.FunctionsCode[P.ThisFunctionSignature] = [
+				["func_info", ["atom",StartFunctionSignature0[0]], ["atom",StartFunctionSignature0[1]], StartFunctionSignature0[2]],
+				["call_ext_only", StartFunctionSignature0[2], ["extfunc", StartFunctionSignature0[0], StartFunctionSignature0[1], StartFunctionSignature0[2]]]
+			];
+		}
+		//throw "module "+P.ThisModuleName+" not allowed in direct calls yet (trying to start execution from "+P.StartFunctionSignature+")";
+	}
+
 
 	return P;
 }
@@ -537,6 +548,10 @@ function erljs_vm_steps__(P) {
 		P.IP = IP;
 	}
 
+	function debug(X) {
+		debug_zew(P.Pid + " " + X);
+	}
+
 	function get_arg(What) {
 		if (What == "nil") { return new EListNil(); } // we can return static Nil reference really.
 		switch (What[0]) {
@@ -553,14 +568,30 @@ function erljs_vm_steps__(P) {
 			case "fr": // {fr,N} is in float register
 				return FloatRegs[What[1]];
 			case "literal": // {litera,Term} is some kind of complex (compile time constant) term in. [a,b,c]
-				return eterm_decode(What[1]);
+				try {
+					return eterm_decode(What[1].s);
+				} catch (err2) {
+					try {
+						return new EListString(What[1].s);
+					} catch (err3) {
+						return eterm_decode(What[1]);
+					}
+				}
 			default:
 				throw("what? "+ss(What));
 		}
 	}
 
 	function jump(LabelNo) {
+		assert(LabelNo !== undefined && LabelNo > 0, "Bad LabelNo - undefined or not positive");
+		//debug("Jumping to "+LabelNo+" in Labels:"+toJSON(ThisLabels));
 		var L = ThisLabels[LabelNo];
+		if (!L) {
+			erljs_scheduler_log("Bad LabelNo="+LabelNo);
+			erljs_scheduler_log("P.ThisModuleName="+P.ThisModuleName);
+//			erljs_scheduler_log("ThisLabels="+toJSON(ThisLabels));
+		}
+		assert(L !== undefined, "Bad LabelNo - point nowhere");
 		//var L = Labels[ThisModuleName][LabelNo];
 		IP = L[1];
 	}
@@ -573,6 +604,7 @@ function erljs_vm_steps__(P) {
 	}
 
 	function erl_throw(E) {
+erljs_scheduler_log(P.Pid+": exception: "+E.toString());
 		// {'EXIT',{E,[{M,F,A},{M,F,A},...]}}.
 		// now we need to traverse stack, up to the proper EH handler
 		// we can ignore stack trace for now
@@ -631,8 +663,11 @@ if (LabelF[1] === 0) {
 	//TracedModules["random"]=1;
 	//TracedModules["lists"]=1;
 
+	var TraceAllModules = true;
+
 	var Etrue = new EAtom("true"),
 		Efalse = new EAtom("false");
+	var Eundefined = new EAtom("undefined");
 
 	// current opcode
 	var OC = [];
@@ -666,8 +701,8 @@ mainloop:
 	}
 
 	if (FullDebug >= 1) {
-	if (P.ThisModuleName in TracedModules) {
-		if (FullDebug >= 1) {
+	if ((P.ThisModuleName in TracedModules) || TraceAllModules) {
+		if (FullDebug >= 2) {
 			try {
 				debug("  x0: "+ss(Regs[0]));
 				debug("  x1: "+ss(Regs[1]));
@@ -761,7 +796,7 @@ mainloop:
 					jumpf(OC[2]);
 				}
 				break;
-			case "is_float":	
+			case "is_float":
 				//assert(OC[3].length == 1);
 				Arg = get_arg(OC[3][0]);
 				if (!is_float(Arg)) {
@@ -830,7 +865,22 @@ mainloop:
 			case "is_function2":
 				Arg1 = get_arg(OC[3][0]);
 				Arg2 = get_arg(OC[3][1]);
-				if (!(Arg1 instanceof EFun && Arg1.fun_arity() === Arg2)) {
+				if (!(is_integer(Arg2) && Arg2 >= 0)) {
+					throw "badarg";
+				}
+				if (!(is_fun(Arg1) && Arg1.fun_arity() === Arg2)) {
+					jumpf(OC[2]);
+				}
+				break;
+			case "is_function": // i.e. erlang:spawn_link/1
+				Arg1 = get_arg(OC[3][0]);
+				if (!is_fun(Arg1)) {
+					jumpf(OC[2]);
+				}
+				break;
+			case "is_binary":
+				Arg = get_arg(OC[3][0]);
+				if (!is_binary(Arg)) {
 					jumpf(OC[2]);
 				}
 				break;
@@ -1018,6 +1068,15 @@ mainloop:
 	case "C": // alias for "call"
 	//case "call":
 		//opcode_test(OC, 'call', 2) || opcode_test(OC, 'call_only', 2);
+
+/*
+			var msg = P.Pid+": ";
+			for(i=0; i<P.Stack.length;i++) {
+				msg += "....";
+			}
+			erljs_scheduler_log(msg+OC);
+*/
+
 			//switch (opcode0) {
 			//case "C":
 			////case "call":
@@ -1082,9 +1141,30 @@ mainloop:
 
 */
 
+	// np. apply(F,X,[a,b,c]) czy też F:X(a,b,c) -- to samo.
 	case "apply_last": // to robi compilator jesli zna ilosc argumentow za wczasu.
 	case "apply":
-			uns(OC);
+		opcode_test(OC, 'apply', 1) || opcode_test(OC, 'apply_last', 2);
+			Arity = OC[1];
+			ModuleName = Regs[Arity].toString();
+			Name = Regs[Arity+1].toString();
+			if (opcode0 != "apply_last") {
+				Stack.push([P.ThisFunctionSignature, ThisFunctionCode, IP, P.ThisModuleName, LocalRegs, LocalEH]);
+			}
+				LocalRegs = [];
+				LocalEH = [];
+				var FunctionSignature = func_sig(ModuleName, Name, Arity);
+				// if no such function?
+				ThisFunctionCode = FunctionsCode[FunctionSignature];
+				if (ThisFunctionCode === undefined) {
+					erl_throw(new EAtom("undef"));
+					break;
+				} else {
+					P.ThisFunctionSignature = FunctionSignature;
+					P.ThisModuleName = ModuleName;
+					ThisLabels = Labels[P.ThisModuleName];
+					IP = P.GeneralEntryPoint;
+				}
 			break;
 
 	case "call_fun":
@@ -1129,7 +1209,7 @@ mainloop:
 					erl_throw(new EAtom("undef"));
 				} else {
 					P.ThisFunctionSignature = FunctionSignature;
-					P.ThisModuleName = ModuleName;
+					P.ThisModuleName = FunctionModuleName;
 					ThisLabels = Labels[P.ThisModuleName];
 					//jump(EntryPoint);
 					IP = P.GeneralEntryPoint;
@@ -1144,6 +1224,22 @@ mainloop:
 	case "call_lists_only":
 	case "call_ext_last":
 	case "call_last":
+
+
+			var msg = P.Pid+": ";
+			for(i=0; i<P.Stack.length;i++) {
+				msg += "....";
+			}
+			var AllRegs = "";
+			for(i=0; i<Regs.length;i++) {
+				if (Regs[i] !== undefined) {
+					AllRegs += (" \n\t\tx["+i+"]="+Regs[i].toString());
+				}
+			}
+			erljs_scheduler_log(msg+OC+AllRegs);
+
+
+			var reentry = false;
 			P.last_reason = "";
 			var native_function = false; // 'native' keyword is reserved in the Rhino JS :(
 		//opcode_test(OC, 'call_ext', 2) || opcode_test(OC, 'call_ext_only', 2) || opcode_test(OC, 'call_lists', 2) || opcode_test(OC, 'call_lists_only', 2);
@@ -1170,9 +1266,12 @@ mainloop:
 			}
 			//debug("INS: "+toJSON(OC)+" "+ModuleName+" "+Name+" "+Arity);
 			function ni(OC) { debug("not imlepmented: "+ModuleName+":"+Name+"/"+Arity); uns(OC); throw "stoped execution"; }
+
+			var NA = Name+"/"+Arity;
+
 			// TODO: prepare hash table for this.
 			if (ModuleName == "erljs") {
-				var NA = Name+"/"+Arity;
+				native_function = true;
 				switch (NA) {
 				case "eval/1":
 					var k = Regs[0].toString();
@@ -1190,13 +1289,46 @@ mainloop:
 					console.log(k);
 					Regs[0] = 0;
 					break;
+				case "listen/4":
+					if (!(is_atom(Regs[0]) && is_atom(Regs[1]) && is_list(Regs[2]) && Regs[3] !== undefined)) {
+						throw "badarg";
+					}
+					var Element = document.getElementById(Regs[0].atom_name());
+					if (Element) {
+						var listener = erljs_create_listener(P, Element, Regs[1].atom_name(), false, false, false, {id: Regs[0], aux:Regs[3]});
+						var ref = 2;
+						Regs[0] = new ETuple([new EAtom("ok"), ref]);
+					} else {
+						Regs[0] = new ETuple([new EAtom("error"), new EAtom("no_such_element")]);
+					}
+					break;
+				case "set/3":
+					if (!(is_atom(Regs[0]) && is_atom(Regs[1]) && Regs[2] !== undefined)) {
+						throw "badarg";
+					}
+					var Element = document.getElementById(Regs[0].atom_name());
+					if (Element) {
+						switch (Regs[1].atom_name()) {
+							case "value":
+								Element.value = Regs[2].toString();
+								break;
+							default:
+								ni(OC);
+								break;
+						}
+						Regs[0] = new ETuple(new EAtom("ok"));
+					} else {
+						Regs[0] = new ETuple([new EAtom("error"), new EAtom("no_such_element")]);
+					}
+					break;
 				default:
 					alert("erljs "+NA+" undef");
 					throw "undef";
 				}
-				native_function=true;
-			} else if (ModuleName == "math") {
-				var NA = Name+"/"+Arity;
+			}
+
+			if (ModuleName == "math") {
+				native_function = true;
 				switch (NA) {
 				case "pi/0":
 					Regs[0] = Math.PI;
@@ -1233,17 +1365,42 @@ mainloop:
 					break;
 				default: throw "nofunc";
 				}
-				native_function=true;
-			} else if (ModuleName == "erlang") {
-				var NA = Name+"/"+Arity;
+			}
 
+			if (ModuleName == "init") {
+				native_function = true;
+				switch (NA) {
+					case "get_args/0":
+						Regs[0] = new EListNil();
+						break;
+					case "get_arguments/0":
+						Regs[0] = new EListNil();
+						break;
+					case "get_argument/1":
+						if (!is_atom(Regs[0])) {
+							throw "badarg";
+						}
+						Regs[0] = new EAtom("error");
+						// returning anything other than 'error' for generic_debug
+						// will mean that gen_server will enabled debuging [log, statistics] by defualt
+						//if (Regs[0].atom_name() == "generic_debug") {
+						//}
+						break;
+					default:
+						native_function = false;
+						break;
+				}
+			}
+
+			if (ModuleName == "erlang") {
+				native_function = true;
 				switch (NA) {
 				//case "length/1": // in gc_bif
 				//	break;
 
 				case "++/2": // concats two lists. left cannot be improper
-					if (!(is_list(Regs[0]) && is_list(Regs[1]))) { throw "badarg"; }
-					if (!Regs[1].empty()) {
+					if (!is_list(Regs[0])) { throw "badarg"; }
+					if (!(is_list(Regs[1]) && Regs[1].empty()) || !is_list(Regs[1])) {
 						if (!Regs[0].empty()) {
 							// TODO: add optimalisation for case when Regs[0] is EListString
 							var temp0 = new EList(-137,-138);
@@ -1257,8 +1414,12 @@ mainloop:
 								NativeReductions++;
 							}
 							if (!(Regs[0] instanceof EListNil)) { throw "badarg"; } // Regs[0] must be proper list.
-							temp.sethead(Regs[1].head());
-							temp.settail(Regs[1].tail());
+							if (is_list(Regs[1])) {
+								temp.sethead(Regs[1].head());
+								temp.settail(Regs[1].tail());
+							} else {
+								temp.settail(Regs[1]);
+							}
 							Regs[0] = temp0;
 						} else {
 							Regs[0] = Regs[1];
@@ -1267,9 +1428,68 @@ mainloop:
 					break;
 				case "--/2":
 					ni(OC); break;
+
 				case "apply/2": // apply(Fun,[a,b,c])
 					// same as {M,F,Binded}=Fun, apply(M,F,Binded++[a,b,c]). ?
-					ni(OC);
+					var Args = Regs[1];
+					if (!is_list(Args)) {
+						throw "badarg";
+					}
+					var Fun = Regs[0];
+					if (!is_fun(Fun)) {
+						erl_throw(new ETuple([new EAtom("badfun"), Fun]));
+						throw "badfun";
+					}
+					// similar to call_fun
+
+
+			var Arity = list_len(Args);
+		 	if (Fun.fun_arity() != Arity) {
+				erl_throw(new ETuple([
+						new EAtom("badarity"),
+						new ETuple([Fun, Regs[1]])
+				]));
+			} else {
+				if (opcode0 != "call_ext_only") {
+				Stack.push([P.ThisFunctionSignature, ThisFunctionCode, IP, P.ThisModuleName, LocalRegs, LocalEH]);
+				}
+				LocalRegs = [];
+				LocalEH = [];
+
+				var FunctionModuleName = Fun.function_modulename();
+				var FunctionName = Fun.function_name();
+				var FunctionArity = Fun.function_arity();
+
+
+				for (var i = 0; i < Arity; i++) {
+					Regs[i] = Args.head();
+					Args = Args.tail();
+				}
+
+				if (Fun instanceof EFunLocal) {
+					for (var i = Arity, j = 0; i < FunctionArity; i++, j++) {
+						assert(Fun.Env[j] !== undefined);
+						Regs[i] = Fun.Env[j];
+					}
+				}
+
+				var FunctionSignature = func_sig(FunctionModuleName, FunctionName, FunctionArity);
+				// if no such function?
+				ThisFunctionCode = P.FunctionsCode[FunctionSignature];
+				if (ThisFunctionCode === undefined) {
+					erl_throw(new EAtom("undef"));
+				} else {
+					P.ThisFunctionSignature = FunctionSignature;
+					P.ThisModuleName = FunctionModuleName;
+					ThisLabels = Labels[P.ThisModuleName];
+					//jump(EntryPoint);
+					IP = P.GeneralEntryPoint;
+				}
+
+				reentry = true;
+			}
+
+
 					break;
 				case "apply/3": // apply(M,F,[a,b,c]) // be sure to make it tail-recursive!
 					if (!(is_atom(Regs[0]) && is_atom(Regs[1]) && is_list(Regs[2]))) {
@@ -1277,12 +1497,40 @@ mainloop:
 					}
 					ModuleName = Regs[0].toString(); // atom // warning this can be erlang or erljs!
 					Name = Regs[1].toString(); // atom
-					Arity = Regs[2].length();
+					var Args = Regs[2];
 					//LocalRegs2 = Regs[0 .. Arity];
 					//Regs[0] <- Regs[2].hd();
 					//Regs[1] <- Regs[2].tl().hd();...
-					ni(OC);
+
+					var NewRegs = [];
+					Arity = 0;
+					while (!(Args instanceof EListNil)) {
+						NewRegs[Arity++] = Args.head();
+						Args = Args.tail();
+					}
+					Regs = NewRegs;
+
+					if (opcode0 != "call_ext_only") {
+						Stack.push([P.ThisFunctionSignature, ThisFunctionCode, IP, P.ThisModuleName, LocalRegs, LocalEH]);
+					}
+						LocalRegs = [];
+						LocalEH = [];
+						var FunctionSignature = func_sig(ModuleName, Name, Arity);
+						// if no such function?
+						ThisFunctionCode = FunctionsCode[FunctionSignature];
+						if (ThisFunctionCode === undefined) {
+							erl_throw(new EAtom("undef"));
+							break;
+						} else {
+							P.ThisFunctionSignature = FunctionSignature;
+							P.ThisModuleName = ModuleName;
+							ThisLabels = Labels[P.ThisModuleName];
+							IP = P.GeneralEntryPoint;
+						}
+						reentry = true;
+
 					break;
+
 /*				case "hd/1": // in bif
 					if (!(Regs[0] instanceof EList)) throw "badarg";
 					Regs[0]=Regs[0].head();
@@ -1322,7 +1570,14 @@ mainloop:
 					Regs[0] = new EAtom(s);
 					break;
 
-				case "list_to_integer/1": ni(OC); break;
+				case "list_to_integer/1":
+					if (!is_list(Regs[0])) {
+						throw "badarg";
+					}
+					var l = Regs[0].toString();
+					l = l.slice(1, -1);
+					Regs[0] = parseInt(l);
+					break;
 				case "integer_to_list/1":
 					var L = Math.round(Math.abs(Regs[0]));
 					if (L) {
@@ -1380,13 +1635,14 @@ mainloop:
 				case "put/2": // i.e. random:reseed
 					var old = P.PDict[Regs[0].toString()];
 					P.PDict[Regs[0].toString()] = [Regs[0],Regs[1]];
-					Regs[0] = (old ? old : new EAtom("undefined"));
+					Regs[0] = (old ? old : Eundefined);
 					break;
 				case "erase/0":
 				case "get/0":
 					var t = new EListNil();
 					for (var i in P.PDict) {
 						if (P.PDict.hasOwnProperty(i)) {
+							var r = P.PDict(i);
 							t = new EList(new ETuple(r), t);
 						}
 					}
@@ -1396,7 +1652,7 @@ mainloop:
 				case "erase/1":
 				case "get/1":
 					var r = P.PDict[Regs[0].toString()];
-					Regs[0] = (r ? r[1] : new EAtom("undefined"));
+					Regs[0] = (r ? r[1] : Eundefined);
 					if (Name=="erase") { P.PDict[Regs[0].toString()] = undefined; } // or delete?
 					break;
 				case "get_keys/1": ni(OC); break;
@@ -1404,11 +1660,11 @@ mainloop:
 					ni(OC);
 					break;
 
-				case "spawn/1": // Fun
-				case "spawn/2": // Node, Fun
-				case "spawn/4": // Node, Module, Function, [Args]
-					ni(OC);
-					break;
+				//case "spawn/1": // Fun
+				//case "spawn/2": // Node, Fun
+				//case "spawn/4": // Node, Module, Function, [Args]
+				//	ni(OC);
+				//	break;
 				case "spawn/3": // Module, Function, [Args]
 					if (!(is_atom(Regs[0]) && is_atom(Regs[1]) && is_list(Regs[2]))) {
 						throw "badarg";
@@ -1419,23 +1675,34 @@ mainloop:
 					Regs[0] = NewP.Pid;
 					break;
 
-				case "spawn_link/1": // Fun
-				case "spawn_link/2": // Node, Fun
-				case "spawn_link/4": // Node, Module, Function, [Args]
+				//case "spawn_link/1": // Fun
+				//case "spawn_link/2": // Node, Fun
+				//case "spawn_link/4": // Node, Module, Function, [Args]
 				case "spawn_link/3": // Module, Function, [Args]
-					ni(OC);
+					if (!(is_atom(Regs[0]) && is_atom(Regs[1]) && is_list(Regs[2]))) {
+						throw "badarg";
+					}
+					// TODO: use Opts in Regs[3] !!
+					var Arity = Regs[2].length();
+					var NewP = erljs_vm_call_prepare([Regs[0].toString(), Regs[1].toString(), Arity], Regs[2], 1000, true);
+					erljs_spawn(NewP);
+					erljs_scheduler_log("Adding process link: "+NewP.Pid+" -> "+P.Pid);
+					NewP.Links.push(P.Pid);
+					erljs_scheduler_log("Adding process link: "+P.Pid+" -> "+NewP.Pid);
+					P.Links.push(NewP.Pid);
+					Regs[0] = NewP.Pid;
 					break;
 
-				case "spawn_monitor/1": // Fun
-				case "spawn_monitor/3": // Module, Function, [Args]
-					ni(OC);
-					break;
+				//case "spawn_monitor/1": // Fun
+				//case "spawn_monitor/3": // Module, Function, [Args]
+				//	ni(OC);
+				//	break;
 
-				case "spawn_opt/2": // Fun, [Opts]
-				case "spawn_opt/3": // Node, Fun, [Opts]
-				case "spawn_opt/5": // Node, Module, Function, [Args], [Opts]
-					ni(OC);
-					break;
+				//case "spawn_opt/2": // Fun, [Opts]
+				//case "spawn_opt/3": // Node, Fun, [Opts]
+				//case "spawn_opt/5": // Node, Module, Function, [Args], [Opts]
+				//	ni(OC);
+				//	break;
 				case "spawn_opt/4": // Module, Function, [Args], [Opts]
 					if (!(is_atom(Regs[0]) && is_atom(Regs[1]) && is_list(Regs[2]) && is_list(Regs[3]))) {
 						throw "badarg";
@@ -1445,18 +1712,44 @@ mainloop:
 					var NewP = erljs_vm_call_prepare([Regs[0].toString(), Regs[1].toString(), Arity], Regs[2], 1000, true);
 					erljs_spawn(NewP);
 					Regs[0] = NewP.Pid;
+					//MonitorRef = new ERef();
+					//Regs[0] = new ETuple(NewP.Pid, MonitorRef);
 					break;
 
 
 
 				//case "abs/1": ni(OC); break; // abs value of float or int // in gc_bif
-				case "min/2": ni(OC); break;
-				case "max/2": ni(OC); break;
-				case "make_ref/0": ni(OC); break;
+				case "min/2":
+					Regs[0] = (erljs_cmp(Regs[0], Regs[1]) >= 0 ? Regs[0] : Regs[1]);
+					ni(OC);
+					break;
+				case "max/2":
+					Regs[0] = (erljs_cmp(Regs[0], Regs[1]) <= 0 ? Regs[0] : Regs[1]);
+					ni(OC);
+					break;
+				case "make_ref/0":
+					ni(OC);
+					Regs[0] = new ERef();
+					break;
 				case "self/0": ni(OC); break;
-				case "time/0": ni(OC); break; // {Hour,Minute,Second} // {9,42,44}
-				case "date/0": ni(OC); break; // {Year,Month,Day}// {1996,11,6}
-				case "localtime/0": ni(OC); break; // {{Year,Month,Day}, {Hour,Minute,Second}} // {{1996,11,6},{14,45,17}}
+				case "time/0":
+					// {Hour,Minute,Second} // {9,42,44}
+					var c = new Date();
+					Regs[0] = new ETuple([c.getHours(), c.getMinutes(), c.getSeconds()]);
+					break;
+				case "date/0":
+					// {Year,Month,Day}// {1996,11,6}
+					var c = new Date();
+					Regs[0] = new ETuple([c.getFullYear(), 1+c.getMonth(), c.getDate()]);
+					break;
+				case "localtime/0":
+					// {{Year,Month,Day}, {Hour,Minute,Second}} // {{1996,11,6},{14,45,17}}
+					var c = new Date();
+					Regs[0] = new ETuple([
+						new ETuple([c.getFullYear(), 1+c.getMonth(), c.getDate()]),
+						new ETuple([c.getHours(), c.getMinutes(), c.getSeconds()])
+					]);
+					break;
 				case "fun_info/1": ni(OC); break;
 				case "fun_info/2": ni(OC); break;
 				case "phash/2": // i.e. sets:get_slot/2
@@ -1466,6 +1759,7 @@ mainloop:
 				case "get_module_info/1": ni(OC); break;
 				case "get_module_info/2": ni(OC); break;
 				case "yield/0":
+					Regs[0] = Etrue;
 					/*
 					save_context();
 					return false;
@@ -1473,15 +1767,23 @@ mainloop:
 					continue mainloop; // ignore
 					//break; // unreachable break
 				case "halt/0":
-					alert("Halted:"+Regs[0]);
-					P.Returned = "Halted";
+					P.Returned = 0;
 					save_context();
+					alert("Halting Erlang runtime system");
 					return true;
 				case "halt/1":
-					alert("Halted.");
-					P.Returned = "Halted";
+					P.Returned = Regs[0];
 					save_context();
+					alert("Halting Erlang runtime system");
 					return true;
+
+				case "exit/1":
+					var Reason = Regs[0];
+//					P.Returned = Reason;
+					erl_throw(new ETuple([new EAtom("EXIT"), Reason]));
+//					save_context();
+//					return true;
+					break;
 
 				case "error/2":
 					ni(OC);
@@ -1510,35 +1812,222 @@ mainloop:
 					Regs[0] = P.Pid;
 					break;
 
-				case "whereis/1":
-					if (!(is_atom(Regs[0]))) {
+				case "group_leader/2":
+					if (!(is_pid(Regs[0]) && is_pid(Regs[1]))) {
 						throw "badarg";
 					}
-					Regs[0] = new EAtom("undefined");
+					// Note: one can assign Pid which is dead. It is ok.
+					// But process to which we are assigning but be valid.
+					var P2 = ProcessHash[Regs[1]];
+					if (P2 && P2.data) {
+						P2.data.Group_Leader = Regs[0];
+					} else {
+						throw "badarg";
+					}
+					break;
+
+				case "whereis/1":
+					function erljs_whereis(x) {
+						if (!is_atom(x)) {
+							throw "badarg";
+						}
+						var n = x.atom_name();
+						if (Register_Names[n]) {
+							return Register_Names[n];
+						} else {
+							return Eundefined;
+						}
+					}
+					Regs[0] = erljs_whereis(Regs[0]);
 					break;
 
 				case "register/2":
-					if (!(is_atom(Regs[0]))) {
+					if (!is_atom(Regs[0])) {
 						throw "badarg";
 					}
 					if (!(is_pid(Regs[1]) || is_port(Regs[1]))) {
 						throw "badarg";
 					}
+					var n = Regs[0].atom_name();
+					var P2 = ProcessHash[Regs[1]];
+					if (!P2) { // no such local process or process is dead
+						throw "badarg";
+					}
+					P2 = P2.data;
+					erljs_scheduler_log("registering process "+P2.Pid+" as "+n);
+					if (n == "undefined") { // atom 'undefined' is not allowed
+						throw "badarg";
+					}
+					if (Register_Names[n]) {
+						throw "badarg"; // if already registered name
+					}
+					if (Register_Pids[P2.Pid]) {
+						throw "badarg2"; // if already registered process
+					}
+					Register_Names[n] = P2.Pid;
+					Register_Pids[P2.Pid] = n;
 					Regs[0] = new EAtom("true");
-					// throw "badarg" // if already registered
+					break;
+
+				case "registered/0":
+					var t = new EListNil();
+					for (var n in Register_Names) {
+						if (Register_Names.hasOwnProperty(n)) {
+							t = new EList(new EAtom(n), t);
+						}
+					}
+					erljs_scheduler_log("all registered processes: "+t);
+					Regs[0] = t;
 					break;
 
 				case "nodes/0":
 					Regs[0] = new EList( new EAtom("nonode@nohost"), new EListNil() );
 					break;
 
+				case "function_exported/3":
+					if (!(is_atom(Regs[0]) && is_atom(Regs[1]) && is_integer(Regs[2]) && Regs[2] >= 0)) {
+						throw "badarg";
+					}
+					// Note: return false for BIF implemented directly in VM in JS, rather than in Erlang
+					Regs[0] = Etrue;
+					break;
+
+				case "process_flag/3":
+					ni(OC);
+					break;
+				case "process_flag/2":
+					if (!is_atom(Regs[0])) {
+						throw "badarg";
+					}
+					switch (Regs[0].atom_name()) {
+						case "trap_exit":
+							if (!is_boolean(Regs[1])) {
+								throw "badarg";
+							}
+							var old_value = P.trap_exit;
+							P.trap_exit = (Regs[1].atom_name() == "true");
+							Regs[0] = (old_value ? Etrue : Efalse);
+							break;
+						case "error_handler":
+						case "min_heap_size":
+						case "min_bin_vheap_size":
+						case "priority":
+						case "save_calls":
+						case "sensitive":
+							ni(OC);
+							break;
+						default:
+							throw "badarg";
+							break;
+					}
+					break;
+
+
+				case "link/1":
+					if (!(is_pid(Regs[0]) || is_port(Regs[0]))) {
+						throw "badarg";
+					}
+					// if Pid do not exists (or dead), then throw "noproc";
+					// if Link already exists, ignore call
+					Regs[0] = Etrue;
+					break;
+				case "unlink/1":
+					if (!(is_pid(Regs[0]) || is_port(Regs[0]))) {
+						throw "badarg";
+					}
+					// unlink do not fail if there is no link to Pid or Pid do not exists (or is dead)
+					Regs[0] = Etrue;
+					break;
+
+				case "process_info/1":
+					if (!is_pid(Regs[0])) {
+						throw "badarg";
+					}
+					ni(OC);
+					break;
+				case "process_info/2":
+					if (!is_pid(Regs[0])) {
+						throw "badarg";
+					}
+					var P2 = ProcessHash[Regs[0]];
+					if (!P2) {
+						//throw "badarg";
+						Regs[0] = Eundefined;
+						// not exactly. first we should check if Regs[0] is currect atom, then
+						// if incorrect throw 'badarg', if ok, return 'undefined' as process is dead.
+						// for lists do not return list, just single 'undefined'
+					} else {
+					function process_info(X, PP) {
+						function process_info0(Item) {
+							switch (Item) {
+							case "current_function":
+								//{M,F,Arity}
+								return Eundefined;
+							case "initial_call":
+								//{M,F,Arity}
+								return Eundefined;
+							case "status":
+								return new EAtom("running");
+							case "message_queue_len":
+								return 0;
+							case "messages":
+								// todo
+								return new EListNil();
+							case "links":
+								// todo
+								return new EListNil();
+							case "dictionary":
+								// todo
+								return new EListNil();
+							case "trap_exit":
+								// todo
+								return Efalse;
+							case "error_handler":
+								return new EAtom("error_handler");
+							case "priority":
+								return new EAtom("normal");
+							case "group_leader":
+								return PP.Pid;
+							case "total_heap_size":
+								return 2564;
+							case "heap_size":
+								return 1234;
+							case "stack_size":
+								return 25;
+							case "reductions":
+								return Reductions;
+							case "garbage_collection":
+								return Eundefined;
+							default:
+								throw "badarg";
+							}
+						}
+						var rr = process_info0(X.atom_name());
+						if (rr !== Eundefined) {
+							return new ETuple([X, rr]);
+						} else {
+							return rr;
+						}
+					}
+					if (is_atom(Regs[1])) {
+						Regs[0] = process_info(Regs[1], P2.data);
+					} else if (is_list(Regs[1])) {
+						ni(OC);
+					} else {
+						throw "badarg";
+					}
+					}
+					break;
+
 
 				default:
-					throw "not implemented (unknown?) native function: "+ModuleName+":"+NA;
+					native_function = false;
+					// fallback and try calling erlang version instead
+					//throw "not implemented (unknown?) native function: "+ModuleName+":"+NA;
 					//break; // unreachale break
 				}
-				native_function=true;
-			} else {
+			}
+
 				// not needed currently as we have imlementation of this in lists*
 				if (ModuleName == "lists" && Name == "reverse") {
 					if (!is_list(Regs[0])) { throw "badarg"; }
@@ -1566,13 +2055,15 @@ mainloop:
 							break;
 					}
 					native_function=true;
-				} else {
+				}
+
+			if (!native_function) {
 					switch (opcode0) {
 					case 'call_ext':
 					case 'call_lists':
 						Stack.push([P.ThisFunctionSignature, ThisFunctionCode, IP, P.ThisModuleName, LocalRegs, LocalEH]);
-						LocalRegs = [];
 					default: // fallthrough
+						LocalRegs = [];
 						LocalEH = [];
 						var FunctionSignature = func_sig(ModuleName, Name, Arity);
 						// if no such function?
@@ -1588,7 +2079,9 @@ mainloop:
 							IP = P.GeneralEntryPoint;
 						}
 					}
-				}
+			}
+			if (reentry) {
+				break;
 			}
 			if (native_function && /_(only|last)$/.test(opcode0)) {
 	// same as in return
@@ -1695,7 +2188,7 @@ mainloop:
 		case "get": // identitical like erlang:get/1 // ie. random:*
 			var r = P.PDict[get_arg(OC[3][0]).toString()];
 			assert(OC[4][0] == "x");
-			Regs[OC[4][1]] = (r ? r[1] : new EAtom("undefined"));
+			Regs[OC[4][1]] = (r ? r[1] : Eundefined);
 			break;
 		case "tuple_size": // similar to gc_bif size // i.e. proplists:lookup
 			Arg = get_arg(OC[3][0]);
@@ -1748,11 +2241,11 @@ mainloop:
 				Arg = get_arg(OC[3][0]);
 				if (is_pid(Arg)) {
 					//var R = new EAtom("nonode@nohost");
-					var R = new EAtom("undefined");
+					var R = Eundefined;
 				} else if (false) { //is_port(Arg)) {
-					var R = new EAtom("undefined");
+					var R = Eundefined;
 				} else if (false) { //is_ref(Arg)) {
-					var R = new EAtom("undefined");
+					var R = Eundefined;
 				} else {
 					throw "badarg";
 				}
@@ -1803,16 +2296,28 @@ mainloop:
 
 	case "!":
 		opcode_test(OC, '!', 0);
-			assert(Regs[0] !== undefined);
+			Arg = Regs[0];
+			assert(Arg !== undefined);
 			assert(Regs[1] !== undefined);
-			if (is_pid(Regs[0])) {
+			erljs_scheduler_log(Arg.toString() + " ! " + Regs[1].toString());
+			if (is_atom(Arg)) {
+				// if no such registered process - badarg
+				// erljs_whereis throws if bad arguments, or no such registered proess
+				try {
+					Arg = erljs_whereis(Arg);
+				} catch (err5) {
+					// ignore for a while
+					break;
+				}
+			}
+			if (is_pid(Arg)) {
 				// never fails
-				if (Regs[0].pid_type() == "local") {
-					var P2 = ProcessHash[Regs[0]];
+				if (Arg.pid_type() == "local") {
+					var P2 = ProcessHash[Arg];
 					if (P2) {
 						P2 = P2.data;
 						if (P2 && !(P2.State == 6 || P2.State == 7)) { // exists and not ENDED or EXITED
-							if (P2.MsgQueue.enqueue(Regs[1])) {
+							if (P2.msg_enqueue(Regs[1])) {
 								// Reschedule local processes to the reciver side if needed
 								Regs[0] = Regs[1];
 								save_context();
@@ -1820,16 +2325,17 @@ mainloop:
 							}
 						}
 					}
-				} else { // "remove" process
+				} else { // "remote" process
 					ni(OC);
 					// also never fails
 				}
-			} else if (is_atom(Regs[0])) {
-				// if no such registered process - badarg
+			} else if (is_tuple(Arg) && Arg.tuple_arity() == 2) {
+				// is no such reisgered process - no error (are we sure?)
+				//var RegName = Regs[0].get(0);
+				//var Node = Regs[0].get(1);
 				ni(OC);
-			} else if (is_tuple(Regs[0]) && Regs[0].tuple_arity() == 2) {
-				// is no such reisgered process - no error
-				ni(OC);
+			} else if (is_atom(Arg)) {
+				break;
 			} else {
 				throw "badarg";
 			}
@@ -1910,10 +2416,14 @@ mainloop:
 		opcode_test(OC, 'loop_rec', 2);
 			assert(OC[1][0] == "f");
 			assert(OC[2][0] == "x");
+			P.WaitingStart = new Date(); // for calculation of deadline/after
 			if (P.MsgQueue.length == 0) {
 				jump(OC[1][1]);
 			} else {
 				P.remove_message_register = OC[2][1];
+				P.remove_message_position = 0;
+				assert(OC[2][0] == "x");
+				Regs[OC[2][1]] = P.MsgQueue[P.remove_message_position];
 			}
 			break;
 	case "select_val":
@@ -1941,13 +2451,16 @@ mainloop:
 	case "remove_message":
 		opcode_test(OC, 'remove_message', 0);
 			assert(P.MsgQueue.length > 0);
-			Regs[P.remove_message_register] = P.MsgQueue.dequeue();
+			assert(P.remove_message_position !== undefined);
+			Regs[P.remove_message_register] = P.msg_dequeue(P.remove_message_position);
 			break;
 	case "wait":
 		opcode_test(OC, 'wait', 1);
 			assert(OC[1][0] == "f");
 			jump(OC[1][1]);
 			P.JumpLabelOnNewMessage = OC[1][1];
+			P.Waiting = true;
+			P.Timeout = 1.0/0.0;
 			P.WaitingIn = IP-1;
 			save_context();
 			return false;
@@ -1956,12 +2469,15 @@ mainloop:
 			assert(OC[1][0] == "f"); // if new message jump(OC[1][1]);, if no new message in the OC[2][1] miliseconds, then go to next opcode
 			Arg = get_arg(OC[2]);
 			if (is_integer(Arg) && Arg >= 0) {
+				P.Waiting = true;
 				P.Timeout = Arg;
 				P.JumpLabelOnNewMessage = OC[1][1];
 				P.WaitingIn = IP;
 				save_context();
 				return false;
 			} else if (is_atom(Arg) && Arg.atom_name() == "infinity") {
+				P.Waiting = true;
+				P.Timeout = 1.0/0.0;
 				P.WaitingIn = IP-1;
 				jump(OC[1][1]);
 				save_context();
@@ -1973,6 +2489,12 @@ mainloop:
 	case "timeout":
 		opcode_test(OC, 'timeout', 0);
 			// do nothing
+			break;
+	case "loop_rec_end":
+		opcode_test(OC, 'loop_rec_end', 1);
+			P.remove_message_register = undefined;
+			P.remove_message_position = undefined;
+			//alert("unknown opcode " + OC); // TODO: I'm not sure about this opcode
 			break;
 	case "select_tuple_arity":
 		//opcode_test(OC, 'select_tuple_arity', 3);
@@ -2268,6 +2790,12 @@ mainloop:
 			assert(OC[2].length == 2);
 			assert(OC[2][0] == "f");
 			LocalEH.push([ OC[1][1], OC[2][1] ]);
+			if (LocalRegs[OC[1][1]] !== undefined) {
+				erljs_scheduler_log("M"+LocalRegs[OC[1][1]]);
+				erljs_scheduler_log("Start function: "+P.StartFunctionSignature0);
+				erljs_scheduler_log("Args: "+P.Args.toString());
+				erljs_scheduler_log("Current function: "+P.ThisFunctionSignature + " +"+IP);
+			}
 			assert(LocalRegs[OC[1][1]] === undefined);
 			break;
 	case "try_end":
@@ -2301,11 +2829,14 @@ mainloop:
 		assert(OC[3].length == 2);
 		assert(OC[3][0] == "x");
 		var SS = get_arg(OC[3]);
-		alert(ExceptionType);
-//		alert(ExceptionType.toString());
-		alert(ExceptionValue);
-		//alert(ExceptionValue.toString());
-		throw "stop";
+//		alert("OC[2][0]="+toJSON(ExceptionType));
+//		alert("OC[2][0]="+ExceptionType.toString());
+//		alert("OC[2][1]="+toJSON(ExceptionValue));
+		//alert("OC[2][1]="+ExceptionValue.toString());
+//		alert("OC[3][0]="+toJSON(SS));
+//		alert("OC[3][0]="+SS.toString());
+//		throw "stop";
+		erl_throw(SS);
 		break;
 
 	case "make_fun2":
@@ -2404,9 +2935,18 @@ mainloop:
 	throw "internal_vm_error_break_at_mainloop";
 
 } catch (err) {
-	Stack.push([P.ThisFunctionSignature, ThisFunctionCode, IP-1, P.ThisModuleName, LocalRegs]);
+/*
+	throw err;
+	var st = printStackTrace({e:err});
+	for (st_i in st) {
+		if (st.hasOwnProperty(st_i)) {
+			debug("JS call stack: "+st[st_i]);
+		}
+	}
+*/
 	debug("Last OC: "+toJSON(OC));
 	debug("exception error: "+err+"");
+	Stack.push([P.ThisFunctionSignature, ThisFunctionCode, IP-1, P.ThisModuleName, LocalRegs]);
 	for (var i = Stack.length-1; i >= 0; i--) {
 		var S = Stack[i];
 		debug((i==Stack.length-1 ? "in function " : "in call from ") + S[0] +" IP:" + S[2] );

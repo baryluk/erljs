@@ -1,0 +1,19 @@
+% binaries
+
+<<>>
+<<30>>
+<<4,30>>
+<<43,55,30,66,100,31:5>>
+% <<43,55,30,66,100,31:15>> == <<4,0,30:7>>
+% <<43,55,30,66,100,31:16>> == <<4,0,30>>
+% - we can assume that there will no be such terms, as they will be transformed to right
+
+% size and byte_size looks to have different rounding behaviour.
+% byte_size up, size down
+size
+byte_size
+bit_size
+
+% test both in body and in guard tests
+
+begin X=44, <<430:X>> end == <<0,0,0,0,26,14:4>>

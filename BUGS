@@ -1,0 +1,5 @@
+erljs bugs:
+
+
+browser-specific bugs:
+ - In Opera 10.60: float_to_list, io:format and serizliation of float values can be not precisse enught to reconstruct back correct value.

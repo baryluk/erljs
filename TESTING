@@ -1,0 +1,44 @@
+We can perform testing in many ways.
+
+We would like to have testing which:
+ - is highly automatic in performing
+ - can test wide spectrum of modules and functins
+ - should test behaviour with respect to original implementation
+ - should test many possible code paths and conditions
+
+This leads use to the case that we should have tests which are
+automatically generated, and they if possible should be randomized.
+
+They should be automatically run and compared with reference implementation.
+
+For full automaticity we can run something on the server,
+like Rhino or SpiderMonkey. We then can run it from script
+with specific tests, then run also them in Erlang, and compare
+using Erlang or some script.
+
+We can eventually do this by spawning JS engine as Erlang port,
+and send there commands.
+
+We can also have webbrowser which will run them and upload
+results using POST.
+
+Other possibility is to imlement Erlang distributed protocol
+or some kind of emulation so it will be transparent
+to communicate beetwen the two nodes with normal Erlang
+message passing.
+
+Then it can be easly tested on both nodes. Randomized tests
+can easly be runned on the server or client side,
+and similary comparission can be performed both on server and client
+(we can have bugs in comparission code/implementation,
+or term decoding, or by incident, and the fact that we have
+same data in memory, something could go wrong).
+
+Most simple way will be to generate some tests on client (it will not
+stress server), or on server (to have really good randomnes for sure :D),
+then calculate both functions on both nodes (sending second one the needed
+arguments and other parameters), then compare them on client
+and show results. Client will also then report status of tests to the
+server (with also failed tests cases for logging purpose).
+If needed we can send all tests and their status and their results,
+and server will optionally verify it again if it is ok.

@@ -110,7 +110,7 @@ function unittest_stats() {
 	return {ok: _unittest_ok, fail: _unittest_fail};
 }
 
-var eq_hide_green = true;
+var eq_hide_green = false;
 
 function eq(Input,Expected,OriginalCodeForWrapper) {
 	_unittest_fail++;
