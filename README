@@ -18,6 +18,8 @@ What is working:
 - funs
 - lists comprehension (without bitstring generators),
 - tail recursion
+- spawning processes, and message passing, scheduler,
+- exceptions, stack trace for exceptions (not yet fully correct).
 
 Differences:
  - messages are passed using references
@@ -46,11 +48,11 @@ we perform rounding/truncation, but this can be buggy for
 sufficientyl big numbers.
 
 Todo:
- - spawning thread, and message passing, scheduler,
- - exceptions,
- - stack trace for exceptions,
- - bit strings.
+ - bit strings,
  - tracing,
+ - phash,
+ - lots of other small things,
+ - cleanup.
 
 Tested mainly in Opera 10.52 on Linux. Some tests in Chrome and Epiphany also.
 
