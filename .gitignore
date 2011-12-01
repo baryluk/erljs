@@ -5,8 +5,6 @@
 *.E
 *.beam.js
 
-baryluk_bug_*
-
 dict.erl
 gb_sets.erl
 gb_trees.erl
@@ -18,11 +16,9 @@ random.erl
 sets.erl
 string.erl
 regexp.erl
+lists.erl
 
 tests_auto.erl
 tests_auto.js
-
-__doc*.js
-
-
-praca/*
+tests/tests_auto.erl
+tests/tests_auto.js
