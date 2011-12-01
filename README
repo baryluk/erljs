@@ -68,8 +68,10 @@ Todo:
  - bit strings,
  - tracing,
  - phash,
- - lots of other small things,
- - cleanup.
+ - cleanup,
+ - dynamic module loading.
+ - lots of other small things, see TODO file
+ 
 
 Tested mainly in Opera 10.52 on Linux. Some tests in Chrome and Epiphany also.
 
