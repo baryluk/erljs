@@ -1,7 +1,24 @@
 erljs - Run Erlang in JavaScript
 
-This projects allows you to run erlang code directly
+This projects allows you to run Erlang code directly
 in the webbrowser!
+
+If you do not know what Erlang is, please read:
+ http://www.erlang.org/ - Erlang programming language home page
+ http://en.wikipedia.org/wiki/Erlang_(programming_language)
+
+In short, it is functional language designed for fault-tolerant
+and concurrant systems. Because of its design it also fits
+nicely as language of choice for modern dynamic web pages.
+
+
+You will find examples in examples/ directory.
+
+Some motivation can be find in STATUS
+
+
+
+Status
 
 Currently we have pretty good implementation of some
 basic stuffs. Some modules seems to be fully functional.
