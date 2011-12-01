@@ -33,4 +33,5 @@ do
 done
 
 
-diff -Naur /usr/lib/erlang/lib/stdlib-*/src/lists.erl lists.erl
+cp -i /usr/lib/erlang/lib/stdlib-*/src/lists.erl lists.erl
+patch -p0 < lists-erl.patch

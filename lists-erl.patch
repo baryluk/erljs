@@ -1,0 +1,91 @@
+--- /usr/lib/erlang/lib/stdlib-1.17.5/src/lists.erl	2011-10-25 16:13:43.000000000 +0200
++++ lists.erl	2011-12-01 04:01:29.000000000 +0100
+@@ -21,6 +21,8 @@
+ -compile({no_auto_import,[max/2]}).
+ -compile({no_auto_import,[min/2]}).
+ 
++-compile_erljs([export_all]).
++
+ -export([append/2, append/1, subtract/2, reverse/1,
+ 	 nth/2, nthtail/2, prefix/2, suffix/2, last/1, 
+ 	 seq/2, seq/3, sum/1, duplicate/2, min/1, max/1, sublist/2, sublist/3,
+@@ -47,10 +49,10 @@
+ %%  test if X is a member of the list L
+ %%  Now a BIF!
+ 
+-%member(X, [X|_]) -> true;
+-%member(X, [_|Y]) ->
+-%	member(X, Y);
+-%member(X, []) -> false.
++member(X, [X|_]) -> true;
++member(X, [_|Y]) ->
++	member(X, Y);
++member(X, []) -> false.
+ 
+ %% append(X, Y) appends lists X and Y
+ 
+@@ -100,9 +102,9 @@
+ reverse([A, B | L]) ->
+     lists:reverse(L, [B, A]).
+ 
+-%reverse([H|T], Y) ->
+-%    reverse(T, [H|Y]);
+-%reverse([], X) -> X.
++reverse([H|T], Y) ->
++    reverse(T, [H|Y]);
++reverse([], X) -> X.
+ 
+ 
+ %% nth(N, L) returns the N`th element of the list L
+@@ -593,22 +595,22 @@
+ %% keymap(Function, Index, [Tuple])
+ %% keymap(Function, ExtraArgs, Index, [Tuple])
+ 
+-%keymember(K,N,L) when is_integer(N), N > 0 ->
+-%    keymember3(K,N,L).
++keymember(K,N,L) when is_integer(N), N > 0 ->
++    keymember3(K,N,L).
+ 
+-%keymember3(Key, N, [T|Ts]) when element(N, T) == Key -> true;
+-%keymember3(Key, N, [T|Ts]) ->
+-%    keymember3(Key, N, Ts);
+-%keymember3(Key, N, []) -> false.
+-
+-%keysearch(K, N, L) when is_integer(N), N > 0 ->
+-%    keysearch3(K, N, L).
+-
+-%keysearch3(Key, N, [H|T]) when element(N, H) == Key ->
+-%    {value, H};
+-%keysearch3(Key, N, [H|T]) ->
+-%    keysearch3(Key, N, T);
+-%keysearch3(Key, N, []) -> false.
++keymember3(Key, N, [T|Ts]) when element(N, T) == Key -> true;
++keymember3(Key, N, [T|Ts]) ->
++    keymember3(Key, N, Ts);
++keymember3(Key, N, []) -> false.
++
++keysearch(K, N, L) when is_integer(N), N > 0 ->
++    keysearch3(K, N, L).
++
++keysearch3(Key, N, [H|T]) when element(N, H) == Key ->
++    {value, H};
++keysearch3(Key, N, [H|T]) ->
++    keysearch3(Key, N, T);
++keysearch3(Key, N, []) -> false.
+ 
+ -spec keydelete(Key, N, TupleList1) -> TupleList2 when
+       Key :: term(),
+@@ -2743,3 +2745,13 @@
+             lists:reverse(T1, [H1, H2M | M])
+     end.
+ 
++
++keyfind(Key, N, L) when is_integer(N), is_list(L) ->
++	keyfind3(Key, N, L).
++
++keyfind3(Key, N, []) -> false;
++keyfind3(Key, N, [Tuple|Tail]) ->
++	case element(N, Tuple) of
++		Key -> Tuple;
++		_ -> keyfind3(Key, N, Tail)
++	end.
