@@ -3,6 +3,9 @@
 # Copyright 2009-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
 # erljs project
 
+ERL_TOP=${ERL_TOP:-/usr/lib/erlang}
+ERL_TOP_LIB="${ERL_TOP}/lib"
+
 
 MODULES="random string proplists dict gb_trees gb_sets orddict ordsets queue sets regexp"
 MODULES="${MODULES} sys proc_lib gen gen_event gen_fsm gen_server supervisor supervisor_bridge"
@@ -29,7 +32,7 @@ do
 	if [ -L "./erl_lib_core/stdlib/${MODULE}.erl" ]; then
 		rm "./erl_lib_core/stdlib/${MODULE}.erl"
 	fi
-	ln -v -s /usr/lib/erlang/lib/stdlib-*/src/${MODULE}.erl "./erl_lib_core/stdlib/"
+	ln -v -s ${ERL_TOP_LIB}/stdlib-*/src/${MODULE}.erl "./erl_lib_core/stdlib/"
 done
 
 echo "Creating links for modules from kernel application" >&2
@@ -39,7 +42,7 @@ do
 	if [ -L "./erl_lib_core/kernel/${MODULE}.erl" ]; then
 		rm "./erl_lib_core/kernel/${MODULE}.erl"
 	fi
-	ln -v -s /usr/lib/erlang/lib/kernel-*/src/${MODULE}.erl "./erl_lib_core/kernel/"
+	ln -v -s ${ERL_TOP_LIB}/kernel-*/src/${MODULE}.erl "./erl_lib_core/kernel/"
 done
 
 echo "Creating links for modules from erts application" >&2
@@ -50,12 +53,12 @@ do
 	if [ -L "./erl_lib_core/erts/${MODULE}.erl" ]; then
 		rm "./erl_lib_core/erts/${MODULE}.erl"
 	fi
-	ln -v -s /usr/lib/erlang/lib/erts-*/src/${MODULE}.erl "./erl_lib_core/erts/"
+	ln -v -s ${ERL_TOP_LIB}/erts-*/src/${MODULE}.erl "./erl_lib_core/erts/"
 done
 
 
 echo "Copying and patching lists.erl from stdlib application (it should be safe to overwrite existing file)" >&2
-cp -v -i /usr/lib/erlang/lib/stdlib-*/src/lists.erl "./erl_lib_core/stdlib/lists.erl"
+cp -v -i ${ERL_TOP_LIB}/stdlib-*/src/lists.erl "./erl_lib_core/stdlib/lists.erl"
 (cd ./erl_lib_core/stdlib/; patch -p0 < ../lists-erl.patch)
 
 exit 0
