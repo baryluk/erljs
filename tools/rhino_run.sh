@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Copyright 2009-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+# erljs project
+
 # some kind of bug in rhino
 exec rhino -opt -1 erljs_rhino_autorun.js
 #echo 'load("erljs_rhino_autorun.js")' | rhino

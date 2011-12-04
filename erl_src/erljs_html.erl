@@ -1,4 +1,8 @@
 -module(erljs_html).
+-author('baryluk@smp.if.uj.edu.pl').
+
+% Copyright 2009-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+% erljs project
 
 % See also:
 %

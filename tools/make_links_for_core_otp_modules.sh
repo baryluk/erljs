@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Copyright 2009-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+# erljs project
+
+
 MODULES="random string proplists dict gb_trees gb_sets orddict ordsets queue sets regexp"
 MODULES="${MODULES} sys proc_lib gen gen_event gen_fsm gen_server supervisor supervisor_bridge"
 # Note: do not add 'lists' module here. it needs to be patched at the end

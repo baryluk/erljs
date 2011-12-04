@@ -1,4 +1,6 @@
-/* Copyritgh 2008 Witold Baryluk. */
+/* Copyright 2008-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+ * erljs project
+ */
 
 //load("prototype.js");
 

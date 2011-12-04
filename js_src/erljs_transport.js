@@ -1,3 +1,7 @@
+/* Copyright 2008-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+ * erljs project
+ */
+
 if ('WebSocket' in window) {
   var ws = new WebSocket('ws://example.org:12345/demo', 'distributed-erljs');
   ws.onopen = function(e) {

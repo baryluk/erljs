@@ -1,5 +1,9 @@
 Reverse enginering of phash/2 function.
 
+% Copyright 2009-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+% erljs project
+
+
 I have not looked at any source codes.
 
 I will assume that phash is probably computed recursivlly.

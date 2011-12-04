@@ -1,3 +1,6 @@
+% Copyright 2009-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+% erljs project
+
 	example:sum1(333).
 	example:sum2(333,1000000).
 	example:ntka(333,1000000).

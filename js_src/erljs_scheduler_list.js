@@ -1,3 +1,7 @@
+/* Copyright 2008-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+ * erljs project
+ */
+
 /* Linked Lists for use in scheduler
  *
  * This code is borowed from http://blog.jcoglan.com/2007/07/23/writing-a-linked-list-in-javascript/

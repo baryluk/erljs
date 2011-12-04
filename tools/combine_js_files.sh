@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Copyright 2009-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+# erljs project
 
 MODULES="erljs_kernel dict gb_sets ordsets regexp gb_trees proplists sets lists queue string orddict random tests_auto example example_messages"
 MODULES="${MODULES} sys proc_lib gen gen_event gen_fsm gen_server"

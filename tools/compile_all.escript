@@ -2,6 +2,10 @@
 %% -*- erlang -*-
 %%! -smp enable -sname erljs_compil_all -mnesia debug verbose
 
+
+% Copyright 2009-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+% erljs project
+
 main(_Args) ->
 	% prepare for conversion of all modules
 	{ok, erljs} = shell_default:c(erljs),

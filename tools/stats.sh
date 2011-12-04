@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Copyright 2009-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+# erljs project
+
 printf "%42s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" filename lines LOC size Cbytes Cgz6 Cgz9 Cgz9alt lonegst-line
 
 for i in *.js */*.js

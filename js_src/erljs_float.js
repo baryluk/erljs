@@ -1,3 +1,7 @@
+/* Copyright 2008-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+ * erljs project
+ */
+
 /* Witold Baryluk, 2011-06-13 */
 
 inv_pow_2_table = [];

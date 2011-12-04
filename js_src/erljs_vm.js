@@ -1,4 +1,7 @@
-/* Copyritgh 2008 Witold Baryluk. Special thanks to Michal Kolarz, author of IL2JS freamwork */
+/* Copyright 2008-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+ * erljs project
+ */
+
 
 var HAS_NATIVE_JSON = (typeof this.JSON === 'object');
 

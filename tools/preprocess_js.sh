@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Copyright 2009-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+# erljs project
+
 # http://www.nongnu.org/espresso/js-cpp.html
 #
 # GNU cpp

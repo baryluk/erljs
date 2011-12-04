@@ -14,6 +14,8 @@
 %%% The Initial Developer of the Original Code is A2Z Development USA, Inc.
 %%% All Rights Reserved.
 
+% Modified by Witold Baryluk <baryluk@smp.if.uj.edu.pl>, 2008
+
 -module(json_simple).
 -export([encode/1]).
 %-export([is_obj/1, obj_new/0, obj_fetch/2, obj_find/2, obj_is_key/2]).

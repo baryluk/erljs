@@ -1,3 +1,6 @@
+% Copyright 2009-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+% erljs project
+
 example:cross({1.0,2.0,3.0},{4.0,5.0,6.0}).
 example:cross2({1.0,2.0,3.0},{4.0,5.0,6.0}).
 example:cross2({1,2,3},{4,5,6}).

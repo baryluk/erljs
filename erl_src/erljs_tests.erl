@@ -1,4 +1,8 @@
 -module(erljs_tests).
+-author('baryluk@smp.if.uj.edu.pl').
+
+% Copyright 2009-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+% erljs project
 
 -export([c/1]).
 

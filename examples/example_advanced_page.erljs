@@ -1,9 +1,17 @@
+<!--
+Copyright 2008-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+erljs project
+-->
 <html>
 <erljs:header />
 <body>
 
 <erljs:both>
+-author('baryluk@smp.if.uj.edu.pl').
 -record(state, {counter, name}).
+
+% Copyright 2008-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+% erljs project
 
 is_valid({A,B}) when is_integer(A), is_integer(B) -> true;
 is_valid(_) -> false.

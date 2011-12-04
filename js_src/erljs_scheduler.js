@@ -1,3 +1,7 @@
+/* Copyright 2008-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+ * erljs project
+ */
+
 // requires("erljs_scheduler_list.js"); // to load
 // requires("erljs_vm.js"); // to run
 
