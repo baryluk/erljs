@@ -1,4 +1,4 @@
--module(genser_test).
+-module(genser_manybuttons).
 -author('baryluk@smp.if.uj.edu.pl').
 
 % Copyright 2009-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
@@ -61,15 +61,15 @@ handle_cast({free, Ch}, Chs) ->
 handle_cast(stop, State) ->
     {stop, normal, State}.
 
-handle_info({dom, Id, Ref, Type, Value, {digitsX, D}} = E, State) ->
+handle_info({dom, _Id, _Ref, _Type, _Value, {digitsX, D}} = _E, State) ->
 	State2 = [$0+D|State],
 	erljs:set(pole1, value, State2),
     {noreply, State2};
-handle_info({dom, Id, Ref, Type, Value, {clear}} = E, _State) ->
+handle_info({dom, _Id, _Ref, _Type, _Value, {clear}} = _E, _State) ->
 	State2 = [],
 	erljs:set(pole1, value, State2),
     {noreply, State2};
-handle_info({dom, Id, Ref, Type, Value, _} = E, State) ->
+handle_info({dom, _Id, _Ref, _Type, _Value, _} = E, State) ->
 	erljs:set(pole1, value, {received_dom_event, erlang:localtime(), E}),
     {noreply, State};
 handle_info({'EXIT', _Pid, _Reason}, State) ->

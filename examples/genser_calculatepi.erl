@@ -1,4 +1,4 @@
--module(genser_test2).
+-module(genser_calculatepi).
 -author('baryluk@smp.if.uj.edu.pl').
 
 % Copyright 2009-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
@@ -40,7 +40,7 @@ calculate_pi(Pole, X, S, I, N, K) ->
 
 
 
-handle_info({dom, Id, Ref, Type, Value, {start}} = E, State = {Pole, _}) ->
+handle_info({dom, _Id, _Ref, _Type, _Value, {start}} = _E, State = {Pole, _}) ->
 	%N = erljs:set(pole_pi_in, value),
 	erljs:set(Pole, value, "Calculation started..."),
 	S = calculate_pi(Pole, 100000),
