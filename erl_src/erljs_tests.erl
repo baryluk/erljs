@@ -4,11 +4,15 @@
 % Copyright 2009-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
 % erljs project
 
--export([c/1]).
+-export([cl/1, c/1]).
+
+cl(L) ->
+	[ c(M) || M <- L ].
 
 -spec c(atom()) -> {'ok', string(), [{_,_}, ...]}.
 
 c(Module) when is_atom(Module) ->
+	io:format("Generating and compiling test and checks ~p~n", [Module]),
 	Modulename = atom_to_list(Module),
 	Filename = Modulename,
 	{ok, File} = file:open(Filename, [read, {read_ahead, 8192}]),
@@ -33,19 +37,19 @@ c(Module) when is_atom(Module) ->
 	) ->
 		{'ok', string(), [{_,_}, ...]}.
 
-process(eof, File, _Code, _LineNo, Stats = {StatsWithWrapper, StatsWithTerm, StatsWithCall}, {Modulename, FileErl, FileJS}) ->
+process(eof, File, _Code, _LineNo, _Stats = {StatsWithWrapper, StatsWithTerm, StatsWithCall}, {Modulename, FileErl, FileJS}) ->
 	io:format("~n"),
 	ok = file:close(File),
 	ok = file:close(FileErl),
 	ok = file:write(FileJS, "\treturn true;\n}\n"),
 	ok = file:close(FileJS),
-	{ok, _OutputFile, _Stats} = erljs:c(Modulename),
+	{ok, _OutputFile, CompilerStats} = erljs_compiler:c(Modulename),
 	{ok, Modulename, [
 		{direct_call, StatsWithCall},
 		{wrapper, StatsWithWrapper},
 		{term, StatsWithTerm},
 		{total, StatsWithCall+StatsWithWrapper+StatsWithTerm}
-	]};
+	], CompilerStats};
 process({ok, Line0}, File, Code, LineNo, Stats, Aux = {Modulename, FileErl, FileJS}) ->
 	Line1 = string:strip(Line0, both),
 	Line2 = string:strip(Line1, both, $\t),
