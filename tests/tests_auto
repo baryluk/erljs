@@ -574,7 +574,7 @@ lists:sublist([a],1,1).
 lists:sublist([a],1,2).
 lists:sublist([a,b,c,d,e,f,g,h],1,0).
 lists:sublist([a,b,c,d,e,f,g,h],1,1).
-lists:sublist([a,b,c,d,e,f,g,h],1,3)
+lists:sublist([a,b,c,d,e,f,g,h],1,3).
 lists:sublist([a,b,c,d,e,f,g,h],1,8).
 lists:sublist([a,b,c,d,e,f,g,h],1,100).
 lists:sublist([a,b,c,d,e,f,g,h],2,1).
