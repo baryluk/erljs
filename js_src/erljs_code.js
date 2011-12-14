@@ -33,8 +33,9 @@ var all_modules = [
 	["gen_server", module_gen_server],
 	["error_logger", module_error_logger],
 
-	["genser_test", module_genser_test],
-	["genser_test2", module_genser_test2],
+	["gensup_test", module_gensup_test],
+	["genser_manybuttons", module_genser_manybuttons],
+	["genser_calculatepi", module_genser_calculatepi],
 
 	["tests_auto", module_tests_auto],
 
