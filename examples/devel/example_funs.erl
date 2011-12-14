@@ -1,4 +1,4 @@
--module(example_eh).
+-module(example_funs).
 -author('baryluk@smp.if.uj.edu.pl').
 
 % Copyright 2008-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>

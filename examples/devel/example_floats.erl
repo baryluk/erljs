@@ -1,4 +1,4 @@
--module(example_float).
+-module(example_floats).
 -author('baryluk@smp.if.uj.edu.pl').
 
 % Copyright 2008-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
