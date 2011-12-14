@@ -14,10 +14,10 @@
 
 standards() ->
 	[
-		html4.01_transitional,
-		html4.01_strict
-		xhtml1.0,
-		xhtml1.1,
+		'html4.01_transitional',
+		'html4.01_strict',
+		'xhtml1.0',
+		'xhtml1.1',
 		html5
 	].
 
