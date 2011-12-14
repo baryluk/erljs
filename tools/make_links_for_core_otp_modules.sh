@@ -9,6 +9,7 @@ ERL_TOP_LIB="${ERL_TOP}/lib"
 
 MODULES="random string proplists dict gb_trees gb_sets orddict ordsets queue sets regexp"
 MODULES="${MODULES} sys proc_lib gen gen_event gen_fsm gen_server supervisor supervisor_bridge"
+MODULES="${MODULES} erl_bits erl_compile erl_eval erl_expand_records erl_internal erl_lint erl_parse erl_posix_msg erl_pp erl_scan erl_tar"
 # Note: do not add 'lists' module here. it needs to be patched at the end
 
 if [ ! -d "./erl_lib_core" ]; then
