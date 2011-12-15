@@ -9,7 +9,7 @@
 cl(L) ->
 	[ c(M) || M <- L ].
 
--spec c(atom()) -> {'ok', string(), [{_,_}, ...]}.
+-spec c(atom()) -> {'ok', atom(), nonempty_string(), [{_,_}, ...], [{_,_}, ...]}.
 
 c(Module) when is_atom(Module) ->
 	io:format("Generating and compiling test and checks ~p~n", [Module]),
@@ -28,14 +28,14 @@ c(Module) when is_atom(Module) ->
 	process(file:read_line(File), File, [], 1, Stats, {Modulename, FileErl, FileJS}).
 
 -spec process(
-		'eof' | {'ok',string()},
+		'eof' | {'ok', string()},
 		pid() | {'file_descriptor', atom(), _},
 		[{[any()],_}],
 		pos_integer(),
 		{non_neg_integer(), non_neg_integer(), non_neg_integer()},
-		{string(), pid() | {'file_descriptor', atom(), _}, pid() | {'file_descriptor', atom(), _}}
+		{nonempty_string(), pid() | {'file_descriptor', atom(), _}, pid() | {'file_descriptor', atom(), _}}
 	) ->
-		{'ok', string(), [{_,_}, ...]}.
+		{'ok', atom(), nonempty_string(), [{_,_}, ...], [{_,_}, ...]}.
 
 process(eof, File, _Code, _LineNo, _Stats = {StatsWithWrapper, StatsWithTerm, StatsWithCall}, {Modulename, FileErl, FileJS}) ->
 	io:format("~n"),
@@ -43,8 +43,8 @@ process(eof, File, _Code, _LineNo, _Stats = {StatsWithWrapper, StatsWithTerm, St
 	ok = file:close(FileErl),
 	ok = file:write(FileJS, "\treturn true;\n}\n"),
 	ok = file:close(FileJS),
-	{ok, _OutputFile, CompilerStats} = erljs_compiler:c(Modulename),
-	{ok, Modulename, [
+	{ok, Modulename2, _OutputFile, CompilerStats} = erljs_compiler:c(Modulename),
+	{ok, Modulename2, Modulename, [
 		{direct_call, StatsWithCall},
 		{wrapper, StatsWithWrapper},
 		{term, StatsWithTerm},
