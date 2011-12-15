@@ -1,5 +1,5 @@
 --- /usr/lib/erlang/lib/stdlib-1.17.5/src/lists.erl	2011-10-25 16:13:43.000000000 +0200
-+++ lists.erl	2011-12-01 04:01:29.000000000 +0100
++++ stdlib/lists.erl	2011-12-15 20:38:19.000000000 +0100
 @@ -21,6 +21,8 @@
  -compile({no_auto_import,[max/2]}).
  -compile({no_auto_import,[min/2]}).
@@ -9,7 +9,17 @@
  -export([append/2, append/1, subtract/2, reverse/1,
  	 nth/2, nthtail/2, prefix/2, suffix/2, last/1, 
  	 seq/2, seq/3, sum/1, duplicate/2, min/1, max/1, sublist/2, sublist/3,
-@@ -47,10 +49,10 @@
+@@ -36,6 +38,9 @@
+ %% Bifs: member/2, reverse/2
+ %% Bifs: keymember/3, keysearch/3, keyfind/3
+ 
++-export([member/2, reverse/2]).
++-export([keymember/3, keysearch/3, keyfind/3]).
++
+ -export([merge/3, rmerge/3, sort/2, umerge/3, rumerge/3, usort/2]).
+ 
+ -export([all/2,any/2,map/2,flatmap/2,foldl/3,foldr/3,filter/2,
+@@ -47,10 +52,10 @@
  %%  test if X is a member of the list L
  %%  Now a BIF!
  
@@ -24,7 +34,7 @@
  
  %% append(X, Y) appends lists X and Y
  
-@@ -100,9 +102,9 @@
+@@ -100,9 +105,9 @@
  reverse([A, B | L]) ->
      lists:reverse(L, [B, A]).
  
@@ -37,7 +47,7 @@
  
  
  %% nth(N, L) returns the N`th element of the list L
-@@ -593,22 +595,22 @@
+@@ -593,22 +598,22 @@
  %% keymap(Function, Index, [Tuple])
  %% keymap(Function, ExtraArgs, Index, [Tuple])
  
@@ -75,7 +85,7 @@
  
  -spec keydelete(Key, N, TupleList1) -> TupleList2 when
        Key :: term(),
-@@ -2743,3 +2745,13 @@
+@@ -2743,3 +2748,13 @@
              lists:reverse(T1, [H1, H2M | M])
      end.
  
