@@ -1,5 +1,15 @@
 #!/bin/sh
 
+./tools/make_links_for_core_otp_modules.sh
+
+if [ ! -d "js_lib/javascript-stacktrace" ]; then
+echo "Cloning javascript-stacktrace into js_lib/javascript-stacktrace."
+# Backup repository at https://github.com/baryluk/javascript-stacktrace
+(cd js_lib; git clone git://github.com/eriwen/javascript-stacktrace.git)
+else
+echo "js_lib/javascript-stacktrace already exists. Skiping cloning."
+fi
+
 ./tools/compile_all.escript
 
 echo
