@@ -46,7 +46,7 @@ init(_Args) ->
 		{digit0, 0}],
 	[ {ok, _} = erljs:listen(Id, click, [], {digitsX, Digit}) || {Id, Digit} <- Digits ],
  %   {ok, channels()}.
-	erljs:set(pole1, value, initialized1),
+	erljs:set(pole1, value, {initialized, ?MODULE}),
     {ok, []}.
 
 handle_call(alloc, _From, Chs) ->
