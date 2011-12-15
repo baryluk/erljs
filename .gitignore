@@ -18,7 +18,17 @@ string.erl
 regexp.erl
 lists.erl
 
-tests_auto.erl
-tests_auto.js
+erl_lib_core/*/*.erl
+erl_lib_core/*/*.beam
+
 tests/tests_auto.erl
 tests/tests_auto.js
+tests/tests_binaries.erl
+tests/tests_binaries.js
+tests/testy_float.erl
+tests/testy_float.js
+tests/testy_parsowanie.erl
+tests/testy_parsowanie.js
+
+
+js_lib/javascript-stacktrace
