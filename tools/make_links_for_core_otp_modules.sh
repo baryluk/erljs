@@ -60,6 +60,6 @@ done
 
 echo "Copying and patching lists.erl from stdlib application (it should be safe to overwrite existing file)" >&2
 cp -v -i ${ERL_TOP_LIB}/stdlib-*/src/lists.erl "./erl_lib_core/stdlib/lists.erl"
-(cd ./erl_lib_core/stdlib/; patch -p0 < ../lists-erl.patch)
+(cd ./erl_lib_core/stdlib/; patch -p1 < ../lists-erl.patch)
 
 exit 0
