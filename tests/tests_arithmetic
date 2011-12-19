@@ -1,0 +1,169 @@
+% be sure that compiler doesn't optimize all this out
+begin 11+3 end.
+begin 11-3 end.
+begin 11-3 end.
+begin 0*0 end.
+begin 11*0 end.
+begin 0*11 end.
+begin 0*-11 end.
+begin -11*0 end.
+begin -11*1 end.
+begin 1*1 end.
+begin 11*1 end.
+begin 1*11 end.
+begin 1*-11 end.
+begin -1*-11 end.
+begin 1*-1 end.
+begin -1*-1 end.
+begin 11*3 end.
+begin 11*-3 end.
+begin -11*3 end.
+begin -11*-3 end.
+
+begin 3.3*4 end.
+begin 3.3*4.3 end.
+begin 3*4.3 end.
+begin -3.3*4 end.
+begin -3.3*4.3 end.
+begin -3*4.3 end.
+begin 3.3*-4 end.
+begin 3.3*-4.3 end.
+begin 3*-4.3 end.
+begin -3.3*-4 end.
+begin -3.3*-4.3 end.
+begin -3*-4.3 end.
+
+begin 0 / 1 end.
+begin 0 / 2 end.
+begin 0 / 3 end.
+begin 1 / 1 end.
+begin 1 / 2 end.
+begin 1 / 3 end.
+begin 10 / 1 end.
+begin 10 / 2 end.
+begin 11 / 2 end.
+begin 11 / 3 end.
+
+begin -0 / 1 end.
+begin -0 / 2 end.
+begin -0 / 3 end.
+begin -1 / 1 end.
+begin -1 / 2 end.
+begin -1 / 3 end.
+begin -10 / 1 end.
+begin -10 / 2 end.
+begin -11 / 2 end.
+begin -11 / 3 end.
+
+begin 0 / -1 end.
+begin 0 / -2 end.
+begin 0 / -3 end.
+begin 1 / -1 end.
+begin 1 / -2 end.
+begin 1 / -3 end.
+begin 10 / -1 end.
+begin 10 / -2 end.
+begin 11 / -2 end.
+begin 11 / -3 end.
+
+begin -0 / -1 end.
+begin -0 / -2 end.
+begin -0 / -3 end.
+begin -1 / -1 end.
+begin -1 / -2 end.
+begin -1 / -3 end.
+begin -10 / -1 end.
+begin -10 / -2 end.
+begin -11 / -2 end.
+begin -11 / -3 end.
+
+% todo: float / float, float / integer, integer / float
+
+begin 0 div 1 end.
+begin 0 div 2 end.
+begin 0 div 3 end.
+begin 1 div 1 end.
+begin 1 div 2 end.
+begin 1 div 3 end.
+begin 10 div 1 end.
+begin 10 div 2 end.
+begin 11 div 2 end.
+begin 11 div 3 end.
+
+begin -0 div 1 end.
+begin -0 div 2 end.
+begin -0 div 3 end.
+begin -1 div 1 end.
+begin -1 div 2 end.
+begin -1 div 3 end.
+begin -10 div 1 end.
+begin -10 div 2 end.
+begin -11 div 2 end.
+begin -11 div 3 end.
+
+begin 0 div -1 end.
+begin 0 div -2 end.
+begin 0 div -3 end.
+begin 1 div -1 end.
+begin 1 div -2 end.
+begin 1 div -3 end.
+begin 10 div -1 end.
+begin 10 div -2 end.
+begin 11 div -2 end.
+begin 11 div -3 end.
+
+begin -0 div -1 end.
+begin -0 div -2 end.
+begin -0 div -3 end.
+begin -1 div -1 end.
+begin -1 div -2 end.
+begin -1 div -3 end.
+begin -10 div -1 end.
+begin -10 div -2 end.
+begin -11 div -2 end.
+begin -11 div -3 end.
+
+
+begin 0 rem 1 end.
+begin 0 rem 2 end.
+begin 0 rem 3 end.
+begin 1 rem 1 end.
+begin 1 rem 2 end.
+begin 1 rem 3 end.
+begin 10 rem 1 end.
+begin 10 rem 2 end.
+begin 11 rem 2 end.
+begin 11 rem 3 end.
+
+begin -0 rem 1 end.
+begin -0 rem 2 end.
+begin -0 rem 3 end.
+begin -1 rem 1 end.
+begin -1 rem 2 end.
+begin -1 rem 3 end.
+begin -10 rem 1 end.
+begin -10 rem 2 end.
+begin -11 rem 2 end.
+begin -11 rem 3 end.
+
+begin 0 rem -1 end.
+begin 0 rem -2 end.
+begin 0 rem -3 end.
+begin 1 rem -1 end.
+begin 1 rem -2 end.
+begin 1 rem -3 end.
+begin 10 rem -1 end.
+begin 10 rem -2 end.
+begin 11 rem -2 end.
+begin 11 rem -3 end.
+
+begin -0 rem -1 end.
+begin -0 rem -2 end.
+begin -0 rem -3 end.
+begin -1 rem -1 end.
+begin -1 rem -2 end.
+begin -1 rem -3 end.
+begin -10 rem -1 end.
+begin -10 rem -2 end.
+begin -11 rem -2 end.
+begin -11 rem -3 end.

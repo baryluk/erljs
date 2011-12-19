@@ -30,12 +30,25 @@ main(_Args) ->
 	ok = shell_default:cd(".."),
 
 	ok = shell_default:cd("examples/devel"),
-	DevExamples = [example, example_floats, example_funs, example_eh, example_messages, example_binaries],
+	DevExamples = [
+		example,
+		example_floats,
+		example_funs,
+		example_eh,
+		example_messages,
+		example_binaries
+	],
 	[ shell_default:c(M) || M <- DevExamples ],
 	ok = shell_default:cd("../.."),
 
 
-	Tests = [tests_auto, testy_parsowanie, testy_float, tests_binaries],
+	Tests = [
+		tests_arithmetic,
+		testy_float,
+		tests_auto,
+		tests_binaries,
+		testy_parsowanie
+	],
 
 	% generate tests and reference result wrapper and checker
 	ok = shell_default:cd("tests"),
