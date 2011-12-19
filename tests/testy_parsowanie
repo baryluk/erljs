@@ -3,3 +3,8 @@
 
 begin SpecInString = "-spec my_function(some_type()) -> 42 | 'gazonk'.",  {ok, Toks, 1} = erl_scan:string(SpecInString) end.
 begin SpecInString = "-spec my_function(some_type()) -> 42 | 'gazonk'.",  {ok, Toks, 1} = erl_scan:string(SpecInString), erl_parse:parse_form(Toks) end.
+
+erl_scan:string("State#state.counter").
+erl_scan:string("State#state.counter.").
+erl_scan:string("ala.").
+erl_parse:parse_term([{atom,1,ala},{dot,1}]).
