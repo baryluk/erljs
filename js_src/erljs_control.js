@@ -390,8 +390,8 @@ function erljs_init() {
 
 function erljs_unittests() {
 	unittest_clear();
-	//unittest__term_decode(true,true);
-	//unittest__run_examples();
+	unittest__term_decode(true,true);
+	unittest__run_examples();
 	unittest__tests_auto();
 	var stats = unittest_stats();
 	debugh("==================================");
