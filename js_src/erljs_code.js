@@ -32,6 +32,7 @@ var all_modules = [
 	["gen_fsm", module_gen_fsm],
 	["gen_server", module_gen_server],
 	["error_logger", module_error_logger],
+	["timer", module_timer],
 
 	["gensup_test", module_gensup_test],
 	["genser_manybuttons", module_genser_manybuttons],
@@ -39,11 +40,16 @@ var all_modules = [
 
 	["tests_auto", module_tests_auto],
 
-	["erl_internal", module_erl_internal],
-	["erl_scan", module_erl_scan],
-	["erl_parse", module_erl_parse],
-	["erl_lint", module_erl_lint],
+	["epp", module_epp],
+	["eval_bits", module_eval_bits],
+	["erl_bits", module_erl_bits],
+	["erl_compile", module_erl_compile],
 	["erl_eval", module_erl_eval],
+	["erl_expand_records", module_erl_expand_records],
+	["erl_internal", module_erl_internal],
+	["erl_lint", module_erl_lint],
+	["erl_parse", module_erl_parse],
+	["erl_posix_msg", module_erl_posix_msg],
 	["erl_pp", module_erl_pp],
-
+	["erl_scan", module_erl_scan]
 ];

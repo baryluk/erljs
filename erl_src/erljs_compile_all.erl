@@ -28,22 +28,29 @@ ca(Opts) ->
 			example_messages
 		] ]
 		++
-		[ "erl_lib_core/stdlib/" ++ atom_to_list(M) ++ ".erl" || M <- [
+		[ "erl_lib_core/stdlib/src/" ++ atom_to_list(M) ++ ".erl" || M <- [
+			%math,
+			array,
+			base64,
+			binary,
+			calendar,
 			random,
 			lists,
 			orddict,
 			ordsets,
 			string,
+			unicode,
 			queue,
 			dict,
 			proplists,
 			sets,
+			sofs,
 			gb_trees,
 			gb_sets,
 			regexp
 		] ]
 		++
-		[ "erl_lib_core/stdlib/" ++ atom_to_list(M) ++ ".erl" || M <- [
+		[ "erl_lib_core/stdlib/src/" ++ atom_to_list(M) ++ ".erl" || M <- [
 			supervisor,
 			supervisor_bridge,
 			proc_lib,
@@ -54,8 +61,35 @@ ca(Opts) ->
 
 			sys,
 
-			%erl_bits, % potrzebne includy
-			%erl_compile, % potrzebne includy
+			pg,
+			pool,
+			%slave,
+
+			lib,
+
+			io,
+			io_lib,
+			io_lib_format,
+			io_lib_fread,
+			io_lib_pretty,
+
+			error_logger_file_h,
+			error_logger_tty_h,
+			log_mf_h,
+
+			filelib,
+			filename,
+
+			edlin,
+			edlin_expand,
+
+			shell,
+			shell_default,
+			c,
+			epp,
+			eval_bits,
+			erl_bits, % potrzebne includy
+			erl_compile, % potrzebne includy
 			erl_eval,
 			erl_expand_records,
 			erl_internal,
@@ -64,14 +98,35 @@ ca(Opts) ->
 			erl_posix_msg,
 			erl_pp,
 			erl_scan,
-			erl_tar
+			erl_tar,
+			beam_lib,
+
+			ms_transform,
+
+			timer,
+			ets,
+			dets,
+			dets_server,
+			dets_sup,
+			dets_utils,
+			dets_v8,
+			dets_v9,
+			qlc,
+			qlc_pt,
+
+			digraph,
+			digraph_utils,
+
+			otp_internal
+
+%			zip
 		] ]
 		++
-		[ "erl_lib_core/kernel/" ++ atom_to_list(M) ++ ".erl" || M <- [
+		[ "erl_lib_core/kernel/src/" ++ atom_to_list(M) ++ ".erl" || M <- [
 			error_logger
 		] ]
 		++
-		[ "erl_lib_core/erts/" ++ atom_to_list(M) ++ ".erl" || M <- [
+		[ "erl_lib_core/erts/src/" ++ atom_to_list(M) ++ ".erl" || M <- [
 			erlang,
 			otp_ring0,
 			init
@@ -79,7 +134,7 @@ ca(Opts) ->
 		] ]
 		++
 		[
-			"/usr/lib/erlang/lib/erts-5.8.5/ebin/erl_prim_loader.beam"
+			"erl_lib_core/erts/ebin-org/erl_prim_loader.beam"
 		]
 		++
 		[
@@ -98,4 +153,8 @@ ca(Opts) ->
 		] ],
 
 
-	erljs_compiler:cl(L, Opts).
+	Opts2 = [
+		{i, "erl_lib_core/kernel/include"},
+		{i, "erl_lib_core/stdlib/include"}
+	],
+	erljs_compiler:cl(L, Opts ++ Opts2).
