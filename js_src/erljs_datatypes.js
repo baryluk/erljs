@@ -619,6 +619,10 @@ tuple_loop:
 				var t = get_next(s, i, existing);
 				k[n++] = t[0];
 				i = t[1];
+				// skip white space
+				while ((s[i] == " " || s[i] == "\t" || s[i] == "\n" || s[i] == "\r") && i < s.length) {
+					i++;
+				}
 				switch (s[i++]) {
 					case ",":
 						continue tuple_loop; // TODO: allow trailing comma as proposed in EEP
@@ -642,6 +646,11 @@ list_loop:
 				r.settail(r2);
 				r = r2;
 				i = t[1];
+
+				// skip white space
+				while ((s[i] == " " || s[i] == "\t" || s[i] == "\n" || s[i] == "\r") && i < s.length) {
+					i++;
+				}
 				switch (s[i++]) {
 					case ",": // TODO: allow trailing comma in proper lists as proposed in EEP
 						continue list_loop;
