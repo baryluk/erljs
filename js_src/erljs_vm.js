@@ -963,7 +963,15 @@ mainloop:
 							throw "badarith";
 						}
 						// example: 3 div 4 = 0. 5 div 4 = 1. -3 div 4 = 0. -5 div 4 = -1. 5 div -4 = -1. 5 div -6 = 0. -5 div -4 = 1. -5 div -6 = 0.
-						V = Math.round(Arg1/Arg2);
+						//          21 div 2 = 10.
+						//V = Math.floor(Arg1 / Arg2); // this is obviously inccrect for negative numbers.
+						//V = Math.round(Arg1 / Arg2); // this is clearly incorrect for 21 div 2, giving 11 instead of 10
+						// all below solutions are CORRECT ones. Works also for negative numbers.
+						// discovered using lists:seq(1,20,2)
+						// Borowed from http://stackoverflow.com/questions/4228356/integer-division-in-javascript
+						//V = ~~(Arg1 / Arg2);
+						//V = (Arg1 / Arg2) >> 0;
+						V = (Arg1 / Arg2) | 0;
 						break;
 					case "rem":
 						if (Arg2 == 0) {
