@@ -51,24 +51,59 @@ function erl(X, ShowInput) {
 	}
 };
 
-function erlgo(X, ShowResult) {
-	var R,RR;
+var erljs_erlgo_counter = 1;
+
+function erlgo(X, ShowResult, pretty, animate) {
+	var R,RR,RRP;
 	var no_exp = false;
 	try {
 		R = erl(X);
 		RR = R.toString();
+		if (pretty) {
+			var temp = erljs_toString_pretty_printing;
+			erljs_toString_pretty_printing = pretty;
+			RRP = R.toString();
+			erljs_toString_pretty_printing = temp;
+		} else {
+			RRP = RR;
+		}
 		no_exp = true;
 	} catch(err) {
-		RR = "Error: "+err;
+		RRP = RR = "Error: "+err;
 		R = err;
 	}
 	if (ShowResult) {
 	debug("Result: "+RR);
 	}
 	try {
-		document.getElementById('codeform').innerText = RR;
+		var c = document.getElementById('codeform');
+		var f = c.firstChild;
+
+		// TODO: display how much time and reductions it took to evaluate X
+
+		var p1 = document.createElement("p");
+		var maybe_dot = (X.charAt(X.length-1) == '.' ? "" : ".");
+		p1.appendChild(document.createTextNode(""+erljs_erlgo_counter+"> "+X+maybe_dot));
+		c.insertBefore(p1, f);
+
+		var p2 = document.createElement("p");
+		p2.appendChild(document.createTextNode(RRP));
+		c.insertBefore(p2, f);
+
+		var show = function() {
+			p1.toggleClassName("widoczne");
+			p2.toggleClassName("widoczne");
+		};
+		if (animate) {
+			setTimeout(show, 50);
+		} else {
+			show();
+		}
+
+		erljs_erlgo_counter++;
+
 //		debug("---");
-	} catch (e) { ; }; // Rhino
+	} catch (e) { alert(e); }; // Rhino
 	if (no_exp) {
 		return RR;
 	} else {
@@ -120,7 +155,7 @@ function eq(Input,Expected,OriginalCodeForWrapper) {
 	var ShowAs = Input + (OriginalCodeForWrapper ? " (wrapper for "+OriginalCodeForWrapper +")" : "");
 	var Output;
 	try {
-		Output = erlgo(Input);
+		Output = erlgo(Input, undefined, true);
 		failed = false;
 	} catch (err) {
 		failed = true;

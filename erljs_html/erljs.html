@@ -9,6 +9,8 @@
 Copyright 2008-2011, Witold Baryluk <baryluk@smp.if.uj.edu.pl>
 erljs project
 -->
+<link href='styles.css' rel='stylesheet' type='text/css' />
+
 <script src="js_lib/prototype.js" type="text/javascript"> </script> <!-- mainly for JSON decoding -->
 <!--<script src="js_lib/biginteger.js" type="text/javascript"> </script>-->
 
@@ -70,22 +72,217 @@ erljs project
  <script src="erljs/erljs_control.js" type="text/javascript"> </script>
 
  <script src="js_lib/javascript-stacktrace/stacktrace.js" type="text/javascript"> </script>
-
 </head>
-<!--<body style="background-color: #222222; color: #aaaaaa;" onload="erljs_init()">-->
-<body style="background-color: #222222; color: #aaaaaa;" onload="erljs_start_vm()">
-<div id="body">
+<!--<body onload="erljs_init()">-->
+<body onload="erljs_start_vm()"><div id="body"><div id="wrap">
+<h1>erljs - Erlang in JavaScript</h1>
+<!--<form action="#">-->
+<div> <!-- style="float:left;" -->
+<div>
+<div>Examples (<a id="example-inputs-show-more" href="#">show more</a>)
+- try by clicking any of sample expressions or function calls:</div>
+<small>(There are restrictions what can be evaluted in input box. Only functions calls
+with literal arguments can be used. BIFs are not directly callable.)</small>
+<br/>
+<div id="example-inputs-to-try-div">
+<ul class="example-inputs-to-try">
+<li class="nx">lists:reverse([1, 2, 3, 4])</li>
+<li class="nx">lists:reverse([1, 2, 3, 4], [5, 6, 7, 8])</li>
+<li>lists:nthtail(0, [1 | []]) % lists:nthtail(0, L) just returns L</li>
+<li>lists:nthtail(0, [1 | [2 | []]])</li>
+<li>lists:nthtail(1, [1 | [2 | []]])</li>
+<li>lists:nthtail(0, [1, 2, 3 | [4, 5]])</li>
+<li>lists:nthtail(1, [1, 2, 3 | [4, 5]])</li>
+<li>lists:nthtail(2, [1, 2, 3 | [4, 5]])</li>
+<li>lists:nthtail(3, [1, 2, 3 | [4, 5]])</li>
+<li>lists:nthtail(3, [1, 2, 3, 4, 5])</li>
+<li>lists:last([a, b, c, d, e])</li>
+<li>lists:nth(3, [a, b, c, d, e])</li>
+<li class="nx">lists:seq(1, 20)</li>
+<li>lists:seq(1, 20, 2)</li>
+<li>lists:seq(-1, -20, -2)</li>
+<li class="nx">lists:sum([1, 2, 3])</li>
+<li>lists:sum([])</li>
+<li class="nx">lists:member(c, [a, b, c, d])</li>
+<li>lists:member(e, [a, b, c, d])</li>
+<li class="nx">lists:delete(c, [a, b, c, d])</li>
+<li>lists:delete(z, [a, b, c, d])</li>
+<li class="nx">lists:append("abc", "def")</li>
+<li class="nx">lists:append([[1, 2, 3], [a, b], [4, 5, 6]])</li>
+<li>lists:max([a, c, v, e, d])</li>
+<li class="nx">lists:merge([a,d,g,o], [b,c,e,z])</li>
+<li class="nx">lists:merge([[a,d,g,o], [b,c,e,z], [c,b,d,y]])</li>
+<li class="nx">lists:sort([7,2,9,3,6,4,1,8])</li>
+<li>lists:sort([a,c,v,e,z,c,e,y,u,c,a,q,y,o,v,a,u,h,d,s,e,d,z,c,b,n,k,i])</li>
+<li class="nx">lists:split(3, "erljs")</li>
+<li>lists:split(4, [a,b,c,d,e,f,g,h,i,j,k,l])</li>
+<li>lists:prefix([a,b,c], [a,b,c,d])</li>
+<li>lists:prefix([], [a,b,c,d])</li>
+<li>lists:prefix([x,y,z], [a,b,c,d])</li>
+<li>lists:prefix([a,b,d], [a,b,c,d])</li>
+<li class="nx">lists:prefix("new", "new york")</li>
+<li class="nx">lists:prefix("old", "new york")</li>
+<li>lists:suffix([c,d], [a,b,c,d])</li>
+<li>lists:suffix([a,b], [a,b,c,d])</li>
+<li class="nx">lists:suffix(".html", "index.html")</li>
+<li class="nx">lists:suffix(".jpeg", "index.html")</li>
+<li class="nx">lists:concat([doc, '/', file, '.', 3])</li>
+<li class="nx">lists:duplicate(5, xx)</li>
+<li class="nx">lists:flatten([a,b,[c,[d,e],[f,g,[h]]],[i]])</li>
+<li class="nx">lists:flatlength([a,b,[c,[d,e],[f,g,[h]]],[i]])</li>
+<li>erlang:length([1, 2, 3, 4]) % doesn't work here, because it is BIF</li>
+<li>erlang:length([a, b, c, d]) % doesn't work here, because it is BIF, try next ones</li>
+<li class="nx">example:length_native([a,b,c,d])</li>
+<li class="nx">example:length_manual([a,b,c,d])</li>
+<li class="nx">string:len("ala ma kota")</li>
+<li class="nx">string:tokens("ala ma kota", " ")</li>
+<li>string:tokens("abc defxxghix jkl", "x ").</li>
+<li class="nx">string:join(["one", "two", "three"], ", ").</li>
+<li class="nx">string:words(" Hello old boy!").</li>
+<li>string:words(" Hello old boy!", $o).</li>
+<li>string:sub_word(" Hello old boy !",3,$o).</li>
+<li>string:strip("...Hello.....", both, $.).</li>
+<li>string:left("Hello",10,$.).</li>
+<li>string:right("Hello", 10, $.).</li>
+<li>string:centre("Hello", 20, $.).</li>
+<li>string:substr("Hello World", 4, 5).</li>
+<li>string:sub_string("Hello World", 4, 8).</li>
+<!--
+% BIFs?
+<li>string:to_float("1.0-1.0e-1").</li>
+<li>string:to_float("3/2=1.5").</li>
+<li>string:to_float("-1.5eX").</li>
+<li>string:to_integer("33+22").</li>
+<li>string:to_integer("0.5").</li>
+<li>string:to_integer("x=2").</li>
+-->
+<li>string:str(" Hello Hello World World ", "Hello World").</li>
+<li>string:span("\t    abcdef", " \t").</li>
+<li>string:cspan("\t    abcdef", " \t").</li>
+<li class="nx">lists:keyfind(witek, 1, [{jacek, t}, {witek, b}, {marcin, m}, {ania, ch}])</li>
+<li class="nx">lists:keysearch(witek, 1, [{jacek, t}, {witek, b}, {marcin, m}, {ania, ch}])</li>
+<li class="nx">lists:keysearch(krzysiek, 1, [{jacek, t}, {witek, b}, {marcin, m}, {ania, ch}])</li>
+<li>lists:keymember(witek, 1, [{jacek, t}, {witek, b}, {marcin, m}, {ania, ch}])</li>
+<li>lists:keymember(krzysiek, 1, [{jacek, t}, {witek, b}, {marcin, m}, {ania, ch}])</li>
+<li class="nx">lists:keydelete(jacek, 1, [{jacek, t}, {witek, b}, {marcin, m}, {ania, ch}])</li>
+<li>lists:keysort(2, [{jacek, t}, {witek, b}, {marcin, m}, {ania, ch}])</li>
+<li>lists:seq(10, 6, 4)</li>
+<li>lists:seq(10, 6, -4)</li>
+<li>lists:seq(10, 6, 3) % correctly throws exception</li>
+<li>lists:seq(10, 6, -3)</li>
+<li>lists:seq(100, 6, -3)</li>
+<li>lists:seq(1, 0, 1)</li>
+<li>lists:seq(1, 1, 0)</li>
+<li>lists:sublist([a,b,c,d,e,f,g,h], 4)</li>
+<li class="nx">lists:sublist([a,b,c,d,e,f,g,h], 4, 3)</li>
+<li>lists:sublist([1,2,3,4], 2, 2)</li>
+<li>lists:sublist([1,2,3,4], 2, 5)</li>
+<li>lists:sublist([1,2,3,4], 5, 2)</li>
+<li>lists:subtract("123212", "212") % FIXME</li>
+<li class="nx">lists:zip([a,b,c], [1,2,3])</li>
+<li class="nx">lists:unzip([{a,1}, {b,2}, {c,3}])</li>
+<!-- proplists -->
+<li class="nx">proplists:get_value(ola, [{ala,1},{ola,3},{kasia,4}])</li>
+<li class="nx">proplists:get_value(basia, [{ala,1},{ola,3},{kasia,4}])</li>
+<li class="nx">proplists:get_value(basia, [{ala,1},{ola,3},{kasia,4}], -1)</li>
+<li class="nx">proplists:lookup(ola, [{ala,1},{ola,3},{kasia,4}])</li>
+<li class="nx">proplists:lookup(basia, [{ala,1},{ola,3},{kasia,4}])</li>
+<li>proplists:delete(ola, [{ala,1},{ola,3},{kasia,4}])</li>
+<li>proplists:delete(basia, [{ala,1},{ola,3},{kasia,4}])</li>
+<li>proplists:append_values(a, [{a, [1,2]}, {b, 0}, {a, 3}, {c, -1}, {a, [4]}])</li>
+<li>proplists:expand([{foo, [bar, baz]}], [fie, foo, fum])</li>
+<li>proplists:expand([{{foo, true}, [bar, baz]}], [fie, foo, fum])</li>
+<li>proplists:expand([{{foo, false}, [bar, baz]}], [fie, {foo, false}, fum])</li>
+<li>proplists:expand([{{foo, true}, [bar, baz]}], [{foo, false}, fie, foo, fum])</li>
+<li>proplists:split([{c, 2}, {e, 1}, a, {c, 3, 4}, d, {b, 5}, b], [a, b, c])</li>
+<!-- more proplists examples, including simple functions -->
+<li>erl_scan:string("{d,f,g,[4,2,dd3]}").</li>
+<li>erl_scan:string("{d,f,g,[4,2,dd3]}.").</li>
+<li>erl_parse:parse_term([{'{',1},{atom,1,a},{',',1},{atom,1,b},{',',1},{atom,1,c},{'}',1},{dot,1}])</li>
+<li>erl_scan:string("1+3").</li>
+<li>erl_scan:string("1+3.").</li>
+<li>erl_scan:string("if 5 &lt; 6 -&gt; m; true ->&gt; n end").</li>
+<li>erl_parse:parse_exprs([{'if',1},{integer,1,5},{'&lt;',1},{integer,1,6},{'-&gt;',1},{atom,1,m},{';',1},{atom,1,true},{'-&gt;',1},{atom,1,n},{'end',1},{dot,1}]).</li>
+<li>erl_scan:string("fun() -&gt; ok end").</li>
+<li>erl_scan:string("fun() -&gt; ok end.").</li>
+<li>erl_scan:string("fun(X,Y) -&gt; case lists:max(X) of Y -&gt; {big,Y}; Z -&gt; {smaller,Z} end end").</li>
+<li>erl_scan:string("s(A,B) -&gt; A+B.").</li>
+<li>erl_parse:parse_form([{atom,1,s},{'(',1},{var,1,'A'},{',',1},{var,1,'B'},{')',1},{'-&gt;',1},{var,1,'A'},{'+',1},{var,1,'B'},{dot,1}])</li>
+<li>regexp:parse("joe").</li>
+<li>regexp:parse("(ala|adam|ewa|kasia|ewelina)").</li>
+<li>regexp:parse("(jo)?anna").</li>
+<li>regexp:parse("[a-z][0-9a-zA-Z_]*").</li>
+<li>regexp:parse("[A-Z_][0-9a-zA-Z_]*").</li>
+<li>regexp:parse("^([a-z][0-9a-zA-Z_]*|[A-Z_][0-9a-zA-Z_]*)").</li>
+<li>regexp:parse("(\\+|-)?[0-9]+\\.[0-9]+((E|e)(\\+|-)?[0-9]+)?").</li>
+</ul>
+</div>
+<script type="text/javascript">
+// <![CDATA[
+document.observe("dom:loaded", function() {
+	$("codeforminputsubmit").observe('click', function() {
+		var v = $('codeforminput').value;
+		erlgo(v, undefined, true, true);
+		return false;
+	});
+	$("codeforminput").observe('submit', function() {
+		var v = $('codeforminput').value;
+		erlgo(v, undefined, true, true);
+		return false;
+	});
+	$$(".example-inputs-to-try li").each(function(el) {
+		el.observe('click', function(event) {
+			var v = el.innerHTML.replace(/%.*$/,"").replace(/&gt;/gi, ">").replace(/&lt;/gi, "<")
+			$("codeforminput").value = v;
+			erlgo(v, undefined, true, true);
+		});
+	});
+	$$("ul.example-inputs-to-try li:not(.nx)").invoke('hide');
+	var s = $("example-inputs-show-more");
+	s.observe('click', function() {
+		$$("ul.example-inputs-to-try li:not(.nx)").invoke('toggle');
+		if (s.innerText == "show more") {
+			s.innerText = "show less";
+		} else {
+			s.innerText = "show more";
+		}
+		return false;
+	});
+	$("clear-log-button").observe('click', function() {
+		$("codeform").innerHTML = "";
+		$("debugdiv").innerHTML = "";
+		erljs_erlgo_counter = 1;
+	});
+	$("run-unittest-button").observe('click', function() {
+		erljs_unittests();
+		return false;
+	});
+});
+// ]]>
+</script>
+</div>
+
+<div id="input-area">
 <form action="#">
-<div style="float:left;">
-<label for="codeforminput">Input:</label> <input id="codeforminput" size="70" value="" />
-<input type="submit" onclick="erlgo(document.getElementById('codeforminput').value); return false" value="e(Input);" />
+<input id="codeforminput" size="70" value="" />
 <br />
-<br />
-Result:<br />
-<textarea id="codeform" rows="18" cols="80">
-</textarea>
+<input type="submit" id="codeforminputsubmit" value="Run" />
+<input type="button" id="run-unittest-button" value="Run erljs unittests" />
+<input type="button" id="clear-log-button" value="Clear log" />
+</form>
+</div>
+
+<div>
+<div id="evalresult">
+<div id="codeform"></div>
+</div>
+</div>
+
 <!--<textarea id="debugform" rows="18" cols="80"> </textarea> -->
 </div>
+
+
+<!--
 <div>
 VM options:
 <br/>
@@ -108,31 +305,32 @@ Registers:
 </table>
 </div>
 <br/>
-<br/>
+-->
+
+<!--</form>-->
+
 <div>
-
-<input type="button" onclick="erljs_unittests()" value="erljs_unittests();" />
-<input type="button" onclick="cont()" value="cont();" />
-</div>
-</form>
-<br/>
-Tracing:
-<div style=" border: 1px solid green; height: 180px; overflow-y: scroll; overflow-x: scroll; width: 100%; font-family: Courier, monospace; font-size: 10px;" id="debugdiv">
+Tracing and debuging:
+<div id="debugdiv"></div>
 </div>
 
+<div>
+Concurent calculations and event handling (button clicks and aproximate calculation of π constant)<br />
+<form action="">
+<input id="pole_pi1" type="text" size="70" value="" />
+<input id="przycisk_pi_start1" type="button" value="Start" />
  <br />
  <br />
-<input id="przycisk_pi_start1" type="button" value="Licz 1" /> <br />
-<input id="przycisk_pi_start2" type="button" value="Licz 2" /> <br />
-
-<input id="przycisk1" type="button" value="Testowanie eventów 1 :)" />
-<input id="przycisk2" type="button" value="Testowanie eventów 2 :)" />
+<input id="pole_pi2" type="text" size="70" value="" />
+<input id="przycisk_pi_start2" type="button" value="Start" />
+ <br />
  <br />
 <input id="pole1" type="text" size="100" value="" />
  <br />
-<input id="pole_pi1" type="text" size="100" value="" />
-<input id="pole_pi2" type="text" size="100" value="" />
+<input id="przycisk1" type="button" value="Test event #1" />
+<input id="przycisk2" type="button" value="Test event #2" />
  <br />
+Add to state:
 <input id="digit1" type="button" value="1" />
 <input id="digit2" type="button" value="2" />
 <input id="digit3" type="button" value="3" />
@@ -143,14 +341,12 @@ Tracing:
 <input id="digit8" type="button" value="8" />
 <input id="digit9" type="button" value="9" />
 <input id="digit0" type="button" value="0" />
-
- <br />
-
-<input id="digits_clear" type="button" value="Clear" />
-
-
+<input id="digits_clear" type="button" value="Clear state" />
+</form>
 </div>
 
-<a href="https://github.com/baryluk/erljs"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://a248.e.akamai.net/assets.github.com/img/abad93f42020b733148435e2cd92ce15c542d320/687474703a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677265656e5f3030373230302e706e67" alt="Fork me on GitHub"></a>
-</body>
+<div>
+<a href="https://github.com/baryluk/erljs" title="Fork me on GitHub"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://a248.e.akamai.net/assets.github.com/img/abad93f42020b733148435e2cd92ce15c542d320/687474703a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677265656e5f3030373230302e706e67" alt="Fork me on GitHub" /></a>
+</div>
+</div></div></body>
 </html>
