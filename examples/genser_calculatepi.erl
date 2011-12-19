@@ -26,11 +26,13 @@ init({Przycisk, Pole}) ->
 	{ok, {Pole, 0.0, 1}}.
 
 
-
+% Madhava–Leibniz series
+% pi = 4 sum_{i=0}^\infty (-1)^i / (2i+1)
+% its convergence is slow, but we do not care
 calculate_pi(Pass, Pole, N) ->
 	4.0*calculate_pi(Pass, Pole, 0.0, 1.0, 1, 2*N+1, 0).
 
-calculate_pi(Pass, Pole, X, S, I, N, 789) ->
+calculate_pi(Pass, Pole, X, S, I, N, 2000) ->
 	erljs:set(Pole, value, {partial, Pass, I, 4.0*X}),
 	calculate_pi(Pass, Pole, X, S, I, N, 0);
 calculate_pi(Pass, _Pole, X, _S, I, I, _) ->
@@ -38,13 +40,14 @@ calculate_pi(Pass, _Pole, X, _S, I, I, _) ->
 calculate_pi(Pass, Pole, X, S, I, N, K) ->
 	calculate_pi(Pass, Pole, X + S/I, -S, I+2, N, K+1).
 
+-define(EXACT_PI, 3.141592653589793).
 
 
 handle_info({dom, _Id, _Ref, _Type, _Value, {start}} = _E, State = {Pole, _, Pass}) ->
 	%N = erljs:set(pole_pi_in, value),
 	erljs:set(Pole, value, "Calculation started..."),
 	S = calculate_pi(Pass, Pole, 100000),
-	erljs:set(Pole, value, {done, Pass, S}),
+	erljs:set(Pole, value, {done, Pass, S, ?EXACT_PI - S}),
 	{noreply, {Pole, S, Pass+1}};
 handle_info(M, State = {Pole, _, _Pass}) ->
 	erljs:set(Pole, value, {unknown_msg, M}),
