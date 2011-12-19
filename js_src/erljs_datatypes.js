@@ -83,6 +83,8 @@ if (!Function.prototype.bind) {
 	}
 }
 
+// control behaviour of .toString() function
+var erljs_toString_pretty_printing = false;
 
 // Erlang type system
 var ETerm = Class.extend({
@@ -241,7 +243,11 @@ var EList = EListNonEmpty.extend({
 		var h = this.head();
 		var t = this.tail();
 		if (t instanceof EListAny) {
+if (erljs_toString_pretty_printing) {
+			return ", "+h.toString()+t.toStringJust();
+} else {
 			return ","+h.toString()+t.toStringJust();
+}
 		} else {
 			return ","+h.toString()+"|"+t.toString();
 		}
