@@ -2223,14 +2223,22 @@ mainloop:
 			Regs[OC[4][1]] = (erljs_eq(get_arg(OC[3][0]), get_arg(OC[3][1]), false) ? Etrue : Efalse);
 			break;
 		case "element": // i.e. proplists:lookup
-			assert(OC[4][0] == "x");
+//			//assert(OC[4][0] == "x"); // erl_parse:parse_form/1 violates this assertions somewhere, with [y,2]
 			Arg = get_arg(OC[3][1]);
 			var I = get_arg(OC[3][0]);
 			if (!is_tuple(Arg) || !is_integer(I) || I > Arg.tuple_arity()|| I < 1) {
 				jumpfr(OC[2],"badarg");
 			} else {
-				assert(OC[4][0] == "x");
-				Regs[OC[4][1]] = Arg.get(I-1);
+				switch (OC[4][0]) {
+				case "x":
+					Regs[OC[4][1]] = Arg.get(I-1);
+					break;
+				case "y":
+					LocalRegs[OC[4][1]] = Arg.get(I-1);
+					break;
+				default:
+					uns(OC);
+				}
 			}
 			break;
 		case "and": // i.e. proplists:lookup
