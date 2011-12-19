@@ -1,5 +1,5 @@
 --- /usr/lib/erlang/lib/stdlib-1.17.5/src/lists.erl	2011-10-25 16:13:43.000000000 +0200
-+++ stdlib/lists.erl	2011-12-15 20:38:19.000000000 +0100
++++ stdlib/src/lists.erl	2011-12-18 07:59:14.000000000 +0100
 @@ -21,6 +21,8 @@
  -compile({no_auto_import,[max/2]}).
  -compile({no_auto_import,[min/2]}).
