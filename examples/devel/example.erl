@@ -610,3 +610,14 @@ eh10(X,Y) ->
 		lists:sum(Y)
 	end.
 
+
+length_native(L) ->
+	length(L).
+
+length_manual(L) ->
+	length_manual(L, 0).
+
+length_manual([_|T], S) ->
+	length_manual(T, S+1);
+length_manual([], S) ->
+	S.
