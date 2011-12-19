@@ -18,8 +18,11 @@ string.erl
 regexp.erl
 lists.erl
 
-erl_lib_core/*/*.erl
-erl_lib_core/*/*.beam
+erl_lib_core/*/src/*.erl
+erl_lib_core/*/include/*.hrl
+erl_lib_core/*/src/*.beam
+erl_lib_core/*/ebin/*.beam
+erl_lib_core/*/ebin-org/*.beam
 
 tests/tests_auto.erl
 tests/tests_auto.js
