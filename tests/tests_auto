@@ -60,7 +60,8 @@
 	example:dd6().
 	example:dd7().
 	example:dd8(10,200).
-	example:dd9(30).
+%	example:dd9(30).
+	example:dd9(20).
 	example:dd10(30).
 	example:dd11(30).
 	example:dd12(30).
@@ -224,19 +225,32 @@ begin setelement(2,{z,z},[]) end.
 % lists
 
 lists:seq(1,11).
-lists:seq(300,400).
+%lists:seq(300,400).
 lists:seq(4,3).
 lists:seq(4,4).
 begin catch lists:seq(10,8) end.
 lists:seq(2,50,2).
 lists:seq(20,2,-2).
+lists:seq(0,20,2).
+lists:seq(1,20,2).
+begin catch lists:seq(20,1,2) end.
+begin catch lists:seq(20,0,2) end.
+lists:seq(1,20,19).
+lists:seq(1,20,20).
+lists:seq(1,20,21).
+lists:seq(1,20,22).
+lists:seq(1,20,100).
+lists:seq(1,-20,-2).
+lists:seq(-1,-20,-2).
+lists:seq(1,666,33).
+lists:seq(-1,-666,-33).
 lists:duplicate(9,4).
 lists:duplicate(9,97).
-lists:duplicate(80,{a}).
-lists:duplicate(80,a).
-lists:seq(10,200,2).
+lists:duplicate(30,{a}).
+lists:duplicate(40,a).
+lists:seq(10,200,13).
 lists:seq(50,-50,-3).
-begin catch lists:seq(1,14,0.137) end.
+begin catch lists:seq(1,9,0.737) end.
 begin catch lists:seq(54,43,-0.461) end.
 erlang:'++'([1,23,1,23,12],[12,3,12,31,2]).
 erlang:'++'([1,23,1,23,12],[]).
@@ -490,12 +504,15 @@ lists:min([9,4,1,7]).
 lists:max([9,14,1,7]).
 lists:min([9,14,1,7]).
 lists:sum([]).
+lists:sum([13]).
+lists:sum([-3]).
 lists:sum([1,2]).
 lists:sum([1,3]).
 lists:sum([0.4,9.99,3.14]).
 lists:sum([1,33,412]).
 lists:sum([1,3,6,401,-5,12,41,-12]).
-lists:sum([1,3.5,6,8.5,11,13.3,16,18.5,21.3,23.51,26,28.5,31,33.5,36,38.5,41,43.5,46,48.5,51,53.5,56,58.5,61,63.5,66376,378.5,381,383.5,386,388.5,391,393.5,396,398.5,401]).
+%lists:sum([1,3.5,6,8.5,11,13.3,16,18.5,21.3,23.51,26,28.5,31,33.5,36,38.5,41,43.5,46,48.5,51,53.5,56,58.5,61,63.5,66376,378.5,381,383.5,386,388.5,391,393.5,396,398.5,401,63.5,66376,378.5,381,383.5,386,388.5,391,393.5,396,398.5,401]).
+lists:sum([1,3.5,6,8.5,11, 13.3,16,18.5, 21.3,23.51,26, 28.5,31,33.5,36, 38.5,41,43.5,46,48.5, 51,53.5,56,58.5,61, 63.5,66376,378.5, 381,383.5,386, 388.5,391,393.5, 396,398.5,401]).
 lists:last([8]).
 lists:last([9,2]).
 lists:last([a,b,c]).
@@ -522,7 +539,8 @@ lists:sort([3,3]).
 lists:sort([3,3,1]).
 lists:sort([3,1,3]).
 lists:sort([1,3,3]).
-lists:sort([1,3,3,6,1,2,3,1,56,12,62,3423,4,7,213,24,6,7,2,4,7,8,65,3,5,6,89,8765,43,23,12,4,1,4,3,2,2,4,5,6,7,5,4,3,5,65,6,7,4,3,2,4,65,7,9,0,9,7,5,3,2,12,4]).
+%lists:sort([1,3,3,6,1,2,3,1,56,12,62,3423,4,7,213,24,6,7,2,4,7,8,65,3,5,6,89,8765,43,23,12,4,1,4,3,2,2,4,5,6,7,5,4,3,5,65,6,7,4,3,2,4,65,7,9,0,9,7,5,3,2,12,4]).
+lists:sort([1,3,3,6, 1,2,3,1, 56,12,62,3423,4,7, 213,24,6,7,2,4,7, 8,65,3,5,6, 89,8765,43, 23,12,4,1, 4,3,2,4, 5,7,5,4, 3,5,65,6, 7,4]).
 
 gb_trees:empty().
 begin T=gb_trees:empty(), T2=gb_trees:enter(ala,123,T) end.
@@ -589,3 +607,5 @@ erl_scan:string("{d,f,g,[4,2,dd3]}.").
 
 % -> erl_parse:parse_exprs(AAA)
 erl_scan:string("fun(X,Y) -> case lists:max(X) of Y -> {big,Y}; Z -> {smaller,Z} end end.").
+
+erl_scan:string("State#state.counter").
