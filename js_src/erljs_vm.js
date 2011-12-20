@@ -1286,8 +1286,8 @@ mainloop:
 				switch (NA) {
 				case "eval/1":
 					var k = Regs[0].toString();
-					var T = eval(k); // first one can be changed to fromJSON
-					T = eval(T);
+					var T = simple_eval(k); // first one can be changed to fromJSON
+					T = simple_eval(T);
 					if (T!==undefined) { Regs[0] = T; } else { Regs[0] = 0; }
 					break;
 				case "alert/1":
@@ -3051,4 +3051,8 @@ function erljs_vm_call0(Modules, StartFunctionSignature0, Args, ShowResult, Show
 function erljs_vm_call(Modules, StartFunctionSignature0, Args) {
 //	return erljs_vm_call0(Modules, StartFunctionSignature0, Args, true, true, true, true);
 	return erljs_vm_call0(Modules, StartFunctionSignature0, Args);
+}
+
+function simple_eval(t) {
+	return eval(t);
 }
