@@ -19,26 +19,26 @@ function erl(X, ShowInput) {
 	var r = /^\s*([^:]+):([^(]+)\((.*)\)\.?\s*$/;
 	var m = r.exec(X);
 	if (m) {
-/*
-		var args = m[3].length==0 ? [] : m[3].split(/,/);
-		var arity = args.length;
-		for (var i = 0; i < arity; i++) {
-			args[i] = new Number(args[i]);
-		}
-*/
-
 		var args = [];
 		var A = 0;
-		if (m[3].length) {
+		var s = m[3];
+		if (s.length) {
 			var i = 0;
-			var a = get_next(m[3],i,false);
+			var a = get_next(s,i,false);
 			args[A++]=a[0];
 			i=a[1];
-			while (m[3][i] == ",") {
+			// skip white space
+			while ((s[i] == " " || s[i] == "\t" || s[i] == "\n" || s[i] == "\r") && i < s.length) {
 				i++;
-				var a = get_next(m[3],i,false);
+			}
+			while (s[i] == ",") {
+				i++;
+				var a = get_next(s,i,false);
 				args[A++]=a[0];
 				i=a[1];
+				while ((s[i] == " " || s[i] == "\t" || s[i] == "\n" || s[i] == "\r") && i < s.length) {
+					i++;
+				}
 			}
 			if (i != m[3].length) throw "bad syntax in arguments list";
 		}
