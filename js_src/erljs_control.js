@@ -87,6 +87,9 @@ function erlgo(X, ShowResult, pretty, animate) {
 		c.insertBefore(p1, f);
 
 		var p2 = document.createElement("p");
+		if (/^(Exception|Error)/.test(RRP)) {
+			p2.style.color = "rgb(255,0,0)";
+		}
 		p2.appendChild(document.createTextNode(RRP));
 		c.insertBefore(p2, f);
 
