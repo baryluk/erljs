@@ -7,7 +7,7 @@
 -behaviour(gen_server).
 
 -export([start/1, start_link/1]).
--export([init/1, handle_info/2, terminate/2, code_change/3]).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -export([calculate_pi/3]).
 
@@ -25,6 +25,11 @@ init({Przycisk, Pole}) ->
 	erljs:set(Pole, value, {initialized, ?MODULE, Przycisk, Pole, self()}),
 	{ok, {Pole, 0.0, 1}}.
 
+handle_call(_, _From, _State) ->
+	wrong.
+
+handle_cast(_, _State) ->
+	wrong.
 
 % Madhava–Leibniz series
 % pi = 4 sum_{i=0}^\infty (-1)^i / (2i+1)
@@ -41,7 +46,6 @@ calculate_pi(Pass, Pole, X, S, I, N, K) ->
 	calculate_pi(Pass, Pole, X + S/I, -S, I+2, N, K+1).
 
 -define(EXACT_PI, 3.141592653589793).
-
 
 handle_info({dom, _Id, _Ref, _Type, _Value, {start}} = _E, State = {Pole, _, Pass}) ->
 	%N = erljs:set(pole_pi_in, value),
