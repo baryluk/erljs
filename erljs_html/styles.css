@@ -197,3 +197,6 @@ textarea, input {
 #pole1, #pole_pi1, #pole_pi2 {
 	width: 500px;
 }
+fieldset {
+	border: 0;
+}

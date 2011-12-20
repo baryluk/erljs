@@ -76,8 +76,7 @@ erljs project
 <!--<body onload="erljs_init()">-->
 <body onload="erljs_start_vm()"><div id="body"><div id="wrap">
 <h1>erljs - Erlang in JavaScript</h1>
-<!--<form action="#">-->
-<div> <!-- style="float:left;" -->
+<div>
 <div>
 <div>Examples (<a id="example-inputs-show-more" href="#">show more</a>)
 - try by clicking any of sample expressions or function calls:</div>
@@ -264,11 +263,13 @@ document.observe("dom:loaded", function() {
 
 <div id="input-area">
 <form action="#">
+<fieldset>
 <input id="codeforminput" size="70" value="" />
 <br />
 <input type="submit" id="codeforminputsubmit" value="Run" />
 <input type="button" id="run-unittest-button" value="Run erljs unittests" />
 <input type="button" id="clear-log-button" value="Clear log" />
+</fieldset>
 </form>
 </div>
 
@@ -316,15 +317,20 @@ Tracing and debuging:
 
 <div>
 Concurent calculations and event handling (button clicks and aproximate calculation of π constant)<br />
-<form action="">
+<form action="#">
+<fieldset>
 <input id="pole_pi1" type="text" size="70" value="" />
 <input id="przycisk_pi_start1" type="button" value="Start" />
  <br />
  <br />
+</fieldset>
+<fieldset>
 <input id="pole_pi2" type="text" size="70" value="" />
 <input id="przycisk_pi_start2" type="button" value="Start" />
  <br />
  <br />
+</fieldset>
+<fieldset>
 <input id="pole1" type="text" size="100" value="" />
  <br />
 <input id="przycisk1" type="button" value="Test event #1" />
@@ -342,6 +348,7 @@ Add to state:
 <input id="digit9" type="button" value="9" />
 <input id="digit0" type="button" value="0" />
 <input id="digits_clear" type="button" value="Clear state" />
+</fieldset>
 </form>
 </div>
 
