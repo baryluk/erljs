@@ -615,6 +615,10 @@ decode_again:
 while (true) {
 	switch (s[i++]) {
 		case "{":
+			// skip white space
+			while ((s[i] == " " || s[i] == "\t" || s[i] == "\n" || s[i] == "\r") && i < s.length) {
+				i++;
+			}
 			if (s[i] == "}") {
 				return [new ETuple(0), i+1];
 			}
@@ -640,6 +644,9 @@ tuple_loop:
 			}
 			return [new ETuple(k), i];
 		case "[":
+			while ((s[i] == " " || s[i] == "\t" || s[i] == "\n" || s[i] == "\r") && i < s.length) {
+				i++;
+			}
 			if (s[i] == "]") {
 				return [new EListNil(), i+1];
 			}
@@ -674,6 +681,9 @@ list_loop:
 				var t = get_next(s, i, existing);
 				r.settail(t[0]);
 				i = t[1];
+				while ((s[i] == " " || s[i] == "\t" || s[i] == "\n" || s[i] == "\r") && i < s.length) {
+					i++;
+				}
 				if (s[i++] != "]") {
 					throw "bad list at about "+i;
 				}
