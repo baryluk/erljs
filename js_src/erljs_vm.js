@@ -511,6 +511,13 @@ function erljs_vm_call_prepare(StartFunctionSignature0, Args, MaxReductions, Ful
 }
 
 
+var erljs_chrome_timer, erljs_chrome_timer_s;
+if (typeof chrome !== "undefined" && typeof chrome.Interval === "function") {
+	erljs_chrome_timer = new chrome.Interval();
+	erljs_chrome_timer_s = new Date();
+	erljs_chrome_timer.start();
+}
+
 
 function erljs_vm_steps__(P) {
 	var Stack = P.Stack;
@@ -1761,6 +1768,23 @@ mainloop:
 						new ETuple([c.getFullYear(), 1+c.getMonth(), c.getDate()]),
 						new ETuple([c.getHours(), c.getMinutes(), c.getSeconds()])
 					]);
+					break;
+				case "now/0":
+					// TODO: subsequent now/0 calls should return distinct increassing values.
+					//       we have here only 1ms resolution, but sometimes 15ms resolution on Windows XP or Vista!
+					//       http://ejohn.org/blog/accuracy-of-javascript-time/
+					if (typeof erljs_chrome_timer !== "undefined") {
+						// Google Chrome has a native timer constructor
+						var c = erljs_chrome_timer_s.getTime()*1000 + erljs_chrome_timer.microseconds();
+						// Please note that the microseconds() method is only accurate to the us in Google Chrome 7+ with the launch option, --enable-benchmarking.
+						var c_sec = (c / 1000000) | 0;
+						var c_musec = c % 1000000;
+					} else {
+						var c = new Date();
+						var c_sec = (c.getTime() / 1000) | 0;
+						var c_musec = c.getMilliseconds()*1000;
+					}
+					Regs[0] = new ETuple([(c_sec / 1000000) | 0, c_sec % 1000000, c_musec]);
 					break;
 				case "fun_info/1": ni(OC); break;
 				case "fun_info/2": ni(OC); break;

@@ -51,6 +51,10 @@ Differences:
    - JS have floating point exceptions disabled, but Erlang have them enabled, emulation will be slow.
    - so it is possible to have NaN, +-Inf, or underfloat in variables.
    - possible solution: add erljs:check_nan(X) test a variable.
+ - erlang:now/0 have 1ms real resolution, in some cases about 15ms (Windows XP).
+   (erljs will use 1us resolution timer in Chrome started with --enable-benchmkaring,
+    it is however only accurate for measuring relative times)
+
 
 Both Erlang and JS are dynamically typed languages. Unfortunettelly JS is weakly typed,
 but Erlang is strongly typed. This means that we need to perform some additional
