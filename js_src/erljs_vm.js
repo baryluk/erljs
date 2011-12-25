@@ -1321,7 +1321,8 @@ mainloop:
 					if (Element) {
 						switch (Regs[1].atom_name()) {
 							case "value":
-								Element.value = Regs[2].toString();
+								//Element.value = Regs[2].toString();
+								Element.value = erljs_term_to_string(Regs[2], true); // pretty printing
 								break;
 							default:
 								ni(OC);
