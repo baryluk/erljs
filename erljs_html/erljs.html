@@ -200,7 +200,7 @@ with literal arguments can be used. BIFs are not directly callable.)</small>
 <li>erl_parse:parse_term([{'{',1},{atom,1,a},{',',1},{atom,1,b},{',',1},{atom,1,c},{'}',1},{dot,1}])</li>
 <li>erl_scan:string("1+3").</li>
 <li>erl_scan:string("1+3.").</li>
-<li>erl_scan:string("if 5 &lt; 6 -&gt; m; true ->&gt; n end").</li>
+<li>erl_scan:string("if 5 &lt; 6 -&gt; m; true -&gt; n end").</li>
 <li>erl_parse:parse_exprs([{'if',1},{integer,1,5},{'&lt;',1},{integer,1,6},{'-&gt;',1},{atom,1,m},{';',1},{atom,1,true},{'-&gt;',1},{atom,1,n},{'end',1},{dot,1}]).</li>
 <li>erl_scan:string("fun() -&gt; ok end").</li>
 <li>erl_scan:string("fun() -&gt; ok end.").</li>
