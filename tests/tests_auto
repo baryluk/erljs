@@ -452,6 +452,9 @@ begin lists:zipwith(fun(X, Y) -> X+Y end, [1,2,3], [4,5,6]) end.
 begin lists:zipwith3(fun(X, Y, Z) -> X+Y+Z end, [1,2,3], [4,5,6], [7,8,9]) end.
 begin lists:zipwith3(fun(X, Y, Z) -> [X,Y,Z] end, [a,b,c], [x,y,z], [1,2,3]) end.
 
+lists:append(["ala"," ","ma"," ","kota"]).
+lists:split(1  , [ 1 , 2 , 3 ,  {   a   ,    a   }   ,   {   b    }   |  c  ] ).
+
 % end of examples from lists manual
 
 % math
