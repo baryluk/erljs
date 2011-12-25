@@ -949,7 +949,7 @@ function erljs_vm_consume() {
 		if (next_process) {
 			var S = next_process.data;
 			erljs_scheduler_log("Process "+S.Pid+" in state "+state(S.State)+" scheduled. Running...");
-			S.MaxReductions = max_reductions;
+			S.MaxReductions = quantum_reductions;
 			var r = erljs_schedule_run();
 			if (r < 0) { throw "Internal error"; }
 			reductions += S.Reductions;
