@@ -22,6 +22,7 @@ start_link(Args = {Przycisk, Pole}) ->
 
 init({Przycisk, Pole}) ->
 	{ok, _} = erljs:listen(Przycisk, click, [], {start}),
+	{ok, _} = erljs:listen(przycisk_pi_start12, click, [], {start}),
 	erljs:set(Pole, value, {initialized, ?MODULE, Przycisk, Pole, self()}),
 	{ok, {Pole, 0.0, 1}}.
 
