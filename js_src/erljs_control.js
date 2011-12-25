@@ -53,6 +53,19 @@ function erl(X, ShowInput) {
 
 var erljs_erlgo_counter = 1;
 
+function erljs_term_to_string(X, pretty) {
+	var R;
+	if (pretty) {
+		var temp = erljs_toString_pretty_printing;
+		erljs_toString_pretty_printing = pretty;
+		R = X.toString();
+		erljs_toString_pretty_printing = temp;
+	} else {
+		R = X.toString();
+	}
+	return R;
+}
+
 function erlgo(X, ShowResult, pretty, animate) {
 	var R,RR,RRP;
 	var no_exp = false;
@@ -60,10 +73,7 @@ function erlgo(X, ShowResult, pretty, animate) {
 		R = erl(X);
 		RR = R.toString();
 		if (pretty) {
-			var temp = erljs_toString_pretty_printing;
-			erljs_toString_pretty_printing = pretty;
-			RRP = R.toString();
-			erljs_toString_pretty_printing = temp;
+			RRP = erljs_term_to_string(R, pretty);
 		} else {
 			RRP = RR;
 		}
