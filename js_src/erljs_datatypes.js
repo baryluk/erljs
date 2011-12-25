@@ -175,7 +175,11 @@ var ETuple = ETerm.extend({
 		var r = "";
 		for (var i = 0; i < this.TupleArity; i++) {
 			if (i) {
+if (erljs_toString_pretty_printing) {
+				r += ", ";
+} else {
 				r += ",";
+}
 			}
 			if (this.TupleData[i] !== undefined) {
 				r += this.TupleData[i].toString();
