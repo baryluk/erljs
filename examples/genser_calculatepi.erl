@@ -50,8 +50,10 @@ calculate_pi(Pass, Pole, X, S, I, N, K) ->
 handle_info({dom, _Id, _Ref, _Type, _Value, {start}} = _E, State = {Pole, _, Pass}) ->
 	%N = erljs:set(pole_pi_in, value),
 	erljs:set(Pole, value, "Calculation started..."),
+	StartTime = erlang:now(),
 	S = calculate_pi(Pass, Pole, 100000),
-	erljs:set(Pole, value, {done, Pass, S, ?EXACT_PI - S}),
+	EndTime = erlang:now(),
+	erljs:set(Pole, value, {done, Pass, S, ?EXACT_PI - S, timer:now_diff(EndTime, StartTime) / 1000000.0}),
 	{noreply, {Pole, S, Pass+1}};
 handle_info(M, State = {Pole, _, _Pass}) ->
 	erljs:set(Pole, value, {unknown_msg, M}),
