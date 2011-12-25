@@ -70,7 +70,7 @@ handle_info({dom, _Id, _Ref, _Type, _Value, {clear}} = _E, _State) ->
 	erljs:set(pole1, value, State2),
     {noreply, State2};
 handle_info({dom, _Id, _Ref, _Type, _Value, _} = E, State) ->
-	erljs:set(pole1, value, {received_dom_event, erlang:localtime(), E}),
+	erljs:set(pole1, value, {received_dom_event, erlang:localtime(), erlang:now(), E}),
     {noreply, State};
 handle_info({'EXIT', _Pid, _Reason}, State) ->
     {noreply, State};
