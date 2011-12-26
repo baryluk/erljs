@@ -925,14 +925,14 @@ function erljs_vm_consume() {
 	erljs_vm_consumptions++;
 
 	// what is the total time to be consumed by this function (sum of all processes executed here)
-	var max_reductions = 10000;
-	var max_time = 80; // miliseconds
+	var max_reductions = 50000;
+	var max_time = 50; // miliseconds
 
 	// how big is a maximal time-slot we are giving to each process.
 	// (it can be smaller if process ended or entered a blocked state)
 	// (it can be bigger if process used native non-preemptible function)
-	var quantum_reductions = 5000;
-	var quantum_time = 5;
+	var quantum_reductions = 3000;
+	var quantum_time = 6;
 
 	// TODO: we should base our quantum_* number on the number of runnable threads
 	// (and if possibly modify them if new processes are spawned, other terminated, entered a blocking state,
