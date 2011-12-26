@@ -38,7 +38,7 @@ handle_cast(_, _State) ->
 calculate_pi(Pass, Pole, N) ->
 	4.0*calculate_pi(Pass, Pole, 0.0, 1.0, 1, 2*N+1, 0).
 
-calculate_pi(Pass, Pole, X, S, I, N, 2000) ->
+calculate_pi(Pass, Pole, X, S, I, N, 200) ->
 	erljs:set(Pole, value, {partial, Pass, I, 4.0*X}),
 	calculate_pi(Pass, Pole, X, S, I, N, 0);
 calculate_pi(Pass, _Pole, X, _S, I, I, _) ->
